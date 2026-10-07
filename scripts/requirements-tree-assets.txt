@@ -1,0 +1,3 @@
+# Offline passive-tree asset build only; not needed by app users.
+Pillow==12.3.0
+zstandard==0.25.0

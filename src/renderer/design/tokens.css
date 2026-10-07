@@ -1,0 +1,33 @@
+/* Design v1: all shared appearance decisions live here, outside feature logic. */
+:root {
+  color-scheme: light dark;
+  --color-bg: light-dark(#ffffff, #1b1b1c);
+  --color-side: light-dark(#f6f6f5, #151516);
+  --color-soft: light-dark(#f3f3f1, #252526);
+  --color-active: light-dark(#e8e8e4, #333335);
+  --color-text: light-dark(#252525, #e8e8e6);
+  --color-muted: light-dark(#66665f, #aaa99f);
+  --color-line: light-dark(#e2e2dd, #333334);
+  --color-solid: light-dark(#282826, #e9e9e4);
+  --color-inverse: light-dark(#ffffff, #191919);
+  --color-positive: light-dark(#286541, #90bda0);
+  --color-warning: light-dark(#965321, #dfad70);
+  --color-rare: light-dark(#7d6214, #dfcc7c);
+  --color-unique: light-dark(#984d21, #dba474);
+  --color-magic: light-dark(#375f9b, #a5b5df);
+  --color-overlay: #0007;
+  --font-ui: 'Segoe UI', 'Malgun Gothic', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-code: Consolas, ui-monospace, monospace;
+  --font-size: 13px;
+  --font-small: 11px;
+  --font-detail: 12px;
+  --space-1: 4px; --space-2: 6px; --space-3: 8px; --space-4: 12px; --space-5: 16px;
+  --panel-gap: 8px; --panel-padding: 8px; --control-padding: 5px 8px;
+  --nav-width: 168px; --stats-width: 208px; --slot-width: 176px;
+  --row-height: 34px; --radius: 6px; --radius-small: 4px;
+  --stats-row-height: 18px; --title-size: 17px;
+}
+:root[data-theme='dark'] { color-scheme: dark; }
+:root[data-theme='light'] { color-scheme: light; }
+:root[data-density='comfortable'] { --panel-gap: 12px; --panel-padding: 12px; --control-padding: 7px 10px; --row-height: 40px; --stats-row-height: 21px; }
+@media(max-width:1279px) { :root { --nav-width:136px; --stats-width:192px; --slot-width:126px; --panel-gap:6px; --panel-padding:6px; --stats-row-height:16px; } }
