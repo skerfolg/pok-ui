@@ -1,0 +1,12 @@
+import { cp, mkdir, readdir, readFile, stat } from 'node:fs/promises';
+import { resolve, join } from 'node:path';
+const source = process.argv[2] && resolve(process.argv[2]);
+if (!source) throw new Error('Usage: npm run runtime:stage -- <frozen/pok directory>');
+const manifest = JSON.parse(await readFile(join(source, 'resources/runtime-manifest.json'), 'utf8'));
+if (manifest.format_version !== 1 || !manifest.entrypoint?.[0] || !manifest.pob_commit) throw new Error('Unsupported POK runtime manifest.');
+await stat(join(source, manifest.entrypoint[0]));
+const destination = resolve('resources/pok-runtime');
+await mkdir(destination, { recursive: true });
+if ((await readdir(destination)).some(name => name !== '.gitkeep')) throw new Error('Runtime destination is not empty. Move the previous runtime aside before staging a new version.');
+for (const name of await readdir(source)) await cp(join(source, name), join(destination, name), { recursive: true, errorOnExist: true, force: false });
+console.log(`Staged POK ${manifest.version}, PoB ${manifest.pob_commit}, ${manifest.platform}`);
