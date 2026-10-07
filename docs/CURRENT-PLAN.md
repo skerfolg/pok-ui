@@ -5,11 +5,11 @@
 - [x] `https://github.com/skerfolg/pok-ui.git`를 origin으로 연결하고 기존 main의 MIT 라이선스 이력 보존
 - [x] 공개 대상 점검: 개인 XML·대화·세션·실행 파일·생성 리소스 제외, 문서의 개인 빌드명 일반화
 - [x] 앱 검사 52개와 프로덕션 빌드 통과
-- [ ] `codex/desktop-v1` 브랜치 푸시 및 main 대상 PR 생성
+- [x] `codex/desktop-v1` 브랜치 푸시 및 main 대상 [PR #1](https://github.com/skerfolg/pok-ui/pull/1) 생성
 
 ```mermaid
 flowchart LR
-  A[원격 이력 보존]:::done --> B[게시 대상 검토]:::done --> C[검사 및 빌드]:::done --> D[브랜치 푸시 및 PR]:::active
+  A[원격 이력 보존]:::done --> B[게시 대상 검토]:::done --> C[검사 및 빌드]:::done --> D[브랜치 푸시 및 PR]:::done
   classDef done fill:#243d31,stroke:#65967d,color:#fff
   classDef active fill:#4b4025,stroke:#bca46c,color:#fff
 ```
