@@ -1,13 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, rm, symlink } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { PassiveTreeStore, TreeResourceError } from '../src/main/passive-tree';
 
 function manifest(version='0_5'){
+  const treeText=JSON.stringify({nodes:{'1':{skill:1,name:'Fixture'}},groups:{}});
   return {schemaVersion:1,version,treeFile:'tree.json',assets:{'Art/2DArt/SkillIcons/passives/Life.dds':{file:'skills-a1.webp',mime:'image/webp',width:64,height:64,x:128,y:64}},
-    source:{project:'PathOfBuilding-PoE2',commit:'fixture',treeSha256:'fixture'}};
+    source:{project:'PathOfBuilding-PoE2',commit:'fixture',treeSha256:'source-fixture'},treeFileSha256:createHash('sha256').update(treeText).digest('hex')};
 }
 async function fixture(){
   const directory=await mkdtemp(join(tmpdir(),'pok-ui-tree-'));
@@ -49,7 +51,7 @@ test('missing or failed versions can retry; different versions never silently fa
     await f.addVersion('0_4');assert.equal((await store.load('0_4')).version,'0_4');
     const folder=await f.addVersion('0_3');
     await writeFile(join(folder,'tree.json'),'broken');
-    await assert.rejects(store.load('0_3'),/손상/);
+    await assert.rejects(store.load('0_3'),/손상|해시/);
     await f.addVersion('0_3');assert.equal((await store.load('0_3')).version,'0_3');
   }finally{await f.cleanup();}
 });

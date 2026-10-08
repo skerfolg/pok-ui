@@ -98,6 +98,20 @@ test('new numeric item IDs can be inserted and equipped without changing existin
     assert.throws(() => editBuild(fixture, { type: 'item', id, text }));
 });
 
+test('item-equip and batch edits are one logical XML operation for callers', () => {
+  const equipped = editBuild(fixture, { type: 'item-equip', setId: '2', slot: 'Weapon 1', id: '10', text: 'Rarity: NORMAL\nCatalog Base' });
+  const parsed = parseBuild(equipped);
+  assert.equal(parsed.items.find(item => item.id === '10')?.name, 'Catalog Base');
+  assert.equal(parsed.itemSets[1].slots['Weapon 1'], '10');
+  const batched = editBuild(fixture, { type: 'batch', edits: [
+    { type: 'config', setId: '2', key: 'a', value: 5 },
+    { type: 'tree-nodes', specId: '2', nodes: [9, 10] },
+  ] });
+  assert.equal(parseBuild(batched).configs[1].inputs.a, 5);
+  assert.deepEqual(parseBuild(batched).trees[1].nodes, [9, 10]);
+  assert.equal(serial(elements(batched, 'SkillSet')[0]), serial(elements(fixture, 'SkillSet')[0]));
+});
+
 test('slot edits target the requested set and preserve weapon-set data', () => {
   const output = editBuild(fixture, { type: 'slot', setId: '2', slot: 'Weapon 1', itemId: '0' });
   const result = parseBuild(output);
@@ -210,6 +224,34 @@ test('tree edits preserve weapon assignments, sockets, overrides, unknown attrib
   assert.equal(parseBuild(output).trees[1].attributes.future, 'spec');
 });
 
+test('character edits update build and active spec metadata without touching inactive specs', () => {
+  const output = editBuild(fixture, { type: 'character', level: 55, className: 'Sorceress', ascendancy: 'Stormweaver',
+    classLegacyId: 7, classInternalId: 4, ascendancyLegacyId: 1, ascendancyInternalId: 'Sorceress1', treeVersion: '0_5', startNodeId: '123' });
+  const parsed = parseBuild(output);
+  assert.equal(parsed.level, 55);
+  assert.equal(parsed.className, 'Sorceress');
+  assert.equal(parsed.ascendancy, 'Stormweaver');
+  const specs = elements(output, 'Spec');
+  assert.equal(specs[0].getAttribute('treeVersion'), 'test');
+  assert.equal(specs[1].getAttribute('treeVersion'), '0_5');
+  assert.equal(specs[1].getAttribute('classId'), '7');
+  assert.equal(specs[1].getAttribute('classInternalId'), '4');
+  assert.equal(specs[1].getAttribute('ascendClassId'), '1');
+  assert.equal(specs[1].getAttribute('ascendancyInternalId'), 'Sorceress1');
+  assert.equal(specs[1].getAttribute('startNodeId'), '123');
+});
+
+test('character edits can explicitly clear ascendancy using PoB unascended convention', () => {
+  const output = editBuild(fixture, { type: 'character', level: 55, className: 'Sorceress', ascendancy: '',
+    classLegacyId: 7, classInternalId: 4, ascendancyLegacyId: 0, ascendancyInternalId: '', treeVersion: '0_5', startNodeId: '123' });
+  const parsed = parseBuild(output);
+  assert.equal(parsed.className, 'Sorceress');
+  assert.equal(parsed.ascendancy, '');
+  const spec = elements(output, 'Spec')[1];
+  assert.equal(spec.getAttribute('ascendClassId'), '0');
+  assert.equal(spec.getAttribute('ascendancyInternalId'), '');
+});
+
 test('literal attribute newlines/tabs/CR survive parsing and repeated edits without numeric escape output', () => {
   const multiline = 'first\r\nsecond\nthird\tfourth > quoted & text';
   const xml = fixture.replace('string="hello"', `string="first\r\nsecond\nthird\tfourth > quoted &amp; text"`)
@@ -251,6 +293,29 @@ test('blank XML is valid and editable without invented saved calculation values'
   assert.doesNotThrow(() => projectActiveXml(emptyAgain));
 });
 
+test('blank XML catalog defaults keep the character unascended unless an ascendancy is explicit', () => {
+  const xml = createBlankXml({ defaultTreeVersion: '0_5', characterClass: { id: 'Sorceress', internalId: 4, legacyId: 3, name: 'Sorceress', startNodeId: '123',
+    ascendancies: [{ id: 'Sorceress1', name: 'Stormweaver', legacyId: 1 }] } });
+  const parsed = parseBuild(xml);
+  assert.equal(parsed.className, 'Sorceress');
+  assert.equal(parsed.ascendancy, '');
+  assert.equal(parsed.trees[0].version, '0_5');
+  assert.equal(elements(xml, 'Build')[0].getAttribute('targetVersion'), '0_1');
+  assert.equal(elements(xml, 'Spec')[0].getAttribute('classId'), '3');
+  assert.equal(elements(xml, 'Spec')[0].getAttribute('classInternalId'), '4');
+  assert.equal(elements(xml, 'Spec')[0].getAttribute('ascendClassId'), '0');
+  assert.equal(elements(xml, 'Spec')[0].getAttribute('ascendancyInternalId'), '');
+  assert.equal(elements(xml, 'Spec')[0].getAttribute('startNodeId'), '123');
+});
+
+test('blank XML applies an explicitly selected catalog ascendancy', () => {
+  const xml = createBlankXml({ defaultTreeVersion: '0_5', ascendancyId: 'Sorceress1', characterClass: { id: 'Sorceress', internalId: 4, legacyId: 3, name: 'Sorceress', startNodeId: '123',
+    ascendancies: [{ id: 'Sorceress1', name: 'Stormweaver', legacyId: 1 }] } });
+  assert.equal(parseBuild(xml).ascendancy, 'Stormweaver');
+  assert.equal(elements(xml, 'Spec')[0].getAttribute('ascendClassId'), '1');
+  assert.equal(elements(xml, 'Spec')[0].getAttribute('ascendancyInternalId'), 'Sorceress1');
+});
+
 test('rejects DTD/entities, malformed XML, invalid characters, excessive depth and oversized input', () => {
   const invalid = [
     '<!DOCTYPE PathOfBuilding2 [<!ENTITY external SYSTEM "file:///secret">]>' + fixture,
@@ -280,4 +345,13 @@ test('rejects edits that cannot be applied safely instead of silently choosing a
   group.gems[0].quality = -1;
   assert.throws(() => editBuild(fixture, { type: 'skill-group', setId: '2', groupId: '1', group }));
   assert.throws(() => editBuild(fixture, { type: 'item', id: '5', text: '\u0000' }));
+});
+
+test('explicit level edits disable PoB auto-level while class-only edits preserve its mode',()=>{
+  const xml=createBlankXml().replace('characterLevelAutoMode="false"','characterLevelAutoMode="true"');
+  const same=editBuild(xml,{type:'character',level:1,className:'Ranger',ascendancy:''});
+  assert.match(same,/characterLevelAutoMode="true"/);
+  const changed=editBuild(xml,{type:'character',level:50,className:'Ranger',ascendancy:''});
+  assert.match(changed,/characterLevelAutoMode="false"/);
+  assert.equal(parseBuild(changed).level,50);
 });

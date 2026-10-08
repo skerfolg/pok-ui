@@ -19,6 +19,7 @@ export function validateState(value: unknown): asserts value is AppState {
     s.settings.pok.python, s.settings.pok.luajit, s.settings.trade.league]) {
     if (typeof value !== 'string') throw new Error('설정 값은 문자열이어야 합니다.');
   }
+  if(s.settings.agent.reasoningEffort!==undefined&&typeof s.settings.agent.reasoningEffort!=='string')throw new Error('추론 수준 설정이 올바르지 않습니다.');
   const ids = new Set<string>();
   for (const b of s.builds) {
     if (!b || typeof b.id !== 'string' || ids.has(b.id) || typeof b.name !== 'string' ||
@@ -31,8 +32,12 @@ export function validateState(value: unknown): asserts value is AppState {
     if (!c || typeof c.id !== 'string' || chats.has(c.id) || typeof c.title !== 'string' ||
         !Array.isArray(c.messages)) throw new Error('대화 저장 형식이 올바르지 않습니다.');
     chats.add(c.id);
-    for (const m of c.messages) if (!m || typeof m.text !== 'string' ||
-      !['user','assistant','system'].includes(m.role)) throw new Error('메시지 형식이 올바르지 않습니다.');
+    for (const m of c.messages) {
+      if (!m || typeof m.text !== 'string' || !['user','assistant','system'].includes(m.role)) throw new Error('메시지 형식이 올바르지 않습니다.');
+      if(m.images!==undefined&&(!Array.isArray(m.images)||m.images.length>4||m.images.some(image=>!image||!/^[a-f0-9]{64}$/.test(image.id)||typeof image.name!=='string'||typeof image.mimeType!=='string'||!Number.isSafeInteger(image.size)||image.size<1||image.size>4*1024*1024)))throw new Error('이미지 첨부 정보가 올바르지 않습니다.');
+      if(m.completedAt!==undefined&&(typeof m.completedAt!=='string'||!Number.isFinite(Date.parse(m.completedAt))))throw new Error('응답 완료 시각이 올바르지 않습니다.');
+      if(m.durationMs!==undefined&&(!Number.isFinite(m.durationMs)||m.durationMs<0))throw new Error('응답 소요 시간이 올바르지 않습니다.');
+    }
   }
 }
 export class StateStore {

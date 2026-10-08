@@ -1,5 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { effectivePokSettings } from '../src/main/pok';
+
+test('packaged startup always selects the bundled engine despite saved checkout settings',()=>{
+  const saved={mode:'checkout' as const,root:'old-checkout',python:'custom-python',luajit:'custom-lua'};
+  assert.deepEqual(effectivePokSettings(saved,true),{mode:'bundled',root:'',python:'',luajit:''});
+  assert.equal(saved.mode,'checkout');
+});
+test('development startup preserves the selected engine settings',()=>{
+  const saved={mode:'checkout' as const,root:'dev-checkout',python:'dev-python',luajit:'dev-lua'};
+  assert.deepEqual(effectivePokSettings(saved,false),saved);
+  assert.notEqual(effectivePokSettings(saved,false),saved);
+});
 import { unwrapMcp, PokToolError } from '../src/main/pok';
 test('MCP unwrap handles object results, array envelopes and text-only servers',()=>{
   assert.deepEqual(unwrapMcp({structuredContent:{stats:{Life:100}}}),{stats:{Life:100}});
@@ -84,4 +96,102 @@ test('FastMCP engine validation errors retain restoration diagnostics while tran
   assert.ok(calculation.restoreNotes.includes('weapon set folded'));
   assert.ok(calculation.restoreNotes.includes('Arctic Armour stages missing'));
   assert.deepEqual(calculation.result.pok_runtime,{stale:false,loaded_commit:'runtime'});
+});
+
+const identity = {
+  apiVersion: 1 as const, pok: { version: 'test', sourceCommit: 'a'.repeat(40), sourceDigest: 'b'.repeat(64) },
+  pob: { commit: 'c'.repeat(40), sourceDigest: 'd'.repeat(64) }, kb: { manifestSha256: 'e'.repeat(64), contentSha256: 'f'.repeat(64), patch: 'test' },
+  capabilities: { computeXml: true, renderItem: true, catalogExport: true },
+};
+test('connection checks skip cold KB diagnostics and use short bounded deadlines',async()=>{
+  const connection=new PokConnection();const requests:any[]=[];
+  connection.tools=[{name:'server_info',inputSchema:{}},{name:'render_pob_item',inputSchema:{}}];
+  (connection as any).client={callTool:async(request:any,_schema:any,options:any)=>{
+    requests.push({request,options});return {structuredContent:{}};
+  }};
+  await connection.call('server_info',{});
+  await connection.call('render_pob_item',{request:{kind:'base',id:'Iron Ring'}});
+  assert.equal(requests[0].request.arguments.include_kb_diagnostics,false);
+  assert.equal(requests[0].options.maxTotalTimeout,15_000);
+  assert.equal(requests[1].options.maxTotalTimeout,45_000);
+  assert.equal(requests[1].options.resetTimeoutOnProgress,false);
+});
+test('item requests require a completed verified connection',()=>{
+  const connection=new PokConnection();
+  assert.throws(()=>connection.requireReady(),/연결/);
+  (connection as any).client={};connection.bindIdentity(identity);
+  (connection as any).connectPromise=new Promise(()=>{});
+  assert.throws(()=>connection.requireReady(),/진행 중/);
+  (connection as any).connectPromise=undefined;
+  assert.doesNotThrow(()=>connection.requireReady());
+});
+test('an item timeout returns a reconnect instruction rather than an indefinite busy state',async()=>{
+  const connection=new PokConnection();connection.tools=[{name:'render_pob_item',inputSchema:{}}];
+  let closed=false,disconnected='';connection.onDisconnected=message=>{disconnected=message;};
+  (connection as any).client={close:async()=>{closed=true;},callTool:async()=>{throw Object.assign(new Error('Request timed out'),{code:-32001});}};
+  await assert.rejects(connection.call('render_pob_item',{request:{kind:'base',id:'Iron Ring'}}),/아이템 생성 응답이 45초/);
+  assert.equal(closed,true);assert.match(disconnected,/45초/);assert.equal(connection.connected,false);
+});
+test('a closed managed transport clears the connected state and live tool inventory',()=>{
+  const connection=new PokConnection();const client={};let error='';
+  (connection as any).client=client;connection.bindIdentity(identity);connection.tools=[{name:'server_info',inputSchema:{}}];
+  connection.onDisconnected=message=>{error=message;};
+  (connection as any).connectionLost(client,'closed');
+  assert.equal(connection.connected,false);assert.deepEqual(connection.tools,[]);assert.equal(error,'closed');
+});
+test('concurrent identity checks coalesce without caching later source checks',async()=>{
+  const connection=new PokConnection();let calls=0;
+  connection.tools=[{name:'server_info',inputSchema:{}}];
+  (connection as any).client={callTool:async()=>{calls++;await new Promise(resolve=>setTimeout(resolve,5));return{structuredContent:{identity}};}};
+  await Promise.all([connection.call('server_info',{}),connection.call('server_info',{})]);assert.equal(calls,1);
+  await connection.call('server_info',{});assert.equal(calls,2);
+});
+test('verified bundle calculations pass active XML directly and retain input provenance', async () => {
+  const connection = new PokConnection();
+  const build = createBuildDocument('synthetic', createBlankXml());
+  const calls: {name:string;args:Record<string,unknown>}[] = [];
+  (connection as any).call = async (name:string,args:Record<string,unknown>) => {
+    calls.push({name,args});
+    return name === 'server_info' ? {identity,stale:false} : {ok:true,stats:{Life:50},diagnostics:['checked']};
+  };
+  const result = await connection.compute(build,{bundleId:'bundle',identity});
+  assert.deepEqual(calls.map(c=>c.name),['server_info','compute_pob_xml','server_info']);
+  assert.match(String(calls[1].args.xml),/PathOfBuilding2/);
+  assert.equal(result.provenance?.buildId,build.id);
+  assert.equal(result.provenance?.bundleId,'bundle');
+  assert.equal(result.provenance?.mode,'xml');
+  assert.deepEqual(result.result.stats,{Life:50});
+});
+test('a changed KB or PoB identity rejects calculations before and after the engine call', async () => {
+  const connection = new PokConnection(); const build=createBuildDocument('synthetic',createBlankXml());
+  let calls=0;
+  (connection as any).call=async()=>{calls++;return {identity:{...identity,pob:{...identity.pob,commit:'other'}}};};
+  await assert.rejects(connection.compute(build,{bundleId:'bundle',identity}),/버전/);
+  assert.equal(calls,1);
+  let infoCount=0;
+  (connection as any).call=async(name:string)=>{
+    if(name!=='server_info')return {ok:true,stats:{Life:50}};
+    return {identity:++infoCount===1?identity:{...identity,kb:{...identity.kb,contentSha256:'changed'}}};
+  };
+  await assert.rejects(connection.compute(build,{bundleId:'bundle',identity}),/버전/);
+});
+test('verified direct XML domain failure preserves diagnostics without restored fallback', async () => {
+  const connection = new PokConnection(); const build=createBuildDocument('synthetic',createBlankXml());
+  const calls:string[]=[];
+  (connection as any).call=async(name:string)=>{
+    calls.push(name);if(name==='server_info')return {identity};
+    throw new PokToolError('Unsupported source');
+  };
+  const result=await connection.compute(build,{bundleId:'bundle',identity});
+  assert.equal(result.result.ok,false);
+  assert.match(String(result.result.reason),/Unsupported source/);
+  assert.equal(calls.includes('restore_pob_spec'),false);
+});
+
+test('UI and AI calls cannot interleave the shared PoB request stream',async()=>{
+  const connection=new PokConnection();let active=0,maximum=0;
+  connection.tools=[{name:'render_pob_item',inputSchema:{}}];
+  (connection as any).client={callTool:async({arguments:args}:any)=>{active++;maximum=Math.max(maximum,active);await new Promise(resolve=>setTimeout(resolve,10));active--;return {structuredContent:{id:args.id}};}};
+  const results=await Promise.all([connection.call('render_pob_item',{id:'a'}),connection.call('render_pob_item',{id:'b'})]);
+  assert.equal(maximum,1);assert.deepEqual(results,[{id:'a'},{id:'b'}]);
 });

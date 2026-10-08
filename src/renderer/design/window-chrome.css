@@ -1,0 +1,73 @@
+:root {
+  --window-titlebar-height: 34px;
+  --window-titlebar-controls-width: 138px;
+  --window-titlebar-traffic-width: 80px;
+}
+
+.window-frame {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: var(--window-titlebar-height) minmax(0, 1fr);
+  background: var(--color-bg);
+}
+
+.window-frame > .app-shell {
+  height: 100%;
+  min-height: 0;
+}
+
+.window-titlebar {
+  min-width: 0;
+  height: var(--window-titlebar-height);
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  background: var(--color-side);
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-muted);
+  user-select: none;
+  app-region: drag;
+  -webkit-app-region: drag;
+}
+
+.window-titlebar-drag {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+}
+
+.window-titlebar[data-platform='darwin'] .window-titlebar-drag {
+  padding-left: var(--window-titlebar-traffic-width);
+}
+
+.window-titlebar:not([data-platform='darwin']) .window-titlebar-drag {
+  padding-right: var(--window-titlebar-controls-width);
+}
+
+.window-titlebar-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-small);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.window-titlebar button,
+.window-titlebar a,
+.window-titlebar input,
+.window-titlebar select,
+.window-titlebar textarea,
+.window-titlebar summary {
+  app-region: no-drag;
+  -webkit-app-region: no-drag;
+}
+
+@media(max-width:1279px) {
+  :root {
+    --window-titlebar-controls-width: 130px;
+  }
+}

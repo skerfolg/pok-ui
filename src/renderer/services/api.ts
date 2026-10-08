@@ -1,3 +1,4 @@
+import type { PassiveTreeData } from '../../shared/passive-tree';
 import type { DesktopApi } from '../../shared/contracts';
 import { createDefaultState, createBuildDocument } from '../../shared/state';
 import { parseBuild } from '../../shared/pob-document';
@@ -9,8 +10,15 @@ function chooseFile(): Promise<File | null> {
     input.addEventListener('cancel', () => resolve(null), { once: true }); input.click();
   });
 }
+async function previewJson<T>(path:string):Promise<T> {
+  const response=await fetch('/__pok-data'+path);
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||'게임 데이터 읽기 실패');
+  return data as T;
+}
 // Browser mode is only a renderer development surface. Native capabilities stay in main.
 const browserPreview: DesktopApi = {
+  platform:'browser',windowChrome:false,
   async loadState() { const text = localStorage.getItem('pok-preview-v1'); return text ? JSON.parse(text) : createDefaultState(); },
   async saveState(state) { localStorage.setItem('pok-preview-v1', JSON.stringify(state)); },
   async importBuild() { const file = await chooseFile(); if (!file) return null; const xml = await file.text(); parseBuild(xml); return createBuildDocument(file.name.replace(/\.xml$/i, ''), xml, file.name); },
@@ -21,19 +29,18 @@ const browserPreview: DesktopApi = {
     const link = document.createElement('a'); link.href = url; link.download = `${build.name}.${format}`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); return link.download;
   },
   async connectPok() { return { connected: false, error: '브라우저 미리보기입니다. 엔진 연결은 데스크톱 앱에서 가능합니다.' }; },
+  async getPokConnection() { return {connected:false}; },
+  onPokConnection() { return ()=>{}; },
+  getDataBundleInfo: () => previewJson('/info'),
+  queryPobCatalog: query => previewJson('/catalog?' + new URLSearchParams(Object.entries(query).filter(([,v])=>v!==undefined).map(([k,v])=>[k,String(v)]))),
+  getPobCatalogEntry: (type,id) => previewJson('/entry?' + new URLSearchParams({type,id})),
+  async renderPobItem() { return {ok:false,reason:'브라우저 미리보기에서는 POK 아이템 렌더링을 사용할 수 없습니다.'}; },
   async loadPassiveTree(version) {
-    if (!/^\d+_\d+$/.test(version)) throw new Error('트리 버전이 올바르지 않습니다.');
-    const base = `/__pok-tree/${version}/`;
-    const response = await fetch(base + 'manifest.json');
-    if (!response.ok) throw new Error(`${version} 트리 리소스를 준비하지 못했습니다. README의 트리 리소스 준비를 확인하세요.`);
-    const manifest = await response.json();
-    if (manifest.schemaVersion !== 1 || manifest.version !== version || manifest.treeFile !== 'tree.json') throw new Error('트리 리소스 버전이 다릅니다.');
-    const treeResponse = await fetch(base + 'tree.json');
-    if (!treeResponse.ok) throw new Error('트리 데이터를 읽지 못했습니다.');
-    return { version, tree: await treeResponse.json(), source: manifest.source,
-      assets: Object.fromEntries(Object.entries(manifest.assets).map(([name, value]) => { const asset = value as { file: string; width: number; height: number; x?: number; y?: number }; if (!/^[a-zA-Z0-9._-]+$/.test(asset.file)) throw new Error('잘못된 트리 이미지 경로'); return [name, { ...asset, url: base + asset.file }]; })) };
+    const data = await previewJson<PassiveTreeData>('/tree?' + new URLSearchParams({version}));
+    return {...data,assets:Object.fromEntries(Object.entries(data.assets).map(([key,asset])=>[key,{...asset,url:'/__pok-data/asset?'+new URLSearchParams({url:asset.url})}]))};
   },
-  callPok: unavailable, computeBuild: unavailable, sendChat: unavailable, cancelChat: unavailable, resolveApproval: unavailable,
+  callPok: unavailable, computeBuild: unavailable, applyBuildProposal: unavailable, sendChat: unavailable, cancelChat: unavailable, resolveApproval: unavailable,
+  listAgentModels:async()=>[],pickChatImages:unavailable,addChatImage:unavailable,chatImageUrl:()=>'',answerAgentQuestion:unavailable,
   onAgentEvent() { return () => {}; }, openDataFolder: unavailable, selectPath: unavailable,
 };
 export const api = window.pok ?? browserPreview;

@@ -18,8 +18,13 @@
     "check": "npm run check:boundaries && npm run typecheck && npm test",
     "start": "electron .",
     "runtime:stage": "node scripts/stage-runtime.mjs",
-    "dist:win": "node scripts/verify-runtime.mjs win32 && node scripts/verify-tree-assets.mjs && npm run build && electron-builder --win portable --x64",
-    "dist:mac": "node scripts/verify-runtime.mjs darwin && node scripts/verify-tree-assets.mjs && npm run build && electron-builder --mac dmg"
+    "prepare:data-bundle": "node scripts/prepare-data-bundle.mjs",
+    "bundle:prepare": "node scripts/prepare-bundle.mjs",
+    "bundle:prepare-checkout": "node scripts/prepare-checkout-bundle.mjs",
+    "build:local-exe": "npm run build && node scripts/build-local-exe.mjs",
+    "verify:data-bundle": "node scripts/verify-data-bundle.mjs",
+    "dist:win": "node scripts/verify-runtime.mjs win32 && node scripts/verify-tree-assets.mjs && npm run verify:data-bundle && npm run build && electron-builder --win portable --x64",
+    "dist:mac": "node scripts/verify-runtime.mjs darwin && node scripts/verify-tree-assets.mjs && npm run verify:data-bundle && npm run build && electron-builder --mac dmg"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.0",
@@ -52,6 +57,8 @@
     ],
     "extraResources": [
       { "from": "resources/passive-tree", "to": "passive-tree", "filter": ["**/*"] },
+      { "from": "resources/pob-catalog", "to": "pob-catalog", "filter": ["**/*"] },
+      { "from": "resources/bundle-manifest.json", "to": "bundle-manifest.json" },
       {
         "from": "resources/pok-runtime",
         "to": "pok-runtime",

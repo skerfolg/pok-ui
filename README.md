@@ -13,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-개발에서는 `pok 설정`에서 형제 `poe2-ai-wiki` 체크아웃과 Python 실행 파일을 지정할 수 있다. 배포 런타임이 준비되어 있으면 번들 연결이 기본이다. 실행 시 저장된 설정으로 연결을 시도한다.
+앱 시작 시 main 프로세스가 POK를 자동으로 실행하고 연결한다. 개발에서는 `pok 설정`에 저장한 체크아웃/Python 또는 번들 설정을 사용한다. 배포 앱은 저장된 개발 경로를 사용하지 않고 검증된 번들 POK로 연결한다. 수동 버튼은 재연결용이며, 화면 새로고침으로 엔진을 다시 실행하지 않는다.
 
 ```sh
 npm run check
@@ -45,28 +45,38 @@ npm start
 - XML/PoB 공유 코드/POK JSON 가져오기와 내보내기. 원본 파일은 읽기만 한다.
 - 장비 세트/장착/아이템 원문, 스킬 세트/젬/주 스킬, 트리 할당 ID, 조건 세트 편집과 되돌리기.
 - XML에 저장된 과거 능력치와 현재 리비전의 새 PoB 계산을 구분한다.
-- 고정된 PoB의 트리·아이콘·배경을 로컬에서 일괄 로드한다. 트리는 엔진 연결 없이 표시되며 버전별로 캐시한다. [패시브 트리 구현](docs/PASSIVE-TREE.md)
-- Codex app-server 스트리밍, 취소, 도구 요청·승인, 지식 검색, 빌드 수정 제안 검토/적용.
+- POK 고정 버전의 아이템·접사·젬·직업·어센던시 카탈로그를 사용하고, 같은 PoB의 트리·아이콘·배경을 로컬에서 일괄 로드한다. 트리는 엔진 연결 없이 표시되며 버전별로 캐시한다. [패시브 트리 구현](docs/PASSIVE-TREE.md)
+- Codex app-server 스트리밍, 모델·추론 강도 선택, 이미지 첨부/붙여넣기/드롭, 응답 중지, 질문 선택지·직접 답변.
+- 도구 요청·승인, 지식 검색, 빌드 수정 제안 검토/적용. 새 응답은 완료 시각과 소요 시간을 표시한다.
 - 사용자 데이터 폴더에 버전이 있는 JSON을 원자적으로 저장하고 백업한다. 개인 빌드·대화·로그인은 앱 배포물에 포함하지 않는다.
 
-현재 Claude 연결, 거래소 인증 세션 관리, PoB 전체 기능과의 동등성, macOS 배포 검증은 후속 작업이다. Codex는 별도로 설치하고 로그인한 CLI가 필요하다. 이번 검증에서는 실제 모델 추론을 요청하지 않았다. 트리 편집은 계산 결과만으로 게임 내 적법성을 보장하지 않으며 엔진 진단도 함께 확인한다.
+현재 Claude 연결, PoB 전체 기능과의 동등성, macOS 배포 검증은 후속 작업이다. Codex는 별도로 설치하고 로그인한 CLI가 필요하다. 이번 검증에서는 실제 모델 추론을 요청하지 않았다. 트리 편집은 계산 결과만으로 게임 내 적법성을 보장하지 않으며 엔진 진단도 함께 확인한다.
 
-실제 검증용 사용자 XML의 불러오기·편집·저장은 검증했다. 이 빌드의 **새 계산은 현재 엔진에서 거부된다**. 교체 무기 복원 미지원과 일부 단계형/아이템 부여 스킬의 정보 누락이 있어, 앱은 원본 저장 수치를 보존하고 복원·계산 진단을 표시한다. 해당 제한을 해결하기 전에는 이 빌드의 새 DPS가 검증됐다고 간주하지 않는다.
+거래소 검색은 POK의 `trade-search` 스킬에 구현되어 있고, `.agents/skills/trade-search/SKILL.md` 등 에이전트 진입점에도 이미 등록되어 있다. pok-ui의 대화는 연결된 POK 루트를 작업 디렉터리로 사용한다. 따라서 별도 거래 검색 기능을 만드는 것이 아니라 기존 스킬 호출 흐름을 재사용한다. 무인증 검색을 먼저 사용하고, 인증이 필요한 경우 실행 환경의 `POESESSID`를 받는 계약을 따른다. 별도 로그인·세션 보관 UI는 필수 조건이 아니다. portable runtime 빌더는 거래 검색 스킬의 진입점·절차·실행기를 함께 복사하고 출처 해시에 포함한다. 에이전트에는 실행 Python과 사용자 데이터·캐시 경로를 전달한다. 거래 검색 로직을 복제하거나 별도 인증 UI를 추가하지 않는다. 정식 배포 환경의 실제 챗봇 검색은 다른 PC에서 추가 검증한다.
+
+이전 복원 스펙 계산 경로의 제한은 [검증 기록](docs/VALIDATION.md)에 남겨 두었다. 현재 묶음은 원본 XML을 직접 계산하며, 검사되지 않은 부분과 PoB 모델링 진단을 함께 제공한다. 검증 범위는 합성 빌드이며 실제 사용자 빌드의 전체 동등성을 주장하지 않는다.
+
+## 이 PC에서 로컬 테스트
+
+정식 배포는 다른 PC에서 수행한다. 이 PC에서는 개발용 데이터 묶음과 소스 빌드를 확인하고, 체크아웃을 여는 Windows 테스트 런처를 만든다.
+
+```powershell
+npm run bundle:prepare-checkout -- --pok-root "<POK 저장소>" --python "<POK Python>" --tree-python ".local/tree-tools/Scripts/python.exe"
+npm run build:local-exe -- --pok-root "<POK 저장소>" --python "<POK Python>" --luajit "<LuaJIT 실행 파일>"
+```
+
+생성 파일은 `release/local-test/POK-Local-Test.exe`다. 현재 체크아웃과 `node_modules/electron/dist/electron.exe`가 있어야 실행된다. 독립 배포용 실행파일이 아니며, 테스트 데이터는 `.local/local-test-user-data`에 분리한다. 기존 테스트 프로필은 덮어쓰지 않는다. 빌더는 Windows에 설치된 .NET Framework C# 컴파일러를 사용하며 새 패키지를 설치하지 않는다.
 
 ## Windows 배포
 
-엔진 저장소의 `scripts/build_runtime.py --freeze`로 만든 폴더를 준비한다. 폴더에는 실행 파일, Python 의존성, KB, 스킬, 고정 PoB, LuaJIT과 라이선스가 들어 있다. 빌더가 런타임 manifest에 원본 커밋과 SHA-256을 기록한다.
+[고정 데이터 묶음 준비·갱신 절차](docs/DATA-BUNDLE.md)를 따른다. 검증한 POK runtime 한 벌에서 편집용 원본 카탈로그와 트리 이미지를 생성하고 `pok-runtime.lock.json`에 입력을 고정한다. 실행 중 자동 갱신은 하지 않는다.
 
-```sh
-npm run runtime:stage -- "../poe2-ai-wiki/var/runtime-win-x64/frozen/pok"
-# 먼저 docs/PASSIVE-TREE.md 절차로 resources/passive-tree를 생성한다.
+```powershell
+npm run bundle:prepare -- --runtime "<POK runtime 폴더>" --tree-python ".local/tree-tools/Scripts/python.exe" --write-lock
+npm run check
 npm run dist:win
 ```
 
-`release/POK-0.1.1-win-x64.exe`가 생성된다. 런타임·트리 리소스 없이 포장하는 것은 사전 검사에서 실패한다. 로컬 초안은 코드 서명·자동 업데이트·공개 게시를 하지 않는다. macOS 명령은 준비되어 있으나 해당 플랫폼에서 생성한 런타임과 별도의 검증이 필요하다.
-
-이번 검증본은 이전 실행 파일을 보존하도록 `release/0.1.1/POK-0.1.1-win-x64.exe`에 만들었다. 이전 앱을 종료하고 새 파일을 실행하면 기존 작업 공간을 그대로 불러온다.
-
-`resources/pok-runtime/`, `resources/passive-tree/`, `node_modules/`, `dist/`, `release/`, `.local/`은 파생 파일이라 Git에 넣지 않는다. 앱은 실행 경로에 데이터를 쓰지 않는다. `pok 설정 → 사용자 데이터 폴더 열기`에서 실제 저장 위치를 확인할 수 있다. 필요하면 실행 전 `POK_UI_DATA_DIR`를 절대 경로로 지정해 별도 작업 공간을 사용한다.
+생성된 리소스·실행 파일·사용자 작업 공간은 Git에 넣지 않는다. 앱은 리소스를 읽기 전용으로 사용하고 사용자 데이터 폴더에 저장한다. macOS 패키지는 별도 native 검증이 필요하다.
 
 엔진은 main 프로세스에서 MCP stdio로 실행한다. `POK_DATA_HOME`과 `POK_CACHE_HOME`은 사용자 데이터 아래로 지정하며 배포 리소스는 읽기 전용으로 취급한다. 엔진 업데이트와 UI 업데이트는 각 저장소에서 관리한다.

@@ -312,7 +312,9 @@ def build_version(pob_root: Path, version: str, output_root: Path, revision: str
     missing = sorted(collect_references(tree) - assets.keys())
     # Missing references may exist upstream, but known assets must never silently
     # disappear during conversion. Export diagnostics alongside original data.
-    json_write(output / "tree.json", tree)
+    tree_output = output / "tree.json"
+    json_write(tree_output, tree)
+    tree_file_sha256 = sha256(tree_output)
     files = sorted({entry["file"] for entry in assets.values()})
     manifest = {
         "schemaVersion": SCHEMA_VERSION,
@@ -326,6 +328,7 @@ def build_version(pob_root: Path, version: str, output_root: Path, revision: str
             "treeSha256": source_hashes["tree.json"],
             "files": source_hashes,
         },
+        "treeFileSha256": tree_file_sha256,
         "diagnostics": {"missingArtwork": missing},
         "conversion": {"portraitMaxEdge": PORTRAIT_MAX_EDGE, "centerMaxEdge": CENTER_MAX_EDGE,
                        "atlasMaxEdge": MAX_ATLAS_EDGE, "atlasGutter": GUTTER, "spritesLossless": True},
@@ -341,7 +344,7 @@ def build_version(pob_root: Path, version: str, output_root: Path, revision: str
                 raise ValueError(f"Refusing to remove output outside its version directory: {resolved}")
             resolved.unlink()
     shutil.copyfile(pob_root / "LICENSE.md", output / "POB-LICENSE.md")
-    (output / "ATTRIBUTION.txt").write_text(
+    (output / "ATTRIBUTION.md").write_text(
         "Passive tree data and artwork are derived from Path of Building Community (PoE2).\n"
         "Source: https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2\n"
         f"Source revision: {revision}; tree version: {version}.\n"

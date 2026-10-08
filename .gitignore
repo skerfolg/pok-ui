@@ -5,6 +5,11 @@ resources/pok-runtime/*
 !resources/pok-runtime/.gitkeep
 resources/passive-tree/*
 !resources/passive-tree/.gitkeep
+resources/pob-catalog/*
+!resources/pob-catalog/.gitkeep
+resources/bundle-manifest.json
+resources/engine-identity.json
 *.log
 .local/
+/%SystemDrive%/
 test-results/

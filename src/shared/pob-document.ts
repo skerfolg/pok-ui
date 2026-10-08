@@ -1,5 +1,6 @@
 import { DOMParser, XMLSerializer, type Document, type Element, type Node } from '@xmldom/xmldom';
 import type { Attributes, BuildEdit, Gem, ParsedBuild, SkillGroup } from './contracts';
+import type { CatalogClass } from './game-data';
 
 /** Also enforced on edited output; documents remain small enough to parse in the renderer. */
 export const MAX_XML_BYTES = 10 * 1024 * 1024;
@@ -106,6 +107,9 @@ function directText(node: Element): string {
     if (entry.nodeType === 3 || entry.nodeType === 4) text += entry.nodeValue ?? '';
   return text;
 }
+function escapeAttribute(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/\r/g, '&#13;').replace(/\n/g, '&#10;').replace(/\t/g, '&#9;');
+}
 
 const setKinds = {
   items: ['Items', 'ItemSet', 'activeItemSet'], skills: ['Skills', 'SkillSet', 'activeSkillSet'],
@@ -169,7 +173,7 @@ export function parseBuild(xml: string): ParsedBuild {
       groups: children(set, 'Skill').map(skillGroup),
     })),
     trees: sets(root, 'tree').map((set, index) => ({
-      id: String(index + 1), title: attr(set, 'title', `트리 ${index + 1}`), version: attr(set, 'treeVersion'),
+      id: String(index + 1), title: attr(set, 'title', `트리 ${index + 1}`), version: attr(set, 'treeVersion', attr(build, 'targetVersion')),
       active: String(index + 1) === activeId(root, 'tree'), attributes: attributes(set),
       nodes: attr(set, 'nodes').split(',').filter(value => value.trim() !== '').map(Number).filter(Number.isFinite),
       sockets: children(child(set, 'Sockets'), 'Socket').map(socket => ({ nodeId: attr(socket, 'nodeId'), itemId: attr(socket, 'itemId') })),
@@ -232,6 +236,7 @@ function editGems(group: Element, gems: Gem[]): void {
 }
 
 export function editBuild(xml: string, edit: BuildEdit): string {
+  if (edit.type === 'batch') return edit.edits.reduce((current, next) => editBuild(current, next), xml);
   const document = readXml(xml);
   const root = document.documentElement!;
   const build = child(root, 'Build')!;
@@ -248,6 +253,10 @@ export function editBuild(xml: string, edit: BuildEdit): string {
       }
       replaceDirectText(item, edit.text);
       break;
+    }
+    case 'item-equip': {
+      const output = editBuild(writeXml(document), { type: 'item', id: edit.id, text: edit.text });
+      return editBuild(output, { type: 'slot', setId: edit.setId, slot: edit.slot, itemId: edit.id });
     }
     case 'slot': {
       const set = getSet(root, 'items', edit.setId);
@@ -305,10 +314,25 @@ export function editBuild(xml: string, edit: BuildEdit): string {
       input.setAttribute(typeof edit.value, String(edit.value));
       break;
     }
-    case 'character':
+    case 'character': {
       requireInteger(edit.level, '캐릭터 레벨', 1, 100);
+      if (edit.level !== number(attr(build, 'level'), 1)) build.setAttribute('characterLevelAutoMode', 'false');
       putAttributes(build, { level: String(edit.level), className: edit.className, ascendClassName: edit.ascendancy });
+      const classLegacyId = edit.classLegacyId ?? edit.classId;
+      const classInternalId = edit.classInternalId;
+      const ascendancyLegacyId = edit.ascendancyLegacyId ?? edit.ascendancyId;
+      const selectedTree = activeId(root, 'tree');
+      if (selectedTree) {
+        const spec = getSet(root, 'tree', selectedTree);
+        if (edit.treeVersion) spec.setAttribute('treeVersion', edit.treeVersion);
+        if (classLegacyId !== undefined) { requireInteger(classLegacyId, '직업 legacy ID'); spec.setAttribute('classId', String(classLegacyId)); }
+        if (classInternalId !== undefined) { requireInteger(classInternalId, '직업 internal ID'); spec.setAttribute('classInternalId', String(classInternalId)); }
+        if (ascendancyLegacyId !== undefined) { requireInteger(ascendancyLegacyId, '전직 legacy ID'); spec.setAttribute('ascendClassId', String(ascendancyLegacyId)); }
+        if (edit.ascendancyInternalId !== undefined) spec.setAttribute('ascendancyInternalId', edit.ascendancyInternalId);
+        if (edit.startNodeId) spec.setAttribute('startNodeId', edit.startNodeId);
+      }
       break;
+    }
     case 'active-set': {
       const selected = getSet(root, edit.kind, edit.id);
       const [section, , key] = setKinds[edit.kind];
@@ -343,10 +367,36 @@ export function projectActiveXml(xml: string): string {
   return writeXml(document);
 }
 
-export function createBlankXml(): string {
+export interface BlankBuildOptions {
+  defaultTreeVersion?: string;
+  targetVersion?: string;
+  characterClass?: CatalogClass;
+  ascendancyId?: string;
+}
+
+export function createBlankXml(options: BlankBuildOptions = {}): string {
+  const treeVersion = options.defaultTreeVersion ?? '0_1';
+  const klass = options.characterClass;
+  const ascendancy = options.ascendancyId ? klass?.ascendancies.find(entry => entry.id === options.ascendancyId) : undefined;
+  const buildAttributes = [
+    ['level', '1'],
+    ['characterLevelAutoMode', 'false'],
+    ['className', klass?.name ?? ''],
+    ['ascendClassName', ascendancy?.name ?? ''],
+    ['mainSocketGroup', '1'],
+    ['targetVersion', options.targetVersion ?? '0_1'],
+  ].map(([key, value]) => `${key}="${escapeAttribute(value)}"`).join(' ');
+  const specAttributes = [
+    ['title', '기본'],
+    ['nodes', ''],
+    ['treeVersion', treeVersion],
+    ...(klass ? [['classId', String(klass.legacyId)], ['classInternalId', String(klass.internalId)]] : []),
+    ...(ascendancy ? [['ascendClassId', String(ascendancy.legacyId)], ['ascendancyInternalId', ascendancy.id]] : [['ascendClassId', '0'], ['ascendancyInternalId', '']]),
+    ...(klass?.startNodeId ? [['startNodeId', klass.startNodeId]] : []),
+  ].map(([key, value]) => `${key}="${escapeAttribute(value)}"`).join(' ');
   return '<?xml version="1.0" encoding="UTF-8"?>\n<PathOfBuilding2>\n'
-    + '  <Build level="1" className="" ascendClassName="" mainSocketGroup="1" targetVersion="0_1"/>\n'
-    + '  <Tree activeSpec="1"><Spec title="기본" nodes=""><Sockets/></Spec></Tree>\n'
+    + `  <Build ${buildAttributes}/>\n`
+    + `  <Tree activeSpec="1"><Spec ${specAttributes}><Sockets/></Spec></Tree>\n`
     + '  <Skills activeSkillSet="1"><SkillSet id="1" title="기본"/></Skills>\n'
     + '  <Items activeItemSet="1" useSecondWeaponSet="false"><ItemSet id="1" title="기본" useSecondWeaponSet="false"/></Items>\n'
     + '  <Config activeConfigSet="1"><ConfigSet id="1" title="기본"/></Config>\n'

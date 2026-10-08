@@ -1,3 +1,4 @@
+import { isCalculationCurrent } from '../../shared/calculation-context';
 import { useEffect, useState } from 'react';
 import type { BuildDocument, ParsedBuild } from '../../shared/contracts';
 const groups: { title: string; rows: [string, string, number?, number?, string?][] }[] = [
@@ -10,11 +11,11 @@ const groups: { title: string; rows: [string, string, number?, number?, string?]
 export function calculationStats(build: BuildDocument): Record<string, unknown> {
   return (build.calculation?.result.stats ?? {}) as Record<string, unknown>;
 }
-export function StatsRail({ build, parsed, onDetails }: { build: BuildDocument; parsed: ParsedBuild; onDetails: () => void }) {
+export function StatsRail({ build, parsed, onDetails, bundleId, xmlSha256 }: { build: BuildDocument; parsed: ParsedBuild; bundleId?: string; xmlSha256?: string; onDetails: () => void }) {
   const [source, setSource] = useState(build.revision === 0 && !build.calculation ? 'original' : 'current');
   useEffect(() => { setSource(build.revision === 0 && !build.calculation ? 'original' : 'current'); }, [build.id, build.revision, build.calculation?.at]);
   const failed = build.calculation?.revision === build.revision && build.calculation.result.ok === false;
-  const fresh = build.calculation?.revision === build.revision && !failed;
+  const fresh = isCalculationCurrent(build,bundleId,xmlSha256);
   const stats = source === 'original' ? parsed.stats : fresh ? calculationStats(build) : {};
   return <aside className="stats-rail" aria-label="빌드 능력치 요약">
     <header className="section-heading"><h2>능력치 요약</h2><span className="muted">PoB</span></header>
