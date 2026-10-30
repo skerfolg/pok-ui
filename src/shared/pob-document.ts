@@ -357,6 +357,9 @@ export function projectActiveXml(xml: string): string {
   for (const kind of Object.keys(setKinds) as SetKind[]) {
     const all = sets(root, kind);
     if (!all.length) continue;
+    const explicit = attr(child(root, setKinds[kind][0]), setKinds[kind][2]);
+    if (all.length > 1 && !all.some((node,index) => setId(node,index,kind) === explicit))
+      throw new Error(`활성 ${kind} 세트가 명확하지 않습니다. 계산 전에 사용할 세트를 선택해 주세요.`);
     const selected = getSet(root, kind, activeId(root, kind));
     const parent = child(root, setKinds[kind][0])!;
     if (selected !== parent && selected !== all[0]) parent.insertBefore(selected, all[0]);

@@ -1,5 +1,52 @@
 # 현재 작업
 
+## 우선순위 변경 — PoB 편집 작업 완결성이 먼저 (2026-10-30, 사용자 지시)
+
+제품의 선행 목표는 **AI 없이 사용자가 PoB에서 하던 전체 빌드 작업을 pok-ui에서 수행하는 것**이다. PoK/에이전트의 빌드 생성·자동 조작·추천은 그 이후다. 아래 정상화 감사와 안전성 수정은 보존하지만 실제 AI 요청 성공을 편집기 완성의 선행 조건으로 두지 않는다. 현재 UI는 PoB 전체 기능을 제공하는 상태가 아니다.
+
+- 완료 기준을 메뉴 개수나 XML 보존 여부가 아니라 원본 PoB의 사용자 작업별 수행·저장·재열기·계산 일치로 잡는다. 기준 PoB 버전을 명시하고 기능별 구현/부분 구현/미구현/미검증을 나눈다.
+- 장비·스킬·패시브·전투 조건·계산 상세·가져오기/내보내기·빌드 관리·노트 등 원본 기능 목록과 UI 대응표를 먼저 만든다. 이 목록은 조사 시작 범주이며 전체 기능 조사 완료를 뜻하지 않는다.
+- 현재 확인된 대표 격차: 전투 조건은 기존 input/임의 key 편집 중심이며 PoB의 조건별 선택 UI 전체가 아니다. 젬 이름/레벨/퀄리티/그룹 편집은 있으나 모든 모드·단계·선택지를 사용자가 조작할 수 있는지 미검증이다. 계산 상세는 스탯·진단 표시 중심으로 원본 계산 탭 동등성을 검증하지 않았다.
+- 첫 검증 동선은 사용자 수동 작업이다: 빌드 열기→장비/스킬/트리/조건 조작→계산 확인→저장/재시작→PoB에서 다시 열어 편집. AI 없이 성립해야 한다.
+- PoB 실행·로딩·Lua·headless 계산·내부 편집 연산의 책임 경계는 유지한다. **AI 연결을 뒤로 미루는 것과 PoB 실행/계산 백엔드가 불필요한 것은 다르다.** UI에서 게임 규칙이나 별도 PoB 실행 경로를 구현하지 않는다. 필요한 원본 기능 API는 엔진 요청으로 분리한다.
+- 참고 pob-ai는 로컬 README에서 기존 PoB 창 옆 패널과 PoB 연동을 설명한다. 실제 PoB 창을 사용하는 제품이 원본 기능을 이용하는 것과 자체 UI로 모든 기능을 재구현하는 것은 구분한다. 전체 기능 동등성이나 상대 프로젝트의 의도는 아직 확정하지 않는다.
+- 이 방향 반영은 작업 우선순위의 변경이다. 실행 백엔드 교체·원본 PoB 임베딩·저장소/모듈 경계 변경은 결정하거나 구현하지 않았다.
+
+## pok-ui 정상화 — 2026-10-30 (진행 중, 완료 선언 아님)
+
+- UI 작업 브랜치 `skerfolg/coho`, 시작 HEAD `6d595254d175c3a00e8da149b7b6b4704f6343e3`. 시작 시 tracked 변경 없음. 아래 변경은 아직 커밋하지 않았다.
+- 작업 시작 시 `git ls-remote origin refs/heads/main`으로 고정한 엔진 기준: `e7bd42993a4b51e7a1dcaeacc579573f6eeef846`. 이후 원격을 자동 추종하지 않는다.
+- 공유 엔진 체크아웃은 `codex/generation-controlled-eval`, HEAD `06f4fd2343e0cfb110d09d2e74bd666458c0d556`, 추적 브랜치보다 1커밋 뒤, untracked `.local/` 존재. 공유 checkout의 소스·문서·Git ref를 수정하지 않았다. UI `.local/normalization/engine`에 별도 clone 후 기준 커밋을 detached checkout했다.
+- 기준 KB: patch `0.5.4b`, data repo commit `ae31c8567b4dedb658228648071069021ebf0e8a`, manifest SHA-256 `4e4336c35baa64247f63edc708288da2671adba439c37423ad3bc82586135a60`.
+- 기준 PoB pin: `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`. PoB를 갱신하거나 별도 계산 경로를 만들지 않는다.
+- **최신 main에는 desktop runtime manifest / identity / `pok.desktop` exporter / `compute_pob_xml` / `render_pob_item`가 없다.** UI에 남아 있는 개발 bundle `pokbundle-56f0f978ff358fa58a2d8465a44e42b3`는 과거 dirty source `4da18c1…` 기준이며 최신 호환·배포 근거로 쓰지 않는다. 최신 기준 runtime manifest는 미생성이다.
+
+초기 감사 분류:
+
+1. 현재 단위 실행으로 확인: XML/비활성 세트/알 수 없는 필드 보존, 편집·undo, revision/hash/bundle 검사, 제안 검토·적용의 host 검증, 취소/질문/승인 어댑터, 저장의 원자성. 기존 기능을 새로 중복 구현하지 않았다.
+2. 최신 계약 불일치: parameterless `server_info`에 번들 전용 인자를 보내던 경로, desktop identity와 도구·exporter 부재. 실제 tools/list는 50개였으나 숫자는 고정 계약으로 사용하지 않는다.
+3. 기존 문서상 구현·최신 전체 동선 미검증: 실제 모델→현재 빌드 읽기→도구→제안→적용→재계산, restart/resume, 최신 runtime portable, 실제 PoB GUI 편집.
+4. 엔진 제약/요청: desktop 계약 누락, Windows stdio server_info 시간 초과, 복원의 무기·부여 스킬·모드/단계 손실. 상세 재현과 필요한 계약은 `NORMALIZATION-ENGINE-REQUESTS.md`에 분리한다.
+5. 범위 밖: 엔진/PoB/Lua 실행·편집 연산 구현, 저장소 통합, 다중 공급자·테마·자동 업데이트·macOS 출시, #188 해결 선언.
+
+- [x] 동적 도구 조회 모든 페이지를 원자적으로 교체, 재연결 경합 거부, 새 턴/재개에서 live 목록 갱신. 새 thread에는 고정된 개별 POK 스키마 대신 현재 목록+일반 호출 bridge를 제공한다.
+- [x] server_info 선택 인자를 현재 schema에 있을 때만 전달. desktop 계약 누락은 identity/도구명을 포함해 진단하며 버전 검사를 유지한다.
+- [x] 첫 stat set 강제 가정 제거, 복원 선택 필요 시 자동 계산 차단, 활성 세트 모호 시 계산 projection 거부. 원문 열기·보존 편집은 가능하다.
+- [x] 구조화된 도구 오류·부분 복원 세부 정보를 보존. 도구 승인 대기 중 취소된 턴은 뒤늦게 실행하지 않는다.
+- [x] 취소·실패한 턴의 제안 host 폐기, 정상 완료 전 적용 차단. config 미설정/시험용 gem 제안은 원본을 바꾸지 않는 회귀 추가. 검토 목록에 슬롯·스킬 그룹·패시브 ID·조건의 실제 변경 표시.
+- [x] 최종 `npm run check`: **128 passed**, 경계·타입 통과 (2026-10-30). 최초 sandbox EPERM은 제품 실패와 분리하고 허용된 실행에서 재검사했다. 재연결 후 늦은 도구 응답을 새 app-server로 보내지 않는 회귀 포함.
+- [x] `npm run build` 통과. 실제 Electron 44.5.1에서 최신 도구 누락 진단, 오프라인 편집·저장·재시작·undo와 1920/1024 네 화면 검증 통과. `.local/normalization/desktop-1793345227152/result.json`.
+- [x] 엔진 요청서에 입력·출력·취소·진행 계약, 현재 API로 불가능한 이유, 최소 재현과 UI 영향 분리. 실제 추천 준비도 `not_ready`/`contract_missing` 반환 확인.
+- [x] `npm run dist:win` 실행: runtime manifest 부재로 사전 검증 중단. 최신 runtime/패키지 성공으로 간주하지 않는다.
+- [ ] 대표 지원 빌드의 실제 AI 수정·새 계산, 최신 portable, 실제 PoB GUI. 위 desktop 계약이 준비되기 전 성공으로 간주할 수 없다.
+- [ ] 도구 진단에서 요소로 직접 이동·강조, 실제 원안/최종안 측정 비교의 UI 전체 검증, 한국어 실물 변환 API 연동. 이번에는 상세 변경 위치 이름/ID 표시까지만 보강했다.
+
+검증 범위/실패 시도/기존 bundle 사용 제한은 `VALIDATION.md`에 기록했다. 작업 중 공유 엔진이 다른 세션에서 `codex/pok-redesign-blueprint`와 여러 변경 파일이 있는 상태로 바뀐 것을 읽기 전용 관측했다. 그 변경을 수정·정리하거나 이번 기준에 섞지 않았다. UI 최종 상태는 위 시작 커밋 위의 미커밋 변경이며, 엔진 기준·KB·PoB pin은 유지한다.
+
+최종 API 감사(`.local/normalization/contract.json`, 2026-10-30 07:28 UTC): 동일 pin을 격리 `external/pob/5d173cb`에 준비한 뒤 기존 MCP `compute_pob({build_spec:{class_name:'Sorceress',level:1},stats:['Life']})`도 30초 timeout. server_info/restore 각각 30초 timeout, assemble 추천 게이트의 구조화된 not_ready 반환 확인. 이 제한 시간의 실패를 모든 지원 빌드의 계산 거부/게임 규칙 결함으로 판정하지 않는다. 대표 지원 빌드 성공은 아직 없다.
+
+#188 재평가: 아직 시작 가능한 검증 완료 상태가 아니다. 정상화 작업은 실패와 revision 근거를 보존하는 환경을 보강하며, 생성 품질/최종 구성 재측정의 개선을 입증하지 않는다.
+
 ## 앱 시작 시 POK 자동 실행·연결 (2026-10-08)
 
 - [x] main이 앱 시작 단계에서 POK를 한 번 실행하고 연결; renderer는 상태 조회·이벤트 구독만 수행

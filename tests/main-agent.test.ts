@@ -51,7 +51,7 @@ import type { PokConnection } from '../src/main/pok';
 
 function fixture() {
   const events:AgentEvent[]=[];const responses:unknown[]=[];const errors:unknown[]=[];
-  const pok={tools:[],root:'',connected:false,call:async()=>({})} as unknown as PokConnection;
+  const pok={tools:[],root:'',connected:false,refreshTools:async()=>{},call:async()=>({})} as unknown as PokConnection;
   const manager=new AgentManager(pok,event=>events.push(event),process.cwd());
   const internal=manager as any;
   internal.rpc={respond:(id:unknown,result:unknown)=>responses.push({id,result}),reject:(id:unknown,error:unknown)=>errors.push({id,error})};
@@ -335,6 +335,35 @@ test('resumed sessions can use the generic tool bridge for new UI catalog schema
   const listed=JSON.parse((responses[1] as any).result.contentItems[0].text);
   assert.equal(listed.connected,true);
   assert.ok(listed.uiTools.some((tool:any)=>tool.name==='pok_ui_query_catalog'));
+});
+
+test('live schemas refresh on resumed tool discovery and individual engine schemas are not persisted',async()=>{
+  const {internal,responses}=fixture();let refreshed=0;
+  internal.pok.connected=true;
+  internal.pok.tools=[{name:'old',inputSchema:{}}];
+  internal.pok.refreshTools=async()=>{refreshed++;internal.pok.tools=[{name:'new',inputSchema:{properties:{current:{type:'string'}}}}];};
+  await internal.dynamicCall(90,{threadId:'thread',tool:'pok_ui_list_tools',arguments:{}});
+  const output=JSON.parse((responses[0] as any).result.contentItems[0].text);
+  assert.equal(refreshed,1);assert.equal(output.tools[0].name,'new');
+  assert.ok(output.tools[0].inputSchema.properties.current);
+  assert.equal(internal.dynamicTools().some((t:any)=>t.name==='pok_new'),false);
+});
+
+test('a cancelled tool cannot execute after its artifact approval resolves',async()=>{
+  const {internal}=fixture();let resolve!:(decision:string)=>void,calls=0;
+  internal.askApproval=()=>new Promise(r=>{resolve=r;});
+  internal.pok.call=async()=>{calls++;return{};};
+  const pending=internal.dynamicCall(91,{threadId:'thread',tool:'pok_ui_call_tool',arguments:{name:'assemble_pob',arguments:{}}});
+  internal.turns.delete('chat');resolve('accept');await pending;
+  assert.equal(calls,0);
+});
+
+test('a late tool response is never sent to a replacement app-server',async()=>{
+  const {internal,responses}=fixture();let resolve!:(value:unknown)=>void,newResponses=0;
+  internal.pok.call=()=>new Promise(r=>{resolve=r;});
+  const pending=internal.dynamicCall(92,{threadId:'thread',tool:'pok_ui_call_tool',arguments:{name:'compute_pob',arguments:{}}});
+  internal.rpc={respond:()=>{newResponses++;}};resolve({stats:{Life:10}});await pending;
+  assert.equal(newResponses,0);assert.equal(responses.length,0);
 });
 
 test('managed POK tool calls emit readable start and completion status without arguments',async()=>{

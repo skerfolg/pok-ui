@@ -1,4 +1,38 @@
-# 로컬 검증 — 2026-10-08
+# 로컬 검증
+
+## pok-ui 정상화 — 2026-10-30
+
+전체 정상화 **미완료**. 아래 결과는 이번 실행 결과이며 과거 검증을 최신 성공으로 승계하지 않는다. 엔진 요청과 계약 재현은 [NORMALIZATION-ENGINE-REQUESTS.md](NORMALIZATION-ENGINE-REQUESTS.md)에 분리했다.
+
+| 검증 | 이번 결과 |
+|---|---|
+| 경계·TypeScript·단위 | `npm run check`: **128 passed**, 0 failed, 0 skipped |
+| 프로덕션 코드 | `npm run build` 통과. 기존 Vite 차기 native config loader 경고는 남음 |
+| 실제 최신 MCP | 고정 `e7bd429…`의 initialize·tools/list 성공, 50개 실제 schema 확보. 숫자를 계약으로 고정하지 않음 |
+| server_info | `{}`를 실제 호출. 15초/독립 120초 timeout 관측. 실제 loaded/source 정보 반환 성공으로 기록하지 않음 |
+| 원문 복원 | 합성 XML, `assume_first_stat_set:false`, 30초 timeout 관측. 미지원 빌드 전체의 판정으로 확대하지 않음 |
+| 기존 API 합성 계산 | 같은 PoB pin을 격리 데이터 위치에 준비한 뒤 `compute_pob`의 Sorceress level 1/Life 요청도 30초 timeout. 제한 시간 내 성공 미확인이며 모든 계산 거부의 증명은 아님 |
+| 추천 준비도 | 실제 `assemble_pob`, `purpose:'recommendation'`: `ok:false`, `optimization_readiness.status:'not_ready'`, `contract_missing`와 미해결 근거 반환. 산출물/완성 추천 성공 아님 |
+| 최신 desktop exporter | 고정 엔진에서 `python -m pok.desktop identity`: `No module named pok.desktop` |
+| Windows 패키지 준비 | `npm run dist:win` 실행, 첫 runtime 검증에서 `resources/pok-runtime/resources/runtime-manifest.json` 없음으로 중단. 최신 portable 생성·실행 미수행 |
+| 실제 Electron | **44.5.1**, 격리된 합성 workspace. 자동 시작→실제 tools 조회→누락 도구의 `incompatible` 진단 확인 |
+| 편집·보존·재시작 | 오프라인 레벨 편집→revision 1 저장→프로세스 재시작→동일 XML/originalXml/revision 복원→undo 원문 일치/revision 2. 알 수 없는 XML 보존, 새 계산값 없음 확인 |
+| 화면 | 장비·스킬·설정·pok 설정을 **1920×1080 / 1024×768**에서 실행·캡처. 가로 문서 넘침 없음. 1920 장비/1024 설정 PNG 직접 시각 확인 |
+| 실제 모델·대표 빌드 전체 동선 | **미수행/차단**. 최신 desktop identity·XML 계산·catalog/runtime 계약 부재 때문에 정상 연결→AI 수정→새 계산 성공을 확인할 수 없음 |
+| 내보내기→실제 PoB GUI 편집 | **미수행** |
+| 한국어 실물 입력 | **미수행**. 원문 보존과 한국어 문구의 계산 반영은 별개; UI 번역·게임 규칙을 추가하지 않음 |
+
+합성 native 검사: `tests/normalization-desktop-smoke.cjs`, 최종 증거 `.local/normalization/desktop-1793345227152/result.json` 및 8개 PNG. 화면 표시에는 기존 개발 카탈로그 bundle `pokbundle-56f0f978ff358fa58a2d8465a44e42b3`를 사용했으며, 이를 최신 엔진 호환·새 계산·배포 검증으로 취급하지 않는다. 실제 엔진 연결은 처음 고정한 격리 clone만 사용했다.
+
+API 감사: `tests/engine-contract-smoke.cjs`, `.local/normalization/contract.json`. 최초 합성 compute 입력의 `class`는 하네스 키 오류여서 `class_name`으로 정정했다. 이후 드러난 격리 PoB 데이터 미준비 오류도 엔진 결함으로 분류하지 않았다. 동일 pin의 로컬 Git 객체를 archive하여 격리 clone의 기존 `external/pob/<pin>` 위치에 준비했다. 별도 PoB 실행/계산 API를 UI에 만들지 않았다. 상세 후속 API 결과는 현재 작업 기록에 남긴다.
+
+검증 중 하네스/환경 문제: sandbox가 테스트·esbuild spawn을 EPERM으로 차단해 허용된 실행에서 재검사했다. Electron package 경로 메타파일 읽기는 EBADF여서 기존 설치된 `electron/dist/electron.exe`를 명시했다. 보호 해제나 제품 integrity 우회는 하지 않았다. 설치된 Playwright의 async waitForFunction 관측 문제로 연결 시작 전 결과를 읽던 하네스는 Node 측 RPC polling으로 수정했다. 실패 시도도 `.local/normalization/desktop-*`에 남아 있으며 최종 통과 결과와 구분한다.
+
+회귀 범위: live 목록 pagination/원자 교체/재연결 경합, 현재 server_info schema, 구조화된 오류 내용, 모드 가정 제거·복원 결정 차단, 모호한 활성 세트 거부, 실패/취소된 config·시험용 gem 제안의 원본 불변, 완료 전 적용 차단, 복합 구성 변경 검토, revision/hash/bundle 검사. PoB 내부 what-if 상태의 롤백은 엔진 측 검증이며 이 UI 단위 검사로 대신 주장하지 않는다.
+
+공유 엔진은 읽기 전용으로 상태만 관측했다. 작업 중 다른 세션이 브랜치/파일을 변경한 상태를 확인했으나 갱신·리셋·수정하지 않았다. 고정 기준은 계속 `e7bd429…`이다. 사용자 개인 XML·대화·세션은 검사 입력/fixture/배포물에 넣지 않았다. #188 해결 또는 품질 개선 검증을 선언하지 않는다.
+
+## 이전 검증 — 2026-10-08
 
 ## 자동 실행·연결 — 최소 검증
 

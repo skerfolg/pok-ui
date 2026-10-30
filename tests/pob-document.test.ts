@@ -355,3 +355,9 @@ test('explicit level edits disable PoB auto-level while class-only edits preserv
   assert.match(changed,/characterLevelAutoMode="false"/);
   assert.equal(parseBuild(changed).level,50);
 });
+
+test('ambiguous active sets remain readable but cannot be silently projected for calculation',()=>{
+  const xml=fixture.replace(/activeSkillSet="[^"]*"/,'activeSkillSet="999"');
+  assert.doesNotThrow(()=>parseBuild(xml));
+  assert.throws(()=>projectActiveXml(xml),/활성 skills 세트/);
+});

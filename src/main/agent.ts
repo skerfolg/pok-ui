@@ -5,7 +5,7 @@ import { dirname, join, delimiter } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { AgentEvent, AgentModel, AgentQuestion, AgentQuestionRequest, AgentRequest, Settings } from '../shared/contracts';
 import { parseBuild } from '../shared/pob-document';
-import type { PokConnection } from './pok';
+import { PokToolError, type PokConnection } from './pok';
 import type { GameDataStore } from './game-data';
 import type { CatalogEntryType, CatalogQuery } from '../shared/game-data';
 
@@ -202,7 +202,6 @@ export class AgentManager {
         inputSchema:{type:'object',properties:{type:{type:'string',enum:['base','unique','mod','gem','skill']},query:{type:'string'},category:{type:'string'},offset:{type:'integer',minimum:0},limit:{type:'integer',minimum:1,maximum:50}},additionalProperties:false}},
       {type:'function',name:ENTRY_TOOL,description:'Read one raw PoB editor catalog entry from the same pinned bundle as the current UI.',
         inputSchema:{type:'object',properties:{type:{type:'string',enum:['base','unique','mod','gem','skill']},id:{type:'string'}},required:['type','id'],additionalProperties:false}},
-      ...this.pok.tools.map(t=>({type:'function',name:POK_PREFIX+t.name,description:t.description||t.name,inputSchema:t.inputSchema})),
       {type:'function',name:LIST_TOOL,description:'List the live POK tool schemas. Call at the start of each turn; the engine connection and tool catalog can change after a conversation is resumed.',
         inputSchema:{type:'object',properties:{},additionalProperties:false}},
       {type:'function',name:CALL_TOOL,description:'Call a current POK tool by name and arguments. Read pok_ui_list_tools for its current schema. This remains available when the engine tool catalog changes.',
@@ -232,6 +231,7 @@ export class AgentManager {
   }
   private async sendNow(request:AgentRequest,settings:Settings['agent'],imagePaths:string[]):Promise<void>{
     this.emit({chatId:request.chatId,type:'status',text:'Codex 연결 중'});
+    if(this.pok.connected)await this.pok.refreshTools();
     await this.ready(settings);
     if(this.cancelledChats.delete(request.chatId))return;
     const rpc=this.rpc!;
@@ -402,6 +402,7 @@ export class AgentManager {
     }));
   }
   private async dynamicCall(id:number|string,p:Record<string,any>):Promise<void>{
+    const rpc=this.rpc;
     const chatId=this.threads.get(String(p.threadId));
     const turn=chatId?this.turns.get(chatId):undefined;
     if(!chatId||!turn){this.rpc?.respond(id,{contentItems:[{type:'inputText',text:'No active POK conversation.'}],success:false});return;}
@@ -413,6 +414,7 @@ export class AgentManager {
       }
       if(!args||typeof args!=='object'||Array.isArray(args))throw new Error('도구 인자가 객체여야 합니다.');
       if(p.tool===LIST_TOOL){
+        if(this.pok.connected)await this.pok.refreshTools();
         result={connected:Boolean(this.pok.connected),tools:this.pok.tools,uiTools:this.dynamicTools().filter(tool=>(tool as {name?:string}).name?.startsWith('pok_ui_'))};
       }else if(p.tool===QUERY_TOOL){
         if(!this.catalog)throw new Error('게임 데이터 묶음이 없습니다.');
@@ -442,11 +444,12 @@ export class AgentManager {
           const decision=await this.askApproval(chatId,'pok-tool',{name,arguments:toolArgs},'POK 산출물 저장을 승인해 주세요: '+name);
           if(decision!=='accept')throw new Error('사용자가 산출물 저장을 승인하지 않았습니다.');
         }
+        if(this.turns.get(chatId)!==turn||turn.cancelRequested)throw new Error('취소되었거나 만료된 도구 요청입니다.');
         result=await this.pok.call(name,toolArgs);
         this.emitToolStatus(chatId,name,'completed');
       }else throw new Error('알 수 없는 앱 도구입니다.');
-    }catch(error){success=false;result={error:error instanceof Error?error.message:String(error)};if(typeof p.tool==='string')this.emitToolStatus(chatId,p.tool===CALL_TOOL&&p.arguments&&typeof p.arguments==='object'?String((p.arguments as any).name||p.tool):p.tool.replace(POK_PREFIX,''),'failed');}
-    this.rpc?.respond(id,{contentItems:[{type:'inputText',text:JSON.stringify(result)}],success});
+    }catch(error){success=false;result={error:error instanceof Error?error.message:String(error),...(error instanceof PokToolError?{diagnostics:error.details}:{})};if(typeof p.tool==='string')this.emitToolStatus(chatId,p.tool===CALL_TOOL&&p.arguments&&typeof p.arguments==='object'?String((p.arguments as any).name||p.tool):p.tool.replace(POK_PREFIX,''),'failed');}
+    if(this.rpc===rpc)rpc?.respond(id,{contentItems:[{type:'inputText',text:JSON.stringify(result)}],success});
   }
   private emitToolStatus(chatId:string,tool:string,status:'started'|'completed'|'failed'):void{
     const label=status==='started'?'실행 중':status==='completed'?'완료':'실패';

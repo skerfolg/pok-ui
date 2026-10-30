@@ -8,7 +8,7 @@ import type { AppState, AgentRequest, Settings, BuildDocument, ConnectionInfo } 
 import { createDefaultState } from '../shared/state';
 import { StateStore, validateState } from './storage';
 import { importDocument, exportDocument, validateBuild } from './pob-files';
-import { PokConnection, assertRuntimeIdentity, effectivePokSettings } from './pok';
+import { PokConnection, assertDesktopContract, assertRuntimeIdentity, effectivePokSettings } from './pok';
 import { GameDataStore, GameDataError } from './game-data';
 import type { DataBundleInfo, CatalogQuery, CatalogEntryType, ItemRenderRequest, ItemRenderResult } from '../shared/game-data';
 import type { BuildProposalDraft } from '../shared/contracts';
@@ -104,7 +104,8 @@ function connectEngine(requested:Settings['pok']):Promise<ConnectionInfo> {
       const launch=selected.mode==='bundled'?await gameData.getLaunchDescriptor():undefined;
       if(quitting)return {connected:false,managed:app.isPackaged};
       const result=await pok.connect(selected,bundledRuntimeRoot(),join(app.getPath('userData'),'engine'),join(app.getPath('userData'),'cache','pok'),launch);
-      if(!result.connected)return publishConnection({...result,connecting:false,compatibility:'engine-unavailable'});
+      if(!result.connected)return publishConnection({...result,connecting:false,compatibility:result.compatibility??'engine-unavailable'});
+      assertDesktopContract(result.info,pok.tools);
       assertRuntimeIdentity((result.info as Record<string,unknown>)?.identity,context.identity);
       pok.bindIdentity(context.identity);
       return publishConnection({...result,...context,connecting:false,compatibility:'ready'});
@@ -217,7 +218,8 @@ function registerIpc():void{
     const attachments=await Promise.all((request.images??[]).map(async image=>{text(image?.id,64,'이미지 ID');return chatImages.get(image.id);}));
     request.images=attachments.map(attachment=>attachment.image);
     if(!request.prompt.trim()&&!attachments.length)throw new Error('메시지 또는 이미지를 입력해 주세요.');
-    await agent.send(request,state.settings.agent,attachments.map(attachment=>attachment.path));
+    try{await agent.send(request,state.settings.agent,attachments.map(attachment=>attachment.path));}
+    catch(error){proposals.finishChat(request.chatId,false);throw error;}
   });
   handle('pok:agent-models',()=>agent.listModels(state.settings.agent));
   handle('pok:pick-chat-images',async()=>{
@@ -319,9 +321,10 @@ void app.whenReady().then(async()=>{
   }
   await mkdir(join(dataDirectory,'agent-workspace'),{recursive:true});
   agent=new AgentManager(pok,event=>{
+    if(event.type==='error'||event.type==='completed')proposals.finishChat(event.chatId,event.type==='completed'&&event.finishReason!=='cancelled'&&event.finishReason!=='error');
     if(event.type==='build-proposal'){
       const draft=event.details as BuildProposalDraft;
-      event={...event,details:proposals.register(draft,state.builds.find(b=>b.id===draft.buildId),bundleInfo.bundleId||'')};
+      event={...event,details:proposals.register(draft,state.builds.find(b=>b.id===draft.buildId),bundleInfo.bundleId||'',event.chatId)};
     }
     if(window&&!window.isDestroyed())window.webContents.send('pok:agent-event',event);
   },join(dataDirectory,'agent-workspace'),gameData,{dataHome:join(app.getPath('userData'),'engine'),cacheHome:join(app.getPath('userData'),'cache','pok')});

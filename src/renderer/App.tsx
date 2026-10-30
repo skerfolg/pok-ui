@@ -17,7 +17,7 @@ import { SettingsView } from './features/SettingsView';
 import { WindowTitleBar } from './components/WindowTitleBar';
 import './design/window-chrome.css';
 const navigation = [{ id: 'chat', label: '채팅', icon: MessageSquare }, { id: 'equipment', label: '장비', icon: Shield }, { id: 'skills', label: '스킬', icon: Gem }, { id: 'tree', label: '패시브트리', icon: Network }, { id: 'config', label: '설정', icon: SlidersHorizontal }, { id: 'settings', label: 'pok 설정', icon: Settings2 }] as const;
-interface Proposal { changes?: string[]; proposalId: string; buildId: string; baseRevision: number; xml: string; summary: string }
+interface Proposal { chatId?:string; changes?: string[]; proposalId: string; buildId: string; baseRevision: number; xml: string; summary: string }
 export function App() {
   const workspace = useWorkspace(); const { state, loaded, update, changeBuild, applyEdit, undo, saveStatus, error, setError, flush } = workspace;
   const [view, setView] = useState<View>('equipment'); const [connection, setConnection] = useState<ConnectionInfo>({ connected: false }); const [busy, setBusy] = useState(''); const [notice, setNotice] = useState('');
@@ -63,7 +63,8 @@ export function App() {
     if(event.type==='status'&&event.requestId&&(event.details as {questionResolved?:boolean}|undefined)?.questionResolved){setQuestions(list=>list.filter(q=>q.requestId!==event.requestId));return;}
     if (event.type === 'status' && event.requestId && (event.details as { approvalResolved?: boolean } | undefined)?.approvalResolved) { setApprovals(list => list.filter(a => a.requestId !== event.requestId)); return; }
     if (event.type === 'approval') { setApprovals(list => [...list.filter(a => a.requestId !== event.requestId), event]); return; }
-    if (event.type === 'build-proposal') { setProposal(event.details as Proposal); return; }
+    if (event.type === 'build-proposal') { setProposal({...event.details as Proposal,chatId:event.chatId}); return; }
+    if(event.type==='error'||event.finishReason==='cancelled'||event.finishReason==='error')setProposal(current=>current?.chatId===event.chatId?undefined:current);
     if (!current || event.chatId !== current.chatId) return;
     if (event.type === 'delta') {
       if(!current.firstTokenAt&&event.text){current.firstTokenAt=new Date().toISOString();update(s=>({...s,chats:s.chats.map(c=>c.id===current.chatId?{...c,messages:c.messages.map(m=>m.id===current.messageId?{...m,firstTokenAt:current.firstTokenAt}:m)}:c)}));}
@@ -147,6 +148,6 @@ export function App() {
     {deleted && <div className="toast" role="status">대화를 삭제했습니다.<button onClick={() => { update(s => ({ ...s, chats: [deleted, ...s.chats] })); setDeleted(undefined); }}>되돌리기</button><button aria-label="알림 닫기" onClick={() => setDeleted(undefined)}><X size={14} /></button></div>}
     {rename && <div className="modal-backdrop"><form className="modal" role="dialog" aria-modal="true" aria-label="대화 이름 변경" onSubmit={e => { e.preventDefault(); if (rename.title.trim()) update(s => ({ ...s, chats: s.chats.map(c => c.id === rename.id ? { ...c, title: rename.title.trim() } : c) })); setRename(undefined); }}><h2>대화 이름 변경</h2><input autoFocus aria-label="대화 제목" value={rename.title} onChange={e => setRename({ ...rename, title: e.target.value })} /><div className="actions"><button type="button" onClick={() => setRename(undefined)}>취소</button><button className="primary">저장</button></div></form></div>}
     {approvals[0] && <div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-label="에이전트 승인 요청"><h2>에이전트 승인 요청</h2><p>{approvals[0].text}</p><pre>{JSON.stringify(approvals[0].details, null, 2)}</pre><div className="actions"><button onClick={() => void approve(approvals[0], 'decline')}>거절</button><button className="primary" onClick={() => void approve(approvals[0], 'accept')}>이 요청 허용</button></div></section></div>}
-    {proposal && !approvals.length && <div className="modal-backdrop"><section className="modal proposal" role="dialog" aria-modal="true" aria-label="AI 빌드 변경 검토"><h2>빌드 수정 제안</h2><p>{proposal.summary}</p>{Boolean(proposal.changes?.length)&&<ul>{proposal.changes!.map(change=><li key={change}>{change}</li>)}</ul>}<p className="muted">기준 리비전 {proposal.baseRevision} · 적용 후 되돌릴 수 있습니다.</p><details><summary>제안된 PoB XML 확인</summary><pre>{proposal.xml}</pre></details><div className="actions"><button onClick={() => setProposal(undefined)}>닫기</button><button className="primary" onClick={() => void applyProposal()}>검토한 변경 적용</button></div></section></div>}
+    {proposal && (!proposal.chatId||running!==proposal.chatId) && !approvals.length && <div className="modal-backdrop"><section className="modal proposal" role="dialog" aria-modal="true" aria-label="AI 빌드 변경 검토"><h2>빌드 수정 제안</h2><p>{proposal.summary}</p>{Boolean(proposal.changes?.length)&&<ul>{proposal.changes!.map(change=><li key={change}>{change}</li>)}</ul>}<p className="muted">기준 리비전 {proposal.baseRevision} · 적용 후 되돌릴 수 있습니다.</p><details><summary>제안된 PoB XML 확인</summary><pre>{proposal.xml}</pre></details><div className="actions"><button onClick={() => setProposal(undefined)}>닫기</button><button className="primary" onClick={() => void applyProposal()}>검토한 변경 적용</button></div></section></div>}
   </div></div>;
 }
