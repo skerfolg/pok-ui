@@ -45,3 +45,22 @@ node tests/desktop-smoke.cjs
 브라우저 smoke는 설치된 Microsoft Edge를 사용한다. desktop smoke는 별도 `.local/desktop-qa` 데이터 폴더를 사용하므로 일반 작업 공간을 덮어쓰지 않는다.
 
 전체 엔진 통합 테스트와 PR은 아직 수행하지 않았다. Windows portable은 로컬 검토용이며 macOS 패키지·코드 서명·업데이트 배포는 검증 범위 밖이다. 검증용 사용자 XML의 새 DPS를 계산 완료로 취급하면 안 된다. 원본 XML 저장값 표시는 검증했지만 복원 과정의 교체 무기·단계형/부여 스킬 제한이 남아 있다.
+
+
+## 2026-10-31 — 큰 MCP 결과 참조 소비
+
+기준 `d3817f6`에 합성 회귀를 추가했을 때 새3개가 실패했고, 수정 후 경계/TypeScript와
+전체64개 단위 검사가 통과했다. 이 PC의 의존성은 잠금 파일 그대로 `npm ci --ignore-scripts`
+로 준비했다. 개인 XML·실제 사용자 세션은 사용하지 않았다.
+
+검증 범위: 다중 페이지 복원/계산 결과, 진단·미검증 안내 보존, 변조·무진행·다른 ID의 페이지
+거부, 회수 중 재연결, 구형 서버의 누락 도구, 크기 한도, 비유한수 정규화 원문 참조 보존,
+일반 도구 응답의 참조 유지. `tests/fixtures/pok-stored-result.json`은 당시 PoK의
+`pok.artifacts.tool_results.store_result/read_page`로 만든 합성 wire fixture다.
+Python float 표기와 비BMP Unicode 경계에서 실제 생성된 페이지를 검사한다.
+
+실제 최신 엔진의 앱/모델/GUI/배포 번들 통합은 이 단위 검사로 인증하지 않는다.
+기존 화면·패키지 검증 이력을 이번 변경의 실측으로 재사용하지 않는다.
+
+최종 소스에서 `npm run build`도 통과했다. 페이지 회수마다 기한을 재시작하지 않고
+단조 시계 기준30분 전체 예산을 공유하며, 기한 후 도착한 결과를 사용하지 않는 회귀를 포함한다.
