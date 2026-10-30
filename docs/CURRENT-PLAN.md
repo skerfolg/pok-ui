@@ -1,5 +1,14 @@
 # 현재 작업
 
+## 인계 및 최종 추가 요구 — 2026-10-30
+
+사용자 자리 비움 요청으로 **추가 구현은 중단**하고 이번 결과·요구를 문서화해 `origin/skerfolg/coho`로 인계한다. 상세 재개 절차: [HANDOFF-20261030.md](HANDOFF-20261030.md).
+
+- 확정 요구: **PoK와 pok-ui는 각각 독립 동작한다.** pok-ui의 PoB 수동 편집·계산·저장/복원에 PoK 설치·접속·KB·AI를 필수로 두지 않는 것이 목표다. PoK/AI 생성·조작 연동은 그 이후다.
+- 연동 시 양쪽이 실제 사용하는 PoB 버전/commit·출처의 일치/호환성을 확인한다. 미연결과 불일치를 구분하고 결과의 기준 버전을 보존한다. 자동 갱신·검사 우회로 해결하지 않는다.
+- **이번에 독립 실행을 구현한 것은 아니다.** 현행 코드/카탈로그/런타임 결합은 남아 있다. 독립 PoB 백엔드의 소유·배포·API 구조는 미결정이며, 다음 세션은 PoB 기능 대응표와 결합 지점 감사/설계부터 시작한다. 현재 `compute_pob_xml` 등의 결합을 최종 제품 구조로 고정하지 않는다.
+- 기존 결과 보존 커밋: `87480b5` (`fix: harden engine contracts and revision-safe build proposals`). 최종 인계 문서는 이 커밋 다음의 문서 커밋에 포함한다. 다른 PC에서는 브랜치 tip을 받는다.
+
 ## 우선순위 변경 — PoB 편집 작업 완결성이 먼저 (2026-10-30, 사용자 지시)
 
 제품의 선행 목표는 **AI 없이 사용자가 PoB에서 하던 전체 빌드 작업을 pok-ui에서 수행하는 것**이다. PoK/에이전트의 빌드 생성·자동 조작·추천은 그 이후다. 아래 정상화 감사와 안전성 수정은 보존하지만 실제 AI 요청 성공을 편집기 완성의 선행 조건으로 두지 않는다. 현재 UI는 PoB 전체 기능을 제공하는 상태가 아니다.
@@ -14,7 +23,7 @@
 
 ## pok-ui 정상화 — 2026-10-30 (진행 중, 완료 선언 아님)
 
-- UI 작업 브랜치 `skerfolg/coho`, 시작 HEAD `6d595254d175c3a00e8da149b7b6b4704f6343e3`. 시작 시 tracked 변경 없음. 아래 변경은 아직 커밋하지 않았다.
+- UI 작업 브랜치 `skerfolg/coho`, 시작 HEAD `6d595254d175c3a00e8da149b7b6b4704f6343e3`. 시작 시 tracked 변경 없음. 아래 결과는 인계 시 `87480b5`로 커밋했다.
 - 작업 시작 시 `git ls-remote origin refs/heads/main`으로 고정한 엔진 기준: `e7bd42993a4b51e7a1dcaeacc579573f6eeef846`. 이후 원격을 자동 추종하지 않는다.
 - 공유 엔진 체크아웃은 `codex/generation-controlled-eval`, HEAD `06f4fd2343e0cfb110d09d2e74bd666458c0d556`, 추적 브랜치보다 1커밋 뒤, untracked `.local/` 존재. 공유 checkout의 소스·문서·Git ref를 수정하지 않았다. UI `.local/normalization/engine`에 별도 clone 후 기준 커밋을 detached checkout했다.
 - 기준 KB: patch `0.5.4b`, data repo commit `ae31c8567b4dedb658228648071069021ebf0e8a`, manifest SHA-256 `4e4336c35baa64247f63edc708288da2671adba439c37423ad3bc82586135a60`.
@@ -41,7 +50,7 @@
 - [ ] 대표 지원 빌드의 실제 AI 수정·새 계산, 최신 portable, 실제 PoB GUI. 위 desktop 계약이 준비되기 전 성공으로 간주할 수 없다.
 - [ ] 도구 진단에서 요소로 직접 이동·강조, 실제 원안/최종안 측정 비교의 UI 전체 검증, 한국어 실물 변환 API 연동. 이번에는 상세 변경 위치 이름/ID 표시까지만 보강했다.
 
-검증 범위/실패 시도/기존 bundle 사용 제한은 `VALIDATION.md`에 기록했다. 작업 중 공유 엔진이 다른 세션에서 `codex/pok-redesign-blueprint`와 여러 변경 파일이 있는 상태로 바뀐 것을 읽기 전용 관측했다. 그 변경을 수정·정리하거나 이번 기준에 섞지 않았다. UI 최종 상태는 위 시작 커밋 위의 미커밋 변경이며, 엔진 기준·KB·PoB pin은 유지한다.
+검증 범위/실패 시도/기존 bundle 사용 제한은 `VALIDATION.md`에 기록했다. 작업 중 공유 엔진이 다른 세션에서 `codex/pok-redesign-blueprint`와 여러 변경 파일이 있는 상태로 바뀐 것을 읽기 전용 관측했다. 그 변경을 수정·정리하거나 이번 기준에 섞지 않았다. UI 결과는 `87480b5`로 보존하며, 당시 감사의 엔진 기준·KB·PoB pin은 유지한다. 현재 공유 엔진의 변경을 검사한 결과로 대체하지 않는다.
 
 최종 API 감사(`.local/normalization/contract.json`, 2026-10-30 07:28 UTC): 동일 pin을 격리 `external/pob/5d173cb`에 준비한 뒤 기존 MCP `compute_pob({build_spec:{class_name:'Sorceress',level:1},stats:['Life']})`도 30초 timeout. server_info/restore 각각 30초 timeout, assemble 추천 게이트의 구조화된 not_ready 반환 확인. 이 제한 시간의 실패를 모든 지원 빌드의 계산 거부/게임 규칙 결함으로 판정하지 않는다. 대표 지원 빌드 성공은 아직 없다.
 

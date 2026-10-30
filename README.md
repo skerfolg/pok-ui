@@ -4,6 +4,8 @@ PoE2 빌드와 대화를 관리하는 Electron + React + TypeScript 앱. 지식�
 
 소스 저장소: [skerfolg/pok-ui](https://github.com/skerfolg/pok-ui). UI 소스는 [MIT License](LICENSE)를 따른다. PoB·게임 이미지와 의존성에는 각 원본 라이선스가 적용된다.
 
+**2026-10-30 현재 방향과 인계:** [다른 PC 재개 문서](docs/HANDOFF-20261030.md)를 먼저 읽는다. 목표는 **PoK·AI 없이 PoB 작업을 완결하는 독립 pok-ui**이며, PoK도 UI 없이 독립 동작한다. 연동 시 양쪽 PoB 버전 호환성을 확인한다. 현재 구현은 이 목표에 미달하며, 아래 엔진 자동 실행·번들 준비 설명은 기존 구현의 설명이다. 이번 검증은 UI 검사 128개·코드 빌드·일부 Electron 수동 동선까지이고, 전체 PoB 기능·최신 엔진 계산·AI 전체 동선·portable 성공을 뜻하지 않는다.
+
 ## 실행
 
 Node.js 22.12+ 또는 24 LTS가 필요하다.
