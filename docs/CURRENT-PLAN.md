@@ -12,7 +12,7 @@ PoK R0~R7 재설계의 현행 소비 계약 정상화 작업이다. 새 설계 �
 - [x] 변조/무진행 페이지·재연결·구형 엔진·크기 한도·정규화 원문 참조 회귀
 - [x] `npm run check`: 경계·타입·64개 테스트 통과
 - [x] 최종 프로덕션 빌드 통과
-- [ ] 변경 리뷰/PR 준비
+- [x] 변경 리뷰 및 초안 [PR #2](https://github.com/skerfolg/pok-ui/pull/2) 생성(사용자 병합 대기)
 - [ ] 최신 실제 PoK/모델/번들로 앱 통합 검증(재설계 R6에서 수행)
 
 일반 에이전트 도구 응답은 작은 참조를 유지한다. 자동 회수는 64 MiB/25,000페이지
@@ -22,7 +22,7 @@ PoK R0~R7 재설계의 현행 소비 계약 정상화 작업이다. 새 설계 �
 
 ```mermaid
 flowchart LR
-  T[참조 소비 실패 재현]:::done --> C[자동 회수와 무결성]:::done --> V[64검사]:::done --> P[빌드 완료 · PR 준비]:::active
+  T[참조 소비 실패 재현]:::done --> C[자동 회수와 무결성]:::done --> V[64검사]:::done --> P[빌드 · 초안 PR2]:::done
   P --> I[R6 실제 통합 검증]
   classDef done fill:#243d31,stroke:#65967d,color:#fff
   classDef active fill:#4b4025,stroke:#bca46c,color:#fff
