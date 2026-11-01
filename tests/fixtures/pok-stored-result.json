@@ -1,0 +1,84 @@
+{
+  "generated_by": "pok.artifacts.tool_results store_result/read_page; synthetic only",
+  "notice": {
+    "stored_tool_result": true,
+    "result_ref": {
+      "$pok_result": "74df37e0de52dd1ba56d916050424255839f0617f50a4357c0985e8614182e04",
+      "path": "/result"
+    },
+    "inputs_ref": {
+      "$pok_result": "74df37e0de52dd1ba56d916050424255839f0617f50a4357c0985e8614182e04",
+      "path": "/inputs"
+    },
+    "payload_sha256": "74df37e0de52dd1ba56d916050424255839f0617f50a4357c0985e8614182e04",
+    "inputs_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "result_sha256": "644bf699072f15e6f58ba5e671bba1a04178c2bb14fb34a98d588af0c05c1d4d",
+    "result_bytes": 512,
+    "summary": {
+      "kind": "object",
+      "length": 3
+    },
+    "read": {
+      "tool": "get_tool_result",
+      "result_id": "74df37e0de52dd1ba56d916050424255839f0617f50a4357c0985e8614182e04",
+      "path": "/result"
+    },
+    "claim": "complete_result_stored_no_selection_or_validation_added"
+  },
+  "pages": [
+    {
+      "result_id": "74df37e0de52dd1ba56d916050424255839f0617f50a4357c0985e8614182e04",
+      "payload_sha256": "74df37e0de52dd1ba56d916050424255839f0617f50a4357c0985e8614182e04",
+      "path": "/result",
+      "kind": "object",
+      "mode": "json",
+      "total": 197,
+      "offset": 0,
+      "chunk": "{\"ok\":true,\"stats\":{\"Life\":1187.0,\"Small\":1e-07},\"notes\":[\"기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록",
+      "next_offset": 79
+    },
+    {
+      "result_id": "74df37e0de52dd1ba56d916050424255839f0617f50a4357c0985e8614182e04",
+      "payload_sha256": "74df37e0de52dd1ba56d916050424255839f0617f50a4357c0985e8614182e04",
+      "path": "/result",
+      "kind": "object",
+      "mode": "json",
+      "total": 197,
+      "offset": 79,
+      "chunk": "🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂",
+      "next_offset": 119
+    },
+    {
+      "result_id": "74df37e0de52dd1ba56d916050424255839f0617f50a4357c0985e8614182e04",
+      "payload_sha256": "74df37e0de52dd1ba56d916050424255839f0617f50a4357c0985e8614182e04",
+      "path": "/result",
+      "kind": "object",
+      "mode": "json",
+      "total": 197,
+      "offset": 119,
+      "chunk": "기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기",
+      "next_offset": 159
+    },
+    {
+      "result_id": "74df37e0de52dd1ba56d916050424255839f0617f50a4357c0985e8614182e04",
+      "payload_sha256": "74df37e0de52dd1ba56d916050424255839f0617f50a4357c0985e8614182e04",
+      "path": "/result",
+      "kind": "object",
+      "mode": "json",
+      "total": 197,
+      "offset": 159,
+      "chunk": "록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂\"]}",
+      "next_offset": null
+    }
+  ],
+  "expected": {
+    "ok": true,
+    "stats": {
+      "Life": 1187.0,
+      "Small": 1e-07
+    },
+    "notes": [
+      "기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂기록🙂"
+    ]
+  }
+}

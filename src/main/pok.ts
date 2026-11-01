@@ -1,6 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import type { Settings, ConnectionInfo, BuildDocument, Calculation } from '../shared/contracts';
 import { projectActiveXml } from '../shared/pob-document';
@@ -63,27 +64,90 @@ export class PokConnection {
       await client.connect(transport, { timeout: 60_000 });
       const listed = await client.listTools();
       this.tools = listed.tools.map(t => ({name:t.name, description:t.description, inputSchema:t.inputSchema as Record<string,unknown>}));
-      const info = await this.call('server_info', {});
+      const info = await this.callResult('server_info', {});
       return { connected: true, info, tools: this.tools.map(t => t.name) };
     } catch (error) {
       await this.close();
       return { connected: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
-  async call(name: string, args: Record<string, unknown>): Promise<unknown> {
+  async call(name: string, args: Record<string, unknown>, budgetMs?: number): Promise<unknown> {
     if (!this.client) throw new Error('먼저 POK에 연결해 주세요.');
     if (!this.tools.some(t => t.name === name)) throw new Error('연결된 POK에 없는 도구입니다: ' + name);
-    return unwrapMcp(await this.client.callTool({ name, arguments: args }, undefined, { timeout: 1_800_000, resetTimeoutOnProgress: true }));
+    return unwrapMcp(await this.client.callTool({ name, arguments: args }, undefined, budgetMs === undefined
+      ? { timeout: 1_800_000, resetTimeoutOnProgress: true }
+      : { timeout: budgetMs, maxTotalTimeout: budgetMs, resetTimeoutOnProgress: false }));
+  }
+  // Automatic UI operations need complete values; agent-facing call() keeps
+  // bounded references so large payloads are not copied into every model turn.
+  private async callResult(name: string, args: Record<string, unknown>, diagnostics?: unknown[]): Promise<unknown> {
+    const generation = this.generation;
+    const assertSameConnection = () => {
+      if (generation !== this.generation) throw new Error('결과를 읽는 도중 POK 연결이 변경되었습니다. 새 연결로 다시 계산해 주세요.');
+    };
+    const deadline = performance.now() + 1_800_000;
+    const remainingBudget = () => {
+      const remaining = deadline - performance.now();
+      if (remaining <= 0) throw new Error('POK 결과의 자동 회수 시간이 초과되었습니다. 다시 계산해 주세요.');
+      return remaining;
+    };
+    const value = await this.call(name, args, remainingBudget());
+    assertSameConnection(); remainingBudget();
+    if (!value || typeof value !== 'object' || !('stored_tool_result' in value) || value.stored_tool_result !== true) return value;
+    const notice = value as Record<string, unknown>;
+    const reference = notice.result_ref as { $pok_result?: unknown; path?: unknown } | undefined;
+    const id = reference?.$pok_result;
+    const expectedHash = notice.result_sha256;
+    const expectedBytes = notice.result_bytes;
+    const maxBytes = 64 * 1024 * 1024;
+    const invalid = () => new Error('POK 저장 결과의 참조·페이지 또는 해시가 올바르지 않습니다. 다시 계산해 주세요.');
+    if (typeof id !== 'string' || !/^[0-9a-f]{64}$/.test(id) || reference?.path !== '/result'
+      || notice.payload_sha256 !== id || typeof expectedHash !== 'string' || !/^[0-9a-f]{64}$/.test(expectedHash)
+      || typeof expectedBytes !== 'number' || !Number.isSafeInteger(expectedBytes) || expectedBytes < 0) throw invalid();
+    if (expectedBytes > maxBytes) throw new Error('POK 결과가 자동 표시 한도(64 MiB)를 넘었습니다. 필요한 능력치 범위를 줄여 다시 계산해 주세요.');
+    const chunks: string[] = [];
+    const hash = createHash('sha256');
+    let offset = 0; let total: number | undefined; let bytes = 0;
+    for (let pageIndex = 0; pageIndex < 25_000; pageIndex++) {
+      assertSameConnection();
+      const response = await this.call('get_tool_result', { result_id: id, path: '/result', mode: 'json', offset }, remainingBudget());
+      assertSameConnection(); remainingBudget();
+      if (!response || typeof response !== 'object') throw invalid();
+      const page = response as Record<string, unknown>;
+      if (page.result_id !== id || page.payload_sha256 !== id || page.path !== '/result' || page.mode !== 'json'
+        || page.offset !== offset || typeof page.total !== 'number' || !Number.isSafeInteger(page.total)
+        || page.total < offset || page.total > expectedBytes || typeof page.chunk !== 'string') throw invalid();
+      if (total !== undefined && total !== page.total) throw invalid();
+      total = page.total;
+      bytes += Buffer.byteLength(page.chunk, 'utf8');
+      if (bytes > expectedBytes || bytes > maxBytes) throw invalid();
+      // Python's offsets count code points. Never advance with JS string.length.
+      const end = offset + Array.from(page.chunk).length;
+      if (end > total || (page.next_offset === null ? end !== total : page.next_offset !== end || end <= offset || end >= total)) throw invalid();
+      chunks.push(page.chunk); hash.update(page.chunk, 'utf8');
+      if (page.next_offset === null) {
+        if (bytes !== expectedBytes || hash.digest('hex') !== expectedHash) throw invalid();
+        let decoded: unknown;
+        try { decoded = JSON.parse(chunks.join('')); } catch { throw invalid(); }
+        if (notice.normalization !== undefined) diagnostics?.push({
+          tool: name, transport_normalization: notice.normalization, result_ref: reference
+        });
+        return decoded;
+      }
+      offset = end;
+    }
+    throw new Error('POK 결과의 페이지 수가 자동 회수 한도를 넘었습니다. 필요한 결과 범위를 줄여 다시 계산해 주세요.');
   }
   async compute(build: BuildDocument): Promise<Calculation> {
     const generation = this.generation;
-    const runtime = await this.call('server_info', {}) as Record<string, unknown>;
+    const transportNotes: unknown[] = [];
+    const runtime = await this.callResult('server_info', {}, transportNotes) as Record<string, unknown>;
     if (runtime.stale === true) throw new Error('POK 소스가 변경되었습니다. POK 설정에서 다시 연결한 뒤 계산해 주세요.');
     const assertSameConnection = () => { if (generation !== this.generation) throw new Error('계산 도중 POK 연결이 변경되었습니다. 새 연결로 다시 계산해 주세요.'); };
     assertSameConnection();
-    const restore = await this.call('restore_pob_spec', { build_code: encodePob(projectActiveXml(build.xml)), assume_first_stat_set: true }) as Record<string, unknown>;
+    const restore = await this.callResult('restore_pob_spec', { build_code: encodePob(projectActiveXml(build.xml)), assume_first_stat_set: true }, transportNotes) as Record<string, unknown>;
     assertSameConnection();
-    const restoreNotes = [...(Array.isArray(restore.notes) ? restore.notes : []), ...(Array.isArray(restore.needs_decision) ? restore.needs_decision : []),
+    const restoreNotes = [...transportNotes, ...(Array.isArray(restore.notes) ? restore.notes : []), ...(Array.isArray(restore.needs_decision) ? restore.needs_decision : []),
       ...(restore.faithful === false ? ['원본 전체를 완전히 복원하지 못한 계산입니다.'] : []),
       ...(restore.damage_comparable === false ? ['원본의 피해 수치와 직접 비교할 수 없습니다.'] : [])];
     // A domain refusal is a diagnostic result, not a transport failure. Keep the
@@ -93,7 +157,7 @@ export class PokConnection {
       result = { ...restore, ok: false, stage: 'restore', reason: restore.reason || 'POK에서 계산 스펙을 복원하지 못했습니다.' };
     } else {
       try {
-        result = await this.call('compute_pob', { build_spec: restore.build_spec, stats: ['*'] }) as Record<string,unknown>;
+        result = await this.callResult('compute_pob', { build_spec: restore.build_spec, stats: ['*'] }, restoreNotes) as Record<string,unknown>;
       } catch (error) {
         assertSameConnection();
         // FastMCP exposes engine validation exceptions as isError tool results.

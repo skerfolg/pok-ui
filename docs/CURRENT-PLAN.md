@@ -1,5 +1,34 @@
 # 현재 작업
 
+## PoK 큰 결과 참조 호환 — U0 (2026-10-31)
+
+브랜치: `codex/pok-result-transport`, 기준 main `d3817f6`.
+PoK R0~R7 재설계의 현행 소비 계약 정상화 작업이다. 새 설계 기록 계약이나
+전체 R6 앱/모델/번들 통합을 완료했다는 뜻은 아니다.
+
+- [x] 기존 자동 계산이 `stored_tool_result`를 실제 복원 결과로 읽지 못하는 회귀 재현(신규3실패)
+- [x] 자동 연결/계산 경로만 JSON 페이지 회수·원문 SHA256·연결 세대 검증
+- [x] Python Unicode 오프셋·부동소수점 표기의 실제 PoK 합성 fixture 검증
+- [x] 변조/무진행 페이지·재연결·구형 엔진·크기 한도·정규화 원문 참조 회귀
+- [x] `npm run check`: 경계·타입·64개 테스트 통과
+- [x] 최종 프로덕션 빌드 통과
+- [x] 변경 리뷰 및 초안 [PR #2](https://github.com/skerfolg/pok-ui/pull/2) 생성(사용자 병합 대기)
+- [ ] 최신 실제 PoK/모델/번들로 앱 통합 검증(재설계 R6에서 수행)
+
+일반 에이전트 도구 응답은 작은 참조를 유지한다. 자동 회수는 64 MiB/25,000페이지
+상한을 초과하면 명시적으로 실패하며 요약을 계산 결과로 사용하지 않는다.
+한 결과의 최초 호출과 모든 페이지 회수는 단조 시계 기준30분 예산을 공유한다.
+원본 XML·화면 배치·게임 규칙은 변경하지 않는다.
+
+```mermaid
+flowchart LR
+  T[참조 소비 실패 재현]:::done --> C[자동 회수와 무결성]:::done --> V[64검사]:::done --> P[빌드 · 초안 PR2]:::done
+  P --> I[R6 실제 통합 검증]
+  classDef done fill:#243d31,stroke:#65967d,color:#fff
+  classDef active fill:#4b4025,stroke:#bca46c,color:#fff
+```
+
+
 ## GitHub 저장소 연결 (2026-10-07)
 
 - [x] `https://github.com/skerfolg/pok-ui.git`를 origin으로 연결하고 기존 main의 MIT 라이선스 이력 보존
