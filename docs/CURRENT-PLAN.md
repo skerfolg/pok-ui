@@ -1,11 +1,19 @@
 # 현재 작업
 
-## R6 현재 작업 — 새 통합 브랜치
+## R6 현재 작업 — 독립 worker 방향 확정
 
-main/d15bdab의 U0와 coho/4b86309를 기존 검증 의미를 보존하며 통합 중이다.
-원본 coho/main은 수정하지 않는다. 백엔드 소유·배포 구조는 제안을 준비해 사용자 협의 중이다.
-설계 기록/원문/리비전 저장·적용의 독립 작업은 계속한다.
-현재 변경의 check/build/GUI/번들 검증은 아직 수행하지 않았다. R5 모델 수집 중 큰 host 부하를 피한다.
+main/d15bdab의 U0와 coho/4b86309를 통합한 WIP는 d33b3c3이다. 원본 coho/main은 유지한다.
+2026-11-02 사용자가 A안과 이 브랜치의 원격 반영·draft PR 생성을 승인했다.
+PoB 코어는 형제 엔진의 기존 src/pok/pob가 소유하고 UI는 독립 worker를 번들한다.
+PoK·KB·AI 연결은 수동 편집·계산의 필수가 아니며 renderer에 게임 규칙을 복제하지 않는다.
+
+현재 WIP의 npm run check는 경계·타입·165검사 모두 통과했고 npm run build도 통과했다.
+이전의 실제 Electron 저장/충돌/재시작·설계 기록 표시 검증은 해당 범위의 증거로 보존한다.
+현재 worker/독립 카탈로그/새 runtime bundle과 선택 PoK 연결은 아직 구현·검증 중이다.
+새 standalone 배포나 PoB 전체 기능 동등성·실제 모델 통합 완료를 선언하지 않는다.
+
+다음 작업은 승인한 WIP의 원격 PR 준비와 A안의 실제 runtime producer/IPC 연결이다.
+엔진 worker 작업 트리: C:/Users/SKKim1107/orca/workspaces/poe2-ai-wiki/pok-r6-worker.
 
 ## 이전 U0 기록
 
@@ -347,3 +355,21 @@ PoB/KB/모델과 전체 배포 build는 실행하지 않았다.
 render_pob_item 부재로 incompatible를 반환하고 close했다. 현재 엔진 조합의 지원 완료로
 보고하지 않는다. 독립 backend 협의·실제 API 연결과 전체 check/build는 남아 있다.
 현재 브랜치는 이 상태를 WIP source checkpoint로 보존하며 검증 완료 PR로 취급하지 않는다.
+
+## R6 전량 합성 단위 검사 — 2026-11-01
+
+현재 d33b3c3 소스의 .test.ts14파일을 --test-concurrency=1로 직렬 실행해165통과,
+실패/skip0(22.258초)을 확인했다. 실제 모델/PoB smoke .cjs는 실행하지 않았다.
+증거: 엔진 artifacts/reviews/r6-ui-unit-serial-v1.txt. 동일 소스의 TypeScript·계층도 통과했다.
+npm run check 기본 병렬 명령을 그대로 실행했다고 쓰지 않고 구성 검사 범위를 구분한다.
+배포 build·실제 모델·독립 backend/현재 엔진 연결 지원은 남아 있다. 로컬 draft PR 설명을
+준비했지만 원격 push/PR은 승인 대기이며 main 병합은 하지 않았다.
+
+## R6 앱 번들 빌드와 file UI — 2026-11-01
+
+npm.cmd run build가 exit0이고 실제 main/preload/renderer 산출물 SHA를 확인했다.
+그 dist를 실제 Electron44.5.1에서 development URL 없이 file://로 읽어 설계 카드4개,
+실제 저장 IPC·페이지 재로드·변경 XML과 과거 설계의 불일치 표시를 확인했다.
+증거는 엔진 private r6-ui-app-build-v1.json 및 r6-electron-file-ui-v1/result.json이다.
+앱 소스 번들 build 대기는 이 범위에서 해소됐다. 설치 패키지·독립 backend·정상 엔진
+연결·실제 모델/오라클 전체 동선은 아직 미완료다. 원격 push는 승인 전 실행하지 않는다.
