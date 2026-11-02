@@ -1,5 +1,13 @@
 # 현재 작업
 
+## 최신 체크포인트 — 2026-11-03, 16차
+
+UI 구현 커밋 **`a08ff0a01ca4617b88063e809034bd3eee2170c6`**, 브랜치 `skerfolg/coho`. 원본 Loadout 관리와 XML 출처 보존을 추가했다. native6/source 관리5/Windows packaged 관리5, 후속 표시 source2/packaged2, check160/build/pack:win 통과. 실제 결과/범위와 최초 검사 수정은 아래 16차 및 VALIDATION을 따른다. 과거 체크포인트의 ‘관리 미구현’은 당시 상태다.
+
+PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, 독립 편집에는 KB 비사용. runtime `pob-ac2d6492742dcd1ddeb2e3916815e6543abdadb9ddfb62fac8ee93868c8cf2ed` / manifest SHA256 `373a4eb54fad31e8957fe0828f7407b9e43fd40a3857c82bbc814cc3669194c1`; editor `pob-editor-c9729151adbd0dd1d4ba773b7de5398039a92b71e22f564730e71a7ddad0acee` / manifest SHA256 `4a799e18d12fc2849aebd9c3a8017729ee9ffc1d8289780ec0e2e585bf450ff2`. 원본/공유 엔진 checkout은 수정하지 않았다.
+
+다음은 brace 연결 항목의 raw-name 관리 API 연결과 전체 원본 control/고급 장비·미니언·특수 트리/버전·네트워크 가져오기/옵션·단축키·노트 동등성, 실제 PoB GUI 왕복/portable, 선택 PoK/AI 잔여 결합이다. brace 사례는 선택2/관리목록0을 확인했지만 Build API 부재나 엔진 결함으로 단정하지 않는다. 전체 목표는 active이고 #188 해결/재평가 준비 완료를 선언하지 않는다. 실제 모델/원본 GUI/portable는 이번에 미수행이다.
+
 ## 원본 Loadout 관리·XML 출처 보존 — 2026-11-03 (16차 진행)
 
 최종: 관리 전체 source/Windows packaged 각5개 그룹과 native6개 그룹 통과. 최종 표시 전용 Windows packaged `.local/loadout-management-native-1793638401983/result.json`도 **2개 그룹 통과**, 원본 유지·실제 이름 변경·제거 네 세트의 1920/1024 viewport를 확인하고 PNG를 직접 시각 확인했다. 전체 동선 검증 후의 변경은 표시부와 캡처 범위이며 backend/적용 동작은 동일하다. check160/build/최종 pack:win 통과. 아래 진행 중 기록은 이 결과로 대체한다. source 전체 `.local/loadout-management-native-1793637587048`, packaged 전체 `.local/loadout-management-native-1793637875490`, source 표시 `.local/loadout-management-native-1793638186615`가 각 결과 경로다.
