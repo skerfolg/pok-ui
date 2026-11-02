@@ -2,6 +2,8 @@
 
 ## 구형 단일 Spec의 편집 형식 전환 — 2026-11-03 (21차)
 
+UI 구현 **`616e4546e0e07f7894573edec499c467ec0bb731`**, 브랜치 `skerfolg/coho`. 다른 PC는 이후 인계 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다.20차의 단일 root Spec 미지원은 이번 명시 전환으로 보완했다. 다음은 원본 트리 URL/세부 control 대응표와 남은 전체 수동 기능이며, 전체 목표는 active다.
+
 최종 source `.local/tree-adoption-native-1793652063718/result.json` / Windows packaged `.local/tree-adoption-native-1793652224912/result.json` **각5개 그룹 통과**. native4/check169/build/pack:win 및 source/packaged 두 해상도 직접 시각 확인 통과. 원문 preview/대기 취소·문서 격리, 원본 전체 수치와 동일한 adoption/revision1, unknown/원문/receipt 재시작, 별도 원본 Copy + Convert/revision2, undo3/4 원문 복귀·redo5 새 계산, 혼합 입력 거부/타 문서 보존/재시작·PoK 미연결을 검증했다. 아래 진행 중 기록은 이 최종 결과로 대체한다.
 
 PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB/PoK 비사용. runtime `pob-66822b826219a0f943515ba0b1146cd43912720cf23f0dbbf9b2facf12ee4620`, manifest SHA256 `0296ce574c57c47a4a6cd5f0ba5bff4798a65011ab9f3ea37f8bfdf6d6aa4e08`; editor `pob-editor-f1b8538a45faf3fc8fb6ba72a5f1ed480d4d79fae9d55bf71fc161a2be56c100`, manifest SHA256 `d99bb53d35a19481bfcb162cd6cd97f4d11ab96fe7f2564ae356a6cc9da9d055`. 원본/공유 엔진 소스·문서/ref 수정 없음. 새 엔진 결함을 확인하지 않았으며 Tree 혼합/다중 root Spec은 명시 선택 계약이 없는 UI 미지원으로 보존/진단한다.
