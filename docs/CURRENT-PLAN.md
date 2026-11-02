@@ -1,5 +1,23 @@
 # 현재 작업
 
+## TreeView 원본 관리·미변경 XML 섹션 보존 — 2026-11-03 (19차)
+
+최종 source `.local/tree-management-native-1793647818011/result.json` / Windows packaged `.local/tree-management-native-1793647650631/result.json` **각6개 그룹 통과**. native 관리5·원본 tree export2·기존 세트 source4·check162/build/pack:win 통과. 구버전 지도는 3149노드·26/26이미지·실패0이고 혼합 버전 생성/재시작까지 확인했다. 1920/1024 packaged 검토 화면 직접 시각 확인. 아래 ‘실행 중’은 이 최종 결과로 대체한다. portable·원본 PoB GUI·실제 모델·전체 원본 기능 동등성은 미완료다.
+
+PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB 비사용. runtime manifest SHA256 `eba6f022acb5fe78293725d6c87e0229dce4cf6fac356501f9f72a136d43e7ee`, editor manifest SHA256 `f1134055dfd9beae62afd9d8a8ac1df642c066e16d1f97febe6cc71e78868e47`. 공유 엔진/원본 PoB 소스·문서/ref는 수정하지 않았다. #188 해결·재평가 준비 완료를 선언하지 않는다.
+
+추가 발견/수정: 첫 source 관리 검사는 4개 그룹을 통과한 뒤 0_1 문서 전환에서 renderer의 `nodeOverlay.Normal` 접근 오류로 중단했다. stock PassiveTree는 tree.lua를 읽지만 기존 변환기는 구버전 overlay가 없는 tree.json을 읽었다. 원본 Lua 테이블의 build-time export로 전환하고 source Lua/export/converter/output 해시를 구분했다. 5개 버전의 원본 프레임·좌표·연결 대조 native 2개 그룹은 통과했고 missingArtwork 모두0이다. 최초 추가 GUI 검사는 정상 지도가 표시됐으나 테스트가 canvas 대신 부모 div dataset을 읽어 timeout됐고, 조회 대상을 수정했다. 최종 GUI/packaged 검증은 진행 중이며 이 실패를 완료로 계산하지 않는다.
+
+최종 준비 runtime `pob-aee96eb6663e90e18bd370821d77608b1e0d8ef7724f3362b1925703f8e71fc4`, editor `pob-editor-1fc67f395e8f0fdf80fadbb9e0b2376c7dad538dc4dc53c59fda33c0f6f62ceb`. PoB pin/version은 동일하다. 아래 bef56/d290는 중간 준비값이다.
+
+기존 트리 세트 메뉴를 NativeTreeSets로 교체해 원본 PassiveSpecListControl의 New/Copy/Rename/Delete/드래그를 사용한다. modal에서 비활성/통합 구성 밖 spec도 직접 선택하고, 입력 후 원본 preview를 자동 조회해 검토 후 적용/새 계산한다. preview는 요청 signature·generation·id/revision/XML/runtime에 귀속하며 입력 변경/취소/문서 전환은 이전 결과를 폐기한다. 원본대로 추가/복사는 현재 활성 트리를 유지하며, 활성 삭제의 후속 선택은 원본 컨트롤이 결정한다. old input에서 New가 최신 treeVersion을 쓰는 것도 원본 API에 위임한다.
+
+native `tests/pob-tree-management-smoke.cjs` **5개 그룹 통과**: inactive unmatched rename/copy와 deep unknown·현재 actor/전체 수치·비트리 섹션 보존, 중복 title의 요청 객체 삭제, inactive New/직접 reorder, active delete의 원본 인접 spec 선택과 실제 Life334/Dex47, 구버전0_1 유지/최신 inactive 생성·last/invalid/blank 거부 후 격리. check **162 passed**, build 통과. source/packaged 및 기존 회귀는 실행 중이다.
+
+공통 native-sets 패치는 미변경 kind를 legacy 상태 그대로 유지하고 변경된 known set 슬롯만 교체한다. unknown 형제 위치/공유 item library/누락 weapon flag/다른 섹션을 불필요하게 재구성하지 않는 unit을 추가했다. tree-only는 native가 유지한 다른 세트의 active 선택/weapon flag를 새로 명시하지 않는다. UI에 게임 계산 규칙을 추가하지 않았다.
+
+runtime `pob-bef56d3afe9cd3e81bf6d59be4dbc723babf29eae5812f4baa968b6802370bc8`, editor `pob-editor-d290368f6092a6bb991157543dd344b38506641e309e6768204eb6116a3af5ef`, PoB/KB 비사용 유지. C:40MB 상황에서 이번 작업의 오래된 2026-11-02T09/10 runtime/editor backup11개만 경로/내용 whitelist/reparse 확인 후 정리해 약3.5GB 확보했다. 최신 검증 backup·사용자 workspace·엔진 소스는 보존했다. 전체 목표 active, 원본 GUI/portable/모델 및 전수 동등성은 미완료다.
+
 ## 최신 체크포인트 — 2026-11-03, 18차
 
 UI 구현 **`0ed5f6edf48d7d8c0a7d21b32fc371310f78cf36`**, 브랜치 `skerfolg/coho`. 원본 PassiveSpecListControl 드래그로 연결/공유 구성도 순서를 이동하며 실제 활성 네 객체·주력/무기·계산값을 보존한다. native5/source5/Windows packaged5/기존 named native6/check160/build/pack:win 및 두 크기 확인 통과. 아래 17차의 named reorder 미노출은 이번 tree scope 계약으로 보완했다. legacy loadout scope는 유지했다.

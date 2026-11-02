@@ -44,6 +44,7 @@ for line in io.stdin:lines() do
   else
     local worked, result = pcall(function()
       if request.op=='catalog' then return editor.catalog() end
+      if request.op=='tree-source' then return editor.treeSource(request.version) end
       if request.op=='item' then return editor.item(request.args) end
       if request.op=='inspect' then return inspect(request.xml) end
       if request.op=='calcs' then return calcs(request.xml,request.cellId) end

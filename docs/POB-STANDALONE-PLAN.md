@@ -12,6 +12,8 @@ XML은 편집 정본이다. 계산은 제출 시점 XML을 격리된 원본 PoB�
 
 ## 기능 대응표 (원본 Classes/*Tab.lua 기준, 조사/구현 지속)
 
+19차(2026-11-03): 기존 TreeView 메뉴에 원본 PassiveSpecListControl의 New/Copy/Rename/Delete/drag를 연결해 통합 구성 밖 비활성 spec도 관리한다. 신규/복사의 활성 유지, unknown 형제/미변경 섹션/legacy flag 보존을 보완했다. 구버전 트리 변환은 stock과 동일한 tree.lua 테이블 export로 바꿨으며 원본/export/변환기 해시와 5개 버전의 프레임·좌표·연결을 검사한다. native 관리5/export2/source6/Windows packaged6/기존 세트source4/check162/build/pack:win 및 두 해상도 확인 통과. 트리 없는 문서 생성·버전 변환 및 모든 특수 조합은 여전히 남는다. 아래 18차의 구성 밖 spec 관리 미구현은 이번에 보완했으며 나머지 전체 기능은 유지한다.
+
 18차(2026-11-03): 원본 PassiveSpecListControl 드래그로 brace/일반 구성의 명시적 tree scope 순서 변경을 연결했다. 원본 위치/공유 별칭 metadata·객체 기반 활성 유지·canonical lineage·movement receipt를 사용한다. native5/source5/Windows packaged5/기존 named native6/check160/build/pack:win·두 크기 확인 통과. duplicate title에서 원본 이름 해석이 바뀌는 것은 알리되 명시 활성 actor를 첫 title로 다시 선택하지 않는다. 관리 구성에 속하지 않는 spec을 소스로 선택하는 별도 TreeView 관리와 전체 버전/특수 조합/GUI 동등성은 여전히 남는다.
 
 17차(2026-11-03): 원본이 제공하는 opaque 이름으로 brace 구성의 rename/copy/delete를 연결했다. 생존 구성은 명시적으로 선택하며 삭제 후 원본을 재조회하고 객체 동일성을 확인한다. 연결 구성 추가/제외/변경을 native에서 구해 검토하고 입력 revision/hash/runtime과 함께 계산 receipt에 저장한다. named native6/기존 native6/source5/Windows packaged5/check160/build/pack:win 및 두 해상도 확인 통과. 이름 기반 reorder는 원본 ListControl index 계약으로 제공되지 않아 여전히 남는다(다른 원본 트리 관리 API는 후속 조사 대상이며 엔진 전체 API 부재를 단정하지 않는다).
@@ -38,7 +40,7 @@ XML은 편집 정본이다. 계산은 제출 시점 XML을 격리된 원본 PoB�
 | PartyTab | 7종 버퍼 편집/unknown 보존; native 지원 출력 생성·대상별 Import/Append/Clear 미리보기·revision 적용/계산; 미해석/Unknown 진단 | 일시적 disable/rebuild 상태, URL 직접 가져오기, 모든 지원/링크/전투 조합과 원본 GUI 동등성 |
 | NotesTab | 원문 편집·색상 코드 삽입·크기 조절·적용/undo·저장/재시작; 한글/특수 문자·unknown metadata 보존 | 색상 렌더링/코드 표시 모드, 원본 단축키·범위 색상 편집의 전체 동등성 |
 | 원본 Main/Options | UI 테마·밀도·최근 대화·저장 | 원본 옵션/작업 관리/네트워크 기능별 대체·호환 범위 조사 |
-| Build Loadouts | 원본 목록/이름·brace 연결과 네 세트 동시 전환; 원본 관리 Popup/서비스의 New/Copy/Custom/Rename/Delete/Reorder·canonical lineage; brace raw-name 관리·생존 구성 선택·관계 변화, 원본 PassiveSpecList 드래그의 tree scope 이동/활성 보존·검토/자동 기록·계산·undo/redo | 모든 특수 공유/버전·이름 모호성 조합, 구성에 속하지 않는 source spec의 TreeView 관리, 원본 GUI 동등성 |
+| Build Loadouts | 원본 목록/이름·brace 연결과 네 세트 동시 전환; 원본 관리 Popup/서비스의 New/Copy/Custom/Rename/Delete/Reorder·canonical lineage; brace raw-name 관리·생존 구성 선택·관계 변화, 원본 PassiveSpecList 드래그의 tree scope 이동/활성 보존·검토/자동 기록·계산·undo/redo | 모든 특수 공유/버전·이름 모호성 조합, 원본 GUI 동등성 |
 
 세부 control/function 목록과 실제 사용자 작업 검증을 계속 확장한다. 탭 단위 표만으로 전 기능 조사를 완료했다고 간주하지 않는다. headless가 지원하지 않는 원본 GUI·네트워크 기능은 빠뜨리지 않고 별도 연산/host 계약과 화면으로 구현한다. 별도 PoB 창을 여는 것만으로 자체 편집기 동등성을 완료 처리하지 않는다.
 
@@ -97,6 +99,9 @@ node tests/pob-linked-management-smoke.cjs
 node tests/linked-management-desktop-smoke.cjs
 node tests/pob-linked-reorder-smoke.cjs
 node tests/linked-reorder-desktop-smoke.cjs
+node tests/pob-tree-management-smoke.cjs
+node tests/pob-tree-source-smoke.cjs
+node tests/tree-management-desktop-smoke.cjs
 npm run verify:pob
 ```
 

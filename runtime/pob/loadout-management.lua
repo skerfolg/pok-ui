@@ -20,6 +20,16 @@ local function capture(work)
   main.OpenPopup,main.ClosePopup,main.OpenConfirmPopup=open,close,confirm
   assert(ok,message);return controls,confirmation
 end
+local function dragTree(target,position,beforeChoices)
+  local active,mainGroup,weapon={build.spec,build.itemsTab.activeItemSet,build.skillsTab.skillSets[build.skillsTab.activeSkillSetId],build.configTab.configSets[build.configTab.activeConfigSetId]},build.mainSocketGroup,build.itemsTab.activeItemSet.useSecondWeaponSet
+  local control=new('PassiveSpecListControl',nil,{0,0,350,200},build.treeTab);local origin=isValueInArray(control.list,target)
+  assert(origin and position and control.list[position],'Original tree destination is unavailable');assert(origin~=position,'Original tree is already at this position')
+  local movement={scope='tree',sourceTree=tostring(origin),destinationTree=tostring(position),affectedNames=array()};for _,value in pairs(beforeChoices)do if value.members[1]==target then movement.affectedNames[#movement.affectedNames+1]={name=value.choice.name,label=value.choice.label}end end
+  control.selIndex=origin;control.selValue=target;control.selDragging=true;control.selDragActive=true;control.selDragIndex=position>origin and position+1 or position;control:OnKeyUp('LEFTBUTTON')
+  assert(control.list[position]==target,'Original tree drag did not reach the requested position')
+  local after={build.spec,build.itemsTab.activeItemSet,build.skillsTab.skillSets[build.skillsTab.activeSkillSetId],build.configTab.configSets[build.configTab.activeConfigSetId]};for i=1,4 do assert(after[i]==active[i],'Original tree drag changed the active configuration')end;assert(mainGroup==build.mainSocketGroup and weapon==build.itemsTab.activeItemSet.useSecondWeaponSet,'Original tree drag changed the active skill or weapon state')
+  movement.activePreserved=true;return movement
+end
 local api={}
 function api.choices()
   local result,diagnostics=array(),array()
@@ -41,8 +51,12 @@ end
 function api.inspect()
   local list,entries=new('BuildSetListControl',nil,{0,0,380,200},build),array()
   local listed={};local choices=api.choices()
-  local treeList,positions=new('PassiveSpecListControl',nil,{0,0,350,200},build.treeTab),array()
-  for index,spec in ipairs(treeList.list)do positions[#positions+1]={position=index,label=StripEscapes(treeList:GetRowValue(1,index,spec))}end
+  local treeList,positions,trees=new('PassiveSpecListControl',nil,{0,0,350,200},build.treeTab),array(),array()
+  for index,spec in ipairs(treeList.list)do
+    local label=StripEscapes(treeList:GetRowValue(1,index,spec));positions[#positions+1]={position=index,label=label};treeList.selIndex=index;treeList.selValue=spec
+    local actions={'rename','copy'};if treeList.controls.delete:IsEnabled()then actions[#actions+1]='delete';actions[#actions+1]='reorder'end
+    trees[#trees+1]={id=tostring(index),title=spec.title or 'Default',label=label,active=spec==build.spec,actions=actions}
+  end
   local associations={};for _,choice in ipairs(choices)do local id=choice.selection.tree;associations[id]=associations[id] or array();associations[id][#associations[id]+1]={name=choice.name,label=choice.label}end
   local function reorder(entry)
     if #positions>1 then entry.actions[#entry.actions+1]='reorder';entry.reorderScope='tree'end
@@ -63,7 +77,8 @@ function api.inspect()
     local entry={sourceName=choice.name,tree=choice.selection.tree,name=choice.name,label=choice.label,actions=actions,successors=successors};reorder(entry);entries[#entries+1]=entry
   end end
   local controls=capture(function()list:NewLoadout()end)
-  return{entries=entries,nameLimit=controls.edit.limit,treePositions=positions,treeAssociations=associations}
+  local treeControls=capture(function()treeList:RenameSpec(build.spec,'Rename Tree')end)
+  return{entries=entries,nameLimit=controls.edit.limit,treePositions=positions,treeAssociations=associations,trees=trees,treeNameLimit=treeControls.edit.limit,canNewTree=treeList.controls.new:IsEnabled(),newTreeVersion=latestTreeVersion}
 end
 function api.apply(request)
   local before,source,copies,wrappers=objects(),{},{},{}
@@ -76,11 +91,26 @@ function api.apply(request)
   local ok,plan,confirmation,delta,movement=pcall(function()
     local list=new('BuildSetListControl',nil,{0,0,380,200},build)
     local action=request.action;local spec=request.index and list.list[request.index];local named=request.sourceName and beforeChoices[request.sourceName]
+    local treeMode=request.scope=='tree' and (request.treeId~=nil or action=='new')
+    if request.scope=='tree' and not treeMode then assert(action=='reorder','Original tree source is required')end
+    if request.treeId then assert(request.scope=='tree' and not request.index and not request.sourceName,'Original tree source namespace is ambiguous');spec=build.treeTab.specList[tonumber(request.treeId)]end
     if request.sourceName then assert(not request.index and named,'Original named management source is unavailable');assert(action=='rename' or action=='copy' or action=='delete' or action=='reorder' and request.scope=='tree','Original list reorder is unavailable for this named source')end
     if action~='new' and action~='custom'then assert(spec or named,'Original management entry is unavailable')end
     local movement
     local _,confirmation=capture(function(getControls)
-      if action=='new'then list:NewLoadout()
+      if treeMode then
+        assert(action~='custom','Original tree management action is unavailable')
+        if action=='reorder'then movement=dragTree(spec,request.position,beforeChoices)
+        else
+          local active,mainGroup,weapon={build.spec,build.itemsTab.activeItemSet,build.skillsTab.skillSets[build.skillsTab.activeSkillSetId],build.configTab.configSets[build.configTab.activeConfigSetId]},build.mainSocketGroup,build.itemsTab.activeItemSet.useSecondWeaponSet
+          local control=new('PassiveSpecListControl',nil,{0,0,350,200},build.treeTab);control.selIndex=tonumber(request.treeId);control.selValue=spec
+          local rename=control.RenameSpec;control.RenameSpec=function(self,value,title,add)if action=='copy' and add then copies[value]={kind='tree',id=assert(source.tree[spec],'Original copy source has no XML lineage').id}end;return rename(self,value,title,add)end
+          local button=assert(control.controls[action],'Original tree control is unavailable');assert(button:IsEnabled(),'Original tree action is disabled');button.onClick()
+          if action~='delete'then local controls=assert(getControls(),'Original tree name controls were not opened');assert(type(request.title)=='string','Original tree name is required');controls.edit:SetText(request.title,true);assert(controls.edit.buf==request.title,'Original tree name input changed the requested text');assert(controls.save:IsEnabled(),'Original tree name is unavailable');controls.save.onClick()end
+          for i=2,4 do local value=i==2 and build.itemsTab.activeItemSet or i==3 and build.skillsTab.skillSets[build.skillsTab.activeSkillSetId] or build.configTab.configSets[build.configTab.activeConfigSetId];assert(value==active[i],'Original tree action changed a non-tree set')end;assert(weapon==build.itemsTab.activeItemSet.useSecondWeaponSet,'Original tree action changed weapon state')
+          if action~='delete' or spec~=active[1]then assert(build.spec==active[1] and mainGroup==build.mainSocketGroup,'Original tree action changed the active configuration')end
+        end
+      elseif action=='new'then list:NewLoadout()
       elseif action=='copy'then list:CopyLoadout(request.sourceName or spec.title or 'Default')
       elseif action=='rename'then list:RenameLoadout(request.sourceName or spec.title or 'Default')
       elseif action=='custom'then list:CustomLoadout({specId=0,itemSetId=0,skillSetId=0,configSetId=0})
@@ -98,20 +128,13 @@ function api.apply(request)
         else assert(#list.list>1,'Original last Loadout cannot be deleted');list:DeleteLoadout(request.index,spec)end
       elseif action=='reorder'then
         if request.scope=='tree'then
-          local control,target=new('PassiveSpecListControl',nil,{0,0,350,200},build.treeTab),spec or named.members[1];local origin=isValueInArray(control.list,target)
-          assert(origin and request.position and control.list[request.position],'Original tree destination is unavailable');assert(origin~=request.position,'Original tree is already at this position')
-          local active,mainGroup,weapon={build.spec,build.itemsTab.activeItemSet,build.skillsTab.skillSets[build.skillsTab.activeSkillSetId],build.configTab.configSets[build.configTab.activeConfigSetId]},build.mainSocketGroup,build.itemsTab.activeItemSet.useSecondWeaponSet
-          movement={scope='tree',sourceTree=tostring(origin),destinationTree=tostring(request.position),affectedNames=array()};for _,value in pairs(beforeChoices)do if value.members[1]==target then movement.affectedNames[#movement.affectedNames+1]={name=value.choice.name,label=value.choice.label}end end
-          control.selIndex=origin;control.selValue=target;control.selDragging=true;control.selDragActive=true;control.selDragIndex=request.position>origin and request.position+1 or request.position;control:OnKeyUp('LEFTBUTTON')
-          assert(control.list[request.position]==target,'Original tree drag did not reach the requested position')
-          local after={build.spec,build.itemsTab.activeItemSet,build.skillsTab.skillSets[build.skillsTab.activeSkillSetId],build.configTab.configSets[build.configTab.activeConfigSetId]};for i=1,4 do assert(after[i]==active[i],'Original tree drag changed the active configuration')end;assert(mainGroup==build.mainSocketGroup and weapon==build.itemsTab.activeItemSet.useSecondWeaponSet,'Original tree drag changed the active skill or weapon state')
-          movement.activePreserved=true
+          movement=dragTree(spec or named.members[1],request.position,beforeChoices)
         else
           assert(request.position and list.list[request.position],'Original destination is unavailable')
           local moved=table.remove(list.list,request.index);table.insert(list.list,request.position,moved);list:OnOrderChange(request.index,request.position)
         end
       else error('Unknown original Loadout management action')end
-      if action=='new' or action=='copy' or action=='rename' or action=='custom'then
+      if not treeMode and (action=='new' or action=='copy' or action=='rename' or action=='custom')then
         local controls=assert(getControls(),'Original name controls were not opened')
         if action=='custom'then
           local fields={{'tree','treeDropDown',build.treeTab.specList},{'items','itemDropDown',build.itemsTab.itemSetOrderList},{'skills','skillDropDown',build.skillsTab.skillSetOrderList},{'config','configDropDown',build.configTab.configSetOrderList}}

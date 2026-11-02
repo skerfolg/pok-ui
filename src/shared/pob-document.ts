@@ -354,6 +354,8 @@ export function editBuild(xml: string, edit: BuildEdit): string {
       }
       for(const kind of Object.keys(setKinds) as SetKind[]){
         const entries=edit.sets[kind];if(!Array.isArray(entries)||!entries.length)throw new Error('원본 관리 연산에는 모든 종류의 세트가 필요합니다.');
+        const plannedIds=new Set<string>();for(const [index,entry]of entries.entries()){if(!entry||typeof entry.id!=='string'||!/^\d+$/.test(entry.id)||plannedIds.has(entry.id)||kind==='tree'&&entry.id!==String(index+1))throw new Error('원본 관리 세트 ID/순서가 올바르지 않습니다.');plannedIds.add(entry.id);}
+        const existing=sets(root,kind);if(entries.length===existing.length&&entries.every((entry,index)=>entry.sourceId===setId(existing[index],index,kind)&&entry.id===setId(existing[index],index,kind)&&entry.copyFrom===undefined&&entry.node===undefined&&(entry.title===undefined||entry.title===attr(existing[index],'title'))))continue;
         const parent=explicitSets(root,kind),all=sets(root,kind),sources=new Map(all.map((node,index)=>[setId(node,index,kind),node])),ids=new Set<string>(),retained=new Set<string>();
         const next=entries.map((entry,index)=>{
           if(!entry||typeof entry.id!=='string'||!/^\d+$/.test(entry.id)||ids.has(entry.id)||kind==='tree'&&entry.id!==String(index+1))throw new Error('원본 관리 세트 ID/순서가 올바르지 않습니다.');ids.add(entry.id);
@@ -364,7 +366,7 @@ export function editBuild(xml: string, edit: BuildEdit): string {
           if(kind!=='tree')node.setAttribute('id',entry.id);
           if(entry.title!==undefined){if(typeof entry.title!=='string')throw new Error('원본 세트 이름이 올바르지 않습니다.');node.setAttribute('title',entry.title);}return node;
         });
-        const anchor=all[0];for(const node of next)parent.insertBefore(node,anchor||null);for(const node of all)parent.removeChild(node);
+        const anchor=all.at(-1)?.nextSibling||null;for(let index=0;index<Math.max(all.length,next.length);index++){if(all[index]&&next[index])parent.replaceChild(next[index],all[index]);else if(all[index])parent.removeChild(all[index]);else parent.insertBefore(next[index],anchor);}
       }
       break;
     }

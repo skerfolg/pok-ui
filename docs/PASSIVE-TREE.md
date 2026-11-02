@@ -1,5 +1,15 @@
 # PoB 패시브 트리 표시 — v0.1.1
 
+## 현재 독립 런타임 경로 — 2026-11-03
+
+현재는 `pob:prepare-data`가 고정 원본 런타임의 `tree-source`로 **tree.lua 원본 테이블**을 export하고 `prepare-tree-assets.py --tree-json-dir`에 전달한다. 원본 PassiveTree와 같은 입력을 사용한다. 일부 과거 버전의 tree.json에는 nodeOverlay가 없어 이를 그대로 쓰면 renderer가 중단됐으며, 단순 빈 프레임 대체 대신 원본 프레임/그림 metadata를 공급하도록 고쳤다.
+
+`resources/pob-editor/trees/<version>`에 생성하며 source.format=`pob-lua-raw-v1`, source.treeSha256/files는 원본 Lua/그림, source.exportSha256은 canonical export, treeFileSha256은 출력 JSON을 검증한다. 상위 manifest는 converter와 모든 출력 hash를 포함한다. 동일 출처의 검증된 이미지 캐시는 재사용하지만 전체 캐시에는 converter·export·모든 원본 입력 일치를 요구한다. renderer/IPC에 Lua 실행 기능을 추가하지 않는다.
+
+0_1~0_5 원본 데이터 대조는 3149/3404/4118/4701/4912노드·프레임·좌표·연결과 missingArtwork0을 확인했다. 0_5는 논리5185/표시5147연결이다. 과거 JSON 기반4914노드 결과를 현재 수치로 사용하지 않는다. 구버전0_1의 실제 Electron 표시/혼합 버전 생성·재시작 및 Windows packaged 검사는 VALIDATION의 19차를 따른다. 준비 명령은 `POB-STANDALONE-PLAN.md`가 현재 기준이며 아래는 이전 구현 기록이다.
+
+## 이전 JSON 변환 경로와 검증 기록
+
 트리 화면은 고정 PoB 소스의 `TreeData/<version>/tree.json`, `Classes/PassiveTree.lua`, `Classes/PassiveTreeView.lua`를 따른다. 지식 검색 MCP를 노드 수만큼 호출하지 않는다. 엔진 실행 여부와 관계없이 로컬 정적 리소스를 한 번 읽는다.
 
 ## 수정한 문제

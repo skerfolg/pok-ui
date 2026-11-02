@@ -1,5 +1,9 @@
 # 구조와 배포 경계
 
+독립 tree 변환은 원본 PassiveTree가 읽는 `TreeData/<version>/tree.lua`를 native `tree-source` 요청으로 export한다. build-time `PobRuntime.treeSource`만 사용하며 renderer IPC에는 노출하지 않는다. 구버전 tree.json에 없는 nodeOverlay 등을 추정/복제하지 않는다. 변환 manifest는 원본 Lua/input 파일 hash, canonical export hash와 converter hash를 구분한다. 이전 converter의 검증된 이미지 캐시는 재사용할 수 있지만 export/입력/converter가 모두 일치해야 전체 tree cache를 재사용한다. renderer는 클래스/전직의 array·record 표현을 읽고 overlay 부재로 전체 화면이 중단되지 않게 한다.
+
+19차(2026-11-03): scope=tree/treeId는 원본 PassiveSpecListControl의 named Popup 및 버튼/drag를 replay한다. stock copy의 새 spec은 원본 객체 lineage로 canonical XML을 복제하고 New만 fresh Save 노드를 쓴다. 신규/복사는 원본처럼 활성 actor를 유지한다. 공통 sets patch는 unchanged kind를 건너뛰고 known set의 DOM 슬롯만 교체해 unknown 형제/legacy 섹션/누락 flag를 보존한다. NativeTreeSets가 기존 TreeView 메뉴 안에서 자동 preview의 form signature/generation 및 revision/runtime을 검증하고 explicit apply·calc·receipt를 담당한다.
+
 18차(2026-11-03): tree scope reorder는 원본 PassiveSpecListControl/ListControl의 드래그 입력과 OnOrderChange를 호출한다. 현재 actor를 title로 다시 찾지 않으며 네 활성 세트/주력/무기를 보존했는지 검사한다. metadata의 treePositions/treeAssociations를 한 번만 전달해 위치/공유 관계를 renderer가 추론하지 않게 한다. movement는 source/destination spec 위치·영향받는 원본 이름·activePreserved를 기록한다. canonical DOM lineage를 재배치하고 revision에 속한 새 계산으로 확인하며, 단순 위치 remap을 활성 구성 전환으로 표시하지 않는다.
 
 17차(2026-11-03): native 관리 metadata는 원본 목록 index 또는 원본이 제공한 sourceName 및 동작별 capability를 반환한다. named delete는 사용자 지정 nextName을 원본 API로 재조회/선택하고 실제 생존 객체의 동일성을 검증한다. 원본 구성의 객체 관계 전후 차이는 native에서 계산하며 UI는 결과를 표시한다. 적용 계산의 workspace_operation은 입력 revision/hash·검토 runtime·요청/선택·연결 변화만 자동 저장하며 개인 XML을 중복 저장하지 않는다. renderer는 brace/게임 규칙을 구현하지 않는다.

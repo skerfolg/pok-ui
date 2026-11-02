@@ -16,14 +16,14 @@ export interface RawTreeGroup {
 export interface TreeBackground { image: string; x: number; y: number; width: number; height: number; bg?: { width: number; height: number }; active?: { width: number; height: number } }
 export interface RawTreeClass {
   name: string; integerId: number; background?: TreeBackground;
-  ascendancies?: { name: string; id: string; background?: TreeBackground }[];
+  ascendancies?: { name: string; id: string; background?: TreeBackground }[] | Record<string,{name:string;id:string;background?:TreeBackground}>;
 }
 export interface RawPassiveTree {
   nodes: Record<string, RawTreeNode | null>;
   groups: Record<string, RawTreeGroup | null> | (RawTreeGroup | null)[];
-  classes: RawTreeClass[];
+  classes: RawTreeClass[] | Record<string,RawTreeClass>;
   constants: { orbitRadii: number[]; orbitAnglesByOrbit: number[][]; skillsPerOrbit?: number[] };
-  nodeOverlay: Record<string, TreeOverlay>;
+  nodeOverlay?: Record<string, TreeOverlay>;
   connectionArt?: Record<string, string>;
   min_x: number; max_x: number; min_y: number; max_y: number;
 }

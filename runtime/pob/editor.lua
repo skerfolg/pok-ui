@@ -133,4 +133,9 @@ function api.item(args)
   end
   return {ok=true,text=item:BuildRaw(),diagnostics={{code='pob-item-parser',unsupported=unsupported}},kind=args.kind}
 end
+function api.treeSource(version)
+  local valid=false;for _,candidate in ipairs(treeVersionList)do if candidate==version then valid=true end end
+  assert(valid,'Unsupported original tree version')
+  return{version=version,tree=LoadModule('TreeData/'..version..'/tree')}
+end
 return api

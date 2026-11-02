@@ -18,11 +18,21 @@ const hash=value=>createHash('sha256').update(value).digest('hex');
 try{
   const catalog=await runtime.catalog();
   await writeFile(join(stage,'catalog.json'),stable(catalog)+'\n');
+  // PassiveTree loads tree.lua; older tree.json exports omit stock artwork metadata.
+  const treeSources=join(workspace,'.local','pob-tree-source-'+randomUUID());
+  await mkdir(treeSources,{recursive:true});
+  const treeSourceHashes=new Map();
+  for(const version of catalog.supportedTreeVersions){
+    if(!/^\d+_\d+$/.test(version))throw new Error('Unexpected original tree version: '+version);
+    const path=join(treeSources,version+'.json');
+    await writeFile(path,stable(await runtime.treeSource(version))+'\n');
+    treeSourceHashes.set(version,await sha256File(path));
+  }
   const converter=resolve('scripts/prepare-tree-assets.py'),converterSha256=await sha256File(converter);
-  let completeTreeCache=false;
+  let completeTreeCache=false,seededNativeCache=false;
   if(process.argv.includes('--reuse-tree-assets')){
     const native=await readFile(resolve('resources/pob-editor/manifest.json'),'utf8').then(JSON.parse).catch(error=>{if(error.code==='ENOENT')return undefined;throw error;});
-    if(native?.commit===info.commit&&native.converterSha256===converterSha256){
+    if(native?.commit===info.commit){
       for(const file of native.files){
         if(!file.path.startsWith('trees/'))continue;
         const source=resolve('resources/pob-editor',file.path),target=resolve(stage,file.path);
@@ -30,10 +40,11 @@ try{
         if(await sha256File(source)!==file.sha256)throw new Error('Native tree cache integrity failed: '+file.path);
         await mkdir(dirname(target),{recursive:true});await copyFile(source,target);
       }
-      completeTreeCache=true;
+      seededNativeCache=true;
+      completeTreeCache=native.converterSha256===converterSha256;
       for(const version of catalog.supportedTreeVersions){
         const cached=JSON.parse(await readFile(join(stage,'trees',version,'manifest.json'),'utf8'));
-        if(cached.source.commit!==info.commit){completeTreeCache=false;break;}
+        if(cached.source.commit!==info.commit||cached.source.format!=='pob-lua-raw-v1'||cached.source.exportSha256!==treeSourceHashes.get(version)){completeTreeCache=false;break;}
         const sourceRoot=resolve(runtimeRoot,'pob','src','TreeData',version);
         for(const [file,digest] of Object.entries(cached.source.files)){
           const source=resolve(sourceRoot,file);ensureInside(sourceRoot,source,'native raw tree input');
@@ -41,7 +52,7 @@ try{
         }
       }
     }
-    if(!completeTreeCache){
+    if(!completeTreeCache&&!seededNativeCache){
     const previous=await readFile(join(workspace,'resources','bundle-manifest.json'),'utf8').then(JSON.parse).catch(error=>{if(error.code==='ENOENT')return undefined;throw error;});
     if(previous?.identity?.pob?.commit===info.commit)for(const file of previous.files){
       if(!file.path.startsWith('passive-tree/'))continue;
@@ -52,7 +63,7 @@ try{
     }
     }
   }
-  if(!completeTreeCache){const converted=await exec(resolve(python),[converter,'--pob-root',join(runtimeRoot,'pob'),'--source-revision',info.commit,'--versions',...catalog.supportedTreeVersions,'--output',join(stage,'trees')],{maxBuffer:4*1024*1024});process.stdout.write(converted.stdout);}
+  if(!completeTreeCache){const converted=await exec(resolve(python),[converter,'--pob-root',join(runtimeRoot,'pob'),'--source-revision',info.commit,'--tree-json-dir',treeSources,'--versions',...catalog.supportedTreeVersions,'--output',join(stage,'trees')],{maxBuffer:4*1024*1024});process.stdout.write(converted.stdout);}
   else console.log('Reused complete tree cache after checking conversion source, all output hashes and original PoB input hashes');
   async function walk(root){const files=[];for(const entry of await readdir(root,{withFileTypes:true})){const path=join(root,entry.name);if(entry.isDirectory())files.push(...await walk(path));else if(entry.isFile())files.push(path);else throw new Error('Unexpected resource link: '+path);}return files;}
   const files=[];for(const path of await walk(stage))files.push({path:relative(stage,path).replaceAll('\\','/'),sha256:await sha256File(path)});

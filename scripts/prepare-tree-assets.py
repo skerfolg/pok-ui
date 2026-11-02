@@ -221,8 +221,11 @@ def collect_references(tree: dict) -> set[str]:
             continue
         if group.get("background", {}).get("image"):
             references.add(group["background"]["image"])
-    for character in tree["classes"]:
-        for entry in [character, *character.get("ascendancies", [])]:
+    for character in (tree["classes"].values() if isinstance(tree["classes"], dict) else tree["classes"]):
+        if not isinstance(character, dict):
+            continue
+        ascendancies = character.get("ascendancies", [])
+        for entry in [character, *(ascendancies.values() if isinstance(ascendancies, dict) else ascendancies)]:
             if entry.get("background", {}).get("image"):
                 references.add(entry["background"]["image"])
     return references
@@ -271,10 +274,10 @@ def reuse_array(bundles: list, file: str, digest: str, coords: dict, output: Pat
     return None
 
 
-def build_version(pob_root: Path, version: str, output_root: Path, revision: str) -> dict:
+def build_version(pob_root: Path, version: str, output_root: Path, revision: str, tree_json_dir: Path | None = None) -> dict:
     started = time.perf_counter()
     source = pob_root / "src" / "TreeData" / version
-    tree_path = relative_file(source, "tree.json")
+    tree_path = tree_json_dir / f"{version}.json" if tree_json_dir else relative_file(source, "tree.json")
     tree = json.loads(tree_path.read_text(encoding="utf-8-sig"))
     # JSON arrays become 1-based arrays when PoB's Lua loader reads them. Export
     # explicit keys so browser code cannot accidentally offset every group by 1.
@@ -284,7 +287,8 @@ def build_version(pob_root: Path, version: str, output_root: Path, revision: str
     output.mkdir(parents=True, exist_ok=True)
     cache = reusable_bundles(output_root)
     assets: dict[str, dict] = {}
-    source_hashes: dict[str, str] = {"tree.json": sha256(tree_path)}
+    source_name = "tree.lua" if tree_json_dir else "tree.json"
+    source_hashes: dict[str, str] = {source_name: sha256(relative_file(source, source_name))}
     # PoB precedence: ddsMap > assets > spriteMap.
     containers = sorted(tree.get("ddsCoords", {}).items())
     owners = {name: file for file, coords in containers for name in coords}
@@ -325,7 +329,9 @@ def build_version(pob_root: Path, version: str, output_root: Path, revision: str
             "project": "PathOfBuildingCommunity/PathOfBuilding-PoE2",
             "url": "https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2",
             "commit": revision,
-            "treeSha256": source_hashes["tree.json"],
+            "treeSha256": source_hashes[source_name],
+            "format": "pob-lua-raw-v1" if tree_json_dir else "pob-json-v1",
+            "exportSha256": sha256(tree_path),
             "files": source_hashes,
         },
         "treeFileSha256": tree_file_sha256,
@@ -367,6 +373,7 @@ def main() -> None:
     parser.add_argument("--source-revision", required=True, help="Pinned source commit; normalized to full SHA in Git, full 40-character SHA required for frozen sources")
     parser.add_argument("--versions", nargs="+", default=["0_5"], help="Tree folder versions, or 'all'")
     parser.add_argument("--output", type=Path, default=Path("resources/passive-tree"))
+    parser.add_argument("--tree-json-dir", type=Path, help="Original Lua tree tables exported through the pinned native runtime")
     args = parser.parse_args()
     pob_root = args.pob_root.resolve()
     try:
@@ -381,7 +388,7 @@ def main() -> None:
     if not (pob_root / "LICENSE.md").is_file():
         parser.error("The source repository must include LICENSE.md for redistribution attribution")
     for version in versions:
-        build_version(pob_root, version, args.output.resolve(), revision)
+        build_version(pob_root, version, args.output.resolve(), revision, args.tree_json_dir.resolve() if args.tree_json_dir else None)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,20 @@
 # 로컬 검증
 
+## TreeView 원본 관리 — 2026-11-03 (19차)
+
+- 최종 source `.local/tree-management-native-1793647818011/result.json`도 **6개 그룹 통과**, Windows packaged와 같은 전체 동선을 확인했다. renderer pageerror/crash 없음. 아래 실행 중 기록은 최종 source6/packaged6/native 관리5/export2/기존 세트4/check162/build/pack:win 통과로 대체한다. 원본 PoB GUI·portable·실제 모델·전수 동등성은 미수행/미완료다.
+
+- 최종 Windows packaged `.local/tree-management-native-1793647650631/result.json` **6개 그룹 통과**. 자동 preview/빈 입력·빠른 입력/Enter/취소/문서 격리, inactive unmatched rename/copy/stock New, 직접 drag·활성 삭제·계산, undo6/redo7/최종8 계산·receipt, old0_1 유지/최신 inactive New, 저장/재시작·타 문서 불변·PoK 미연결을 검사했다. 1920/1024 PNG에서 제거되는 구성·직업/노드 변화·적용/취소 버튼을 직접 시각 확인했다. `pack:win`의 runtime/catalog/5tree 실제 계산 검증·build·패키징 통과. old-only source `.local/tree-management-native-1793647510553/result.json`도 **2개 그룹 통과**, 3149노드·3143표시·26/26이미지·실패0·재시작을 확인했다. 최종 source 전체 및 기존 세트 회귀는 실행 중이다.
+- 최종 source 기존 세트 회귀 `.local/tree-sets-native-1793647865565/result.json` **4개 그룹 통과**. 취소/문서 격리, cross-class 전환과 native 복사/명시 선택/삭제/undo, 비교의 원본 직업·측정 XML/hash·최종 적용/새 계산, 저장/재시작·PoK 미연결을 확인했다. 이전 native Loadout 관리6개 그룹 통과 기록도 유지한다. 이 대표 검사는 모든 공유/버전/특수 조합을 전수 검증한 것이 아니다.
+
+- 원본 tree.lua export 회귀 `tests/pob-tree-source-smoke.cjs` **2개 그룹 통과**: 0_1~0_5 source/export 해시·프레임 자원과 모든 표시 좌표·연결 일치, missingArtwork0, 잘못된 버전 거부. `.local/standalone-pob/tree-source-result.json`. 원본 Lua 노드 수는 3149/3404/4118/4701/4912이며 과거 JSON 수치를 승계하지 않는다.
+- 최초 source `.local/tree-management-native-1793645907030/result.json`은 관리4개 그룹 이후 구버전에서 renderer 오류로 중단했다. old-only `.local/tree-management-native-1793646445710/result.json`에 `Cannot read properties of undefined (reading 'Normal')` 재현. stock tree.lua의 overlay가 구 tree.json에 없어서 Lua export로 변환 원본을 수정했다. 이후 `.local/tree-management-native-1793647316208/result.json`은 정상 지도 표시 중 테스트가 부모 div의 빈 dataset을 읽어 timeout된 하네스 오류다. canvas를 직접 읽고 pageerror/crash·이미지/노드 준비를 검사하도록 고쳤으며 최종 실행 중이다. 실패 실행을 성공으로 집계하지 않는다.
+
+- native `tests/pob-tree-management-smoke.cjs` **5개 그룹 통과**, `.local/standalone-pob/tree-management-result.json`. 요청한 inactive/orphan 객체의 원본 rename/copy·중복명 허용/지정 객체 삭제, stock New(자동 활성화 없음)/드래그, active delete의 이전 인접 spec 선택, old0_1 유지/stock latest inactive New 및 거부/다음 입력 불변을 검사했다. before Life170/Dex25, active delete 후 Life334/Dex47. 다른 세트 XML은 serialize 비교로 그대로이고 current actor 유지 동작의 모든 numeric stat을 deepEqual로 확인했다. 추천 개선 판정은 아니다.
+- check **162 passed**, boundary/type 통과. 새로운 unit은 unknown sibling 위치, 미변경 섹션, legacy 비트리 구조와 missing weapon flag가 tree-only 편집으로 재생성되지 않음을 검사한다. build 통과. source/packaged·이전 세트 전환/비교·일반 관리 회귀는 진행 중이다.
+- 이전 React set-copy는 새 tree를 활성화했지만 stock PassiveSpecListControl은 inactive로 추가한다. 기존 desktop 회귀에는 사용자가 새 항목을 명시 선택하는 단계를 추가했고 삭제 final button은 원본 preview 뒤 ‘세트 적용’으로 통일했다. 원본 동작을 임의로 바꾸어 과거 assertion을 맞추지 않았다.
+- C: 여유40MB 때 generated backup11개(09/10시간대)만 절대 경로·workspace 접두어·known content·no reparse 확인 후 정리해 약3.5GB를 확보했다. 최신 검증/사용자 데이터/engine checkout은 변경하지 않았다. 개인 데이터는 fixture/배포물에 넣지 않았다. 원본 GUI/portable/실제 모델은 미수행이다.
+
 ## 원본 passive-spec 순서 이동 — 2026-11-03 (18차 진행)
 
 - 최종 Windows packaged `.local/linked-reorder-native-1793643190539/result.json` **5개 그룹 통과**, source `.local/linked-reorder-native-1793642912224/result.json`도 동일5개 그룹 통과. 양방향/공유 이동의 원래 네 세트와 모든 수치 보존, 변경 없는 위치 차단·취소/문서 격리, undo/redo/revision4 재계산, 이동 범위/동반 별칭/활성 유지/receipt·restart를 확인했다. 1920/1024 PNG 직접 시각 확인. native5와 기존 named 관리 native6, check160/build/pack:win도 통과했다. 아래 진행 중은 이 최종 결과로 대체한다. GUI/portable/실제 모델 미수행.

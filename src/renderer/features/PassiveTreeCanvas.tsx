@@ -78,13 +78,13 @@ export function PassiveTreeCanvas({ data, graph, assigned, search, selected,prev
     const character = Object.values(data.tree.classes).find(c => c?.name === className);
     if (character?.background) {
       const bg = character.background;
-      const chosen = character.ascendancies?.find(a => a.name === ascendancy);
+      const chosen = Object.values(character.ascendancies||{}).find(a => a.name === ascendancy);
       drawBackground({ ...bg, image: chosen?.background?.image ?? bg.image });
       const start = [...graph.nodes.values()].find(n => n.classesStart?.includes(className));
       if (start) image('BGTreeActive', bg.x, bg.y, bg.active?.width ?? 2000, bg.active?.height ?? 2000, 1, Math.PI / 2 + Math.atan2(start.y - bg.y, start.x - bg.x));
       image('BGTree', bg.x, bg.y, bg.bg?.width ?? 2000, bg.bg?.height ?? 2000);
     }
-    for (const c of Object.values(data.tree.classes)) for (const a of c?.ascendancies ?? []) if (a.background) drawBackground(a.background, a.name === ascendancy ? 0.95 : 0.4);
+    for (const c of Object.values(data.tree.classes)) for (const a of Object.values(c?.ascendancies||{})) if (a.background) drawBackground(a.background, a.name === ascendancy ? 0.95 : 0.4);
     for (const group of Object.values(data.tree.groups)) {
       if (!group || group.isProxy || !group.background) continue;
       const bg = group.background, asset = data.assets[bg.image]; if (!asset) continue;
@@ -118,7 +118,7 @@ export function PassiveTreeCanvas({ data, graph, assigned, search, selected,prev
       drawnNodes++;
       const allocated = assigned.has(node.id), matched = search.has(node.id), highlighted = selected === node.id || hover?.node.id === node.id;
       const state = allocated ? 'alloc' : highlighted ? 'path' : 'unalloc';
-      const overlay = node.nodeOverlay ?? data.tree.nodeOverlay[node.kind];
+      const overlay = node.nodeOverlay ?? data.tree.nodeOverlay?.[node.kind];
       const socket = node.kind === 'Socket' || node.containJewelSocket;
       if (node.activeEffectImage && node.kind !== 'OnlyImage') image(node.activeEffectImage, node.x, node.y, 380, 380, allocated || highlighted ? 0.8 : 0.1);
       const icon = node.kind === 'OnlyImage' ? node.activeEffectImage : node.kind === 'AscendClassStart' ? 'AscendancyMiddle' : socket ? overlay?.[state] : node.icon;

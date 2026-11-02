@@ -1,6 +1,6 @@
-import { SetControls } from '../components/SetControls';
+import {NativeTreeSets} from '../components/NativeTreeSets';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { BuildDocument,BuildEdit, ParsedBuild, PassiveTreeData } from '../../shared/contracts';
+import type { BuildDocument,BuildEdit,Calculation, ParsedBuild, PassiveTreeData } from '../../shared/contracts';
 import {useTreeOperation} from '../state/useTreeOperation';
 import {treeAllocationModes} from '../../shared/tree-allocation';
 import { api } from '../services/api';
@@ -14,7 +14,7 @@ function loadTree(bundleId: string, version: string): Promise<LoadedTree> {
   if (!trees.has(key)) trees.set(key, api.loadPassiveTree(version).then(data => ({ data, graph: normalizeTree(data.tree) })).catch(error => { trees.delete(key); throw error; }));
   return trees.get(key)!;
 }
-export function TreeView({ build,runtimeId,applyExpected,parsed, edit, editable = true }: {build:BuildDocument;runtimeId?:string;applyExpected:(snapshot:BuildDocument,edit:BuildEdit,label:string)=>BuildDocument; parsed: ParsedBuild; connected: boolean; edit: (edit: BuildEdit, label: string) => void; editable?: boolean }) {
+export function TreeView({ build,runtimeId,applyExpected,calculated,parsed, edit, editable = true }: {build:BuildDocument;runtimeId?:string;applyExpected:(snapshot:BuildDocument,edit:BuildEdit,label:string)=>BuildDocument;calculated:(build:BuildDocument,result:Calculation)=>boolean; parsed: ParsedBuild; connected: boolean; edit: (edit: BuildEdit, label: string) => void; editable?: boolean }) {
   const spec = parsed.trees.find(t => t.active) ?? parsed.trees[0];
   const [loaded, setLoaded] = useState<LoadedTree>(); const [error, setError] = useState(''); const [elapsed, setElapsed] = useState(0); const [attempt, setAttempt] = useState(0);
   const [bundleId, setBundleId] = useState<string|null>(),[resourceError,setResourceError]=useState('');
@@ -57,7 +57,7 @@ export function TreeView({ build,runtimeId,applyExpected,parsed, edit, editable 
     try{const info=await api.getPobRuntimeInfo();if(info.status!=='ready'||info.runtimeId!==result.data.runtimeId)throw new Error('검토 후 PoB 버전이 바뀌었습니다. 다시 선택해 주세요.');applyExpected(result.snapshot,{type:'tree-native-patch',specId:spec!.id,patch:result.data.patch},`${operationAction==='attribute'?'원본 능력치 변경':operationAction==='jewel'?'원본 주얼 변경':'원본 트리 연산'} · 추가 ${result.data.added.length} / 제거 ${result.data.removed.length} / 변경 ${result.data.modified?.length||0}`);}catch(reason){setError(String(reason));}finally{setApplying(false);}
   }
   return <section className="feature fill tree-feature">
-    <div className="page-heading"><h1>패시브트리</h1><SetControls kind="tree" sets={parsed.trees} edit={edit} disabled={!runtimeId}/><span className="muted">XML 할당 ID {spec.nodes.length}개 · PoB {spec.version}</span><label>할당 모드<select aria-label="트리 할당 모드" value={allocMode} onChange={e=>setAllocMode(Number(e.target.value))}><option value="0">공통</option><option value="1">무기 세트 1</option><option value="2">무기 세트 2</option></select></label></div>
+    <div className="page-heading"><h1>패시브트리</h1><NativeTreeSets build={build} parsed={parsed} runtimeId={runtimeId} enabled={editable} edit={edit} applyExpected={applyExpected} calculated={calculated}/><span className="muted">XML 할당 ID {spec.nodes.length}개 · PoB {spec.version}</span><label>할당 모드<select aria-label="트리 할당 모드" value={allocMode} onChange={e=>setAllocMode(Number(e.target.value))}><option value="0">공통</option><option value="1">무기 세트 1</option><option value="2">무기 세트 2</option></select></label></div>
     <div className="tree-toolbar actions"><input type="search" aria-label="패시브 검색" placeholder="노드 이름·효과·ID 검색" value={query} onChange={e => setQuery(e.target.value)} /><button disabled={!loaded} onClick={() => fit(false)}>할당 위치</button><button disabled={!loaded} onClick={() => fit(true)}>전체 트리</button><label>확대<input aria-label="트리 확대" type="range" min="-0.5" max="6" step="0.05" value={Math.max(-0.5, Math.min(6, Math.log2(camera.scale / baseScale)))} onChange={e => setCamera(zoomAt(camera, baseScale * 2 ** Number(e.target.value) / camera.scale, viewport.width / 2, viewport.height / 2, viewport.width, viewport.height, minScale))} /></label><span className="muted tree-zoom">{Math.round(camera.scale / baseScale * 100)}%</span><button disabled={!loaded} onClick={() => fit(true)}>화면 맞춤</button></div>
     {query.trim() && <div className="tree-search-results" aria-label="패시브 검색 결과"><span>{matches.length}개 일치</span>{matches.slice(0, 20).map(n => <button key={n.id} onClick={() => focus(n)}>{n.name}<small>#{n.id}</small></button>)}{matches.length > 20 && <span>검색어를 더 입력해 범위를 좁히세요.</span>}</div>}
     {loaded ? <PassiveTreeCanvas data={loaded.data} graph={loaded.graph} allocationModes={allocationModes} assigned={assigned} search={searched} preview={preview} previewRemoval={Boolean(operation.current?.data.removed.length)} selected={selectedId} className={parsed.className} ascendancy={parsed.ascendancy} camera={camera} setCamera={setCamera} onSize={onSize} onSelect={n => setSelectedId(n.id)} minScale={minScale} /> : <div className="tree-canvas pob-tree tree-loading"><p>{error || `PoB ${spec.version} 트리와 지도 리소스를 읽는 중…`}</p>{error && <button onClick={() => setAttempt(n => n + 1)}>다시 시도</button>}</div>}

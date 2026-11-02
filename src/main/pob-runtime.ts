@@ -152,6 +152,12 @@ export class PobRuntime {
     const {result}=await this.request({op:'item',args:submitted},expectedRuntimeId);
     return result as unknown as ItemRenderResult;
   }
+  async treeSource(version:string):Promise<Record<string,unknown>>{
+    const info=await this.getInfo();if(info.status!=='ready'||!info.supportedTreeVersions?.includes(version))throw new PobRuntimeError('POB_TREE_SOURCE','지원하는 원본 트리 버전이 아닙니다.');
+    const {result}=await this.request({op:'tree-source',version},info.runtimeId);
+    if(result.version!==version||!result.tree||typeof result.tree!=='object'||Array.isArray(result.tree))throw new PobRuntimeError('POB_PROTOCOL','원본 Lua 트리 export 형식이 올바르지 않습니다.');
+    return result.tree as Record<string,unknown>;
+  }
   async inspect(input:PobInspectionRequest):Promise<PobInspection>{
     const snapshot=structuredClone(input),hash=xmlHash(snapshot.xml),key=snapshot.revision+':'+hash;
     const existing=this.inspectionRequests.get(snapshot.buildId);if(existing?.key===key)return existing.pending;
