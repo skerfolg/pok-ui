@@ -2,6 +2,8 @@
 
 ## 노트 색상 편집·코드 보기·범위/초안 동작 — 2026-11-03 (24차)
 
+UI 구현 **`219b76b386dcad58a0e0cbebc3e05ee9c9105e71`**, 브랜치 `skerfolg/coho`. 다른 PC는 이후 인계 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다. 다음은 원본 세부 control/옵션/남은 전체 수동 기능과 입력 실패·장기 근거 감사다. 전체 목표 active.
+
 최종 source `.local/notes-native-1793659213134/result.json` / Windows packaged `.local/notes-native-1793659409290/result.json` **각6개 그룹 통과**. 원본 NotesTab parity2/unit7/check183/build/pack:win 및 기존 sets-config source8(`.local/sets-config-native-1793659219771/result.json`) 통과. 전체 높이/스크롤·색상/코드보기·원본 범위 색칠·actual caret/로컬 undo·zoom·clipboard synthetic 이벤트·한글/emoji/CRLF·원문/unknown·build undo/redo·초안 문서 격리/재시작을 확인했다. 두 크기의 source/packaged 전체 높이 paint를 직접 시각 확인했다. 아래 진행 중과 이전 clipped PNG/하네스 실패를 이 최종 결과로 대체한다.
 
 PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB/PoK 비사용. 이번 UI-only 변경은 기존 runtime `pob-c3830dc62a9a39bc4040d36bb0ce4448bf5378c4bc5c5849b33a2f7a9906d74e` / manifest SHA256 `3ec5a25f4040e3af75e32df6ae225f5be92e95568cab35304ed02a753d0d6cd7`, editor `pob-editor-d5ab4c116002fb1972629c9803e305127415c3826f6be2903c7a2ee78a33acbe` / SHA256 `f90c7de4c5c0ed873f44da523120a85cef6f35ceaa8f62f16bd2653f230cd885`를 그대로 검증/사용했다. 추가 graphics 규약 source는 POB-NOTES의 별도 commit이며 배포 DLL의 정확한 source commit/원본 GUI pixel parity를 확인한 것은 아니다. 원본/공유 엔진 소스·문서/ref 수정 없음.
