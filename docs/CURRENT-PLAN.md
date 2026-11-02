@@ -420,3 +420,11 @@ npm check173검사·앱 build가 통과했다. Native 전체 검사가 병행 �
 
 다음 실제 제품 연결은 main의 독립 수동 backend와 데이터 번들 v2 소비·선택 PoK 분리다.
 기존 txt 파일 접근 EBADF는 여전히 미해결이며 검증 목록 제거로 우회하지 않았다.
+
+
+## R6 계산 receipt와 수치 진단 보존 — 2026-11-02
+
+클라이언트 계산 반환에 실제 실행 receipt와 비유한수→null 정규화 진단을 보존했다.
+null을0으로 바꾸지 않으며 원래 값/경로가 사라지지 않게 했다. 계산 필드의 수치 타입과
+missing stats·allocated nodes·meta도 검사한다. 새 회귀를 포함한 전송9개와 전체
+npm check174개·앱 build가 통과했다. 기존 main에 이 경로를 실제로 연결하는 일은 남아 있다.

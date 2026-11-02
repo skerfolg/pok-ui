@@ -42,7 +42,7 @@ function launch(mode = 'normal'): WorkerLaunchDescriptor {
       else if(r.method==='render_item')emit({id:r.id,ok:true,result:{identity,ok:true,text:'Transport item fixture'},execution:{owner}});
       else if(r.method==='compute_xml') {
         if(mode==='crash') {input.close(); process.exitCode=1;process.stdin.destroy();return;}
-        emit({id:r.id,ok:true,result:{identity,xml_revision:mode==='wrong-revision'?'wrong':'sha256:'+crypto.createHash('sha256').update(r.params.xml).digest('hex'),stats:{Life:1}},execution:{owner}});
+        emit({id:r.id,ok:true,result:{identity,xml_revision:mode==='wrong-revision'?'wrong':'sha256:'+crypto.createHash('sha256').update(r.params.xml).digest('hex'),stats:{Life:mode==='normalized'?null:1},meta:{},missing_stats:[],allocated_nodes:[],claim:'native_calculation_not_game_validation'},execution:{owner},...(mode==='normalized'?{wire_normalizations:[{path:'/result/stats/Life',value:'nan',serialized_as:'null'}]}:{})});
       } else if(r.method==='shutdown') {
         clearTimeout(initTimer);
         emit({id:r.id,ok:true,cleanup:{confirmed:true}});
@@ -128,4 +128,16 @@ test('hello and initialization share one absolute startup budget', async () => {
   await assert.rejects(worker.connect(launch('delayed-startup')), /초과/);
   assert.equal(worker.connected,false);
   await worker.close();
+});
+
+
+test('native receipt and null normalization reasons survive client transport', async () => {
+  const worker = new PobWorkerConnection();
+  try {
+    await worker.connect(launch('normalized'));
+    const result = await worker.compute('<PathOfBuilding/>');
+    assert.equal(result.stats.Life,null);
+    assert.equal(result.execution.owner,'transport-fixture');
+    assert.deepEqual(result.wire_normalizations,[{path:'/result/stats/Life',value:'nan',serialized_as:'null'}]);
+  } finally {await worker.close();}
 });

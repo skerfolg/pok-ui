@@ -36,6 +36,8 @@ export interface WorkerCalculation {
   allocated_nodes: number[];
   identity: PobWorkerIdentity;
   claim: 'native_calculation_not_game_validation';
+  execution: Record<string, unknown>;
+  wire_normalizations?: {path: string; value: string; serialized_as: 'null'}[];
 }
 
 export type WorkerCatalog = Omit<CatalogExport, 'schemaVersion' | 'extractorVersion' | 'source'> & {

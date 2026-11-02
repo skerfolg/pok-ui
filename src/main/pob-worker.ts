@@ -189,7 +189,10 @@ export class PobWorkerConnection {
     if (!record(result) || result.xml_revision !== revision || !record(result.stats)) throw new Error('계산 결과의 실제 입력이 다릅니다.');
     assertWorkerIdentity(result.identity);
     if (result.identity.sha256 !== this.identity?.sha256) throw new Error('계산 중 런타임 출처가 변경됐습니다.');
-    return result as unknown as WorkerCalculation;
+    if (!Array.isArray(result.missing_stats) || result.missing_stats.some(value => typeof value !== 'string') || !Array.isArray(result.allocated_nodes) || result.allocated_nodes.some(value => !Number.isSafeInteger(value)) || !record(result.meta) || result.claim !== 'native_calculation_not_game_validation' || Object.values(result.stats).some(value => value !== null && (typeof value !== 'number' || !Number.isFinite(value))) || !record(response.execution)) throw new Error('PoB 계산 결과 필드가 올바르지 않습니다.');
+    const changes = response.wire_normalizations;
+    if (changes !== undefined && (!Array.isArray(changes) || changes.some(row => !record(row) || typeof row.path !== 'string' || typeof row.value !== 'string' || row.serialized_as !== 'null'))) throw new Error('PoB 수치 정규화 진단이 올바르지 않습니다.');
+    return {...result, execution:response.execution, ...(changes === undefined ? {} : {wire_normalizations:changes})} as unknown as WorkerCalculation;
   }
 
   async exportCatalog(): Promise<WorkerCatalog> {
