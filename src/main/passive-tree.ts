@@ -1,9 +1,11 @@
 import { lstat, readFile, realpath } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import type { PassiveTreeData, PassiveTreeAsset } from '../shared/passive-tree';
 
 interface ManifestAsset { file:string; mime:'image/png'|'image/webp'; width:number; height:number; x?:number; y?:number }
 interface LoadedTree { data:PassiveTreeData; files:Map<string,ManifestAsset> }
+interface PassiveTreeStoreOptions { bundleId?:string; expectedCommit?:string }
 export class TreeResourceError extends Error {
   constructor(message:string,readonly status=400){super(message);this.name='TreeResourceError';}
 }
@@ -19,8 +21,9 @@ function version(value:unknown):asserts value is string {
 /** Static PoB resources are versioned app assets, independent of the calculation engine. */
 export class PassiveTreeStore {
   private readonly root:string;
+  private readonly options:PassiveTreeStoreOptions;
   private readonly versions=new Map<string,Promise<LoadedTree>>();
-  constructor(root:string){this.root=resolve(root);}
+  constructor(root:string,options:PassiveTreeStoreOptions={}){this.root=resolve(root);this.options=options;}
 
   async load(requestedVersion:unknown):Promise<PassiveTreeData>{
     version(requestedVersion);
@@ -29,9 +32,10 @@ export class PassiveTreeStore {
 
   /** Accept only literal URLs emitted by load(); do not URL-normalize traversal away. */
   async asset(rawUrl:string):Promise<{body:Uint8Array<ArrayBuffer>;mime:string}>{
-    const match=/^pok-tree:\/\/assets\/(\d{1,3}_\d{1,3}(?:_\d{1,3})?)\/([A-Za-z0-9][A-Za-z0-9._-]{0,180}\.(?:webp|png))$/.exec(rawUrl);
+    const match=/^pok-tree:\/\/assets\/(?:(pokbundle-[0-9a-f]{16,64})\/)?(\d{1,3}_\d{1,3}(?:_\d{1,3})?)\/([A-Za-z0-9][A-Za-z0-9._-]{0,180}\.(?:webp|png))$/.exec(rawUrl);
     if(!match)throw new TreeResourceError('허용되지 않은 트리 이미지 경로입니다.');
-    const [,requestedVersion,file]=match;
+    const [,bundleId,requestedVersion,file]=match;
+    if(this.options.bundleId&&bundleId!==this.options.bundleId)throw new TreeResourceError('트리 이미지가 현재 데이터 묶음과 다릅니다.');
     const loaded=await this.getVersion(requestedVersion);
     const entry=loaded.files.get(file);
     if(!entry)throw new TreeResourceError('트리 이미지가 없습니다.',404);
@@ -56,12 +60,16 @@ export class PassiveTreeStore {
 
   private async readVersion(requestedVersion:string):Promise<LoadedTree>{
     const manifest=await this.readJson(requestedVersion,'manifest.json',4*1024*1024);
-    if(!isRecord(manifest)||manifest.schemaVersion!==1||manifest.version!==requestedVersion||manifest.treeFile!=='tree.json'||!isRecord(manifest.assets)||!isRecord(manifest.source)){
+    if(!isRecord(manifest)||manifest.schemaVersion!==1||manifest.version!==requestedVersion||manifest.treeFile!=='tree.json'||!isRecord(manifest.assets)||!isRecord(manifest.source)||typeof manifest.treeFileSha256!=='string'){
       throw new TreeResourceError('패시브 트리 매니페스트 형식 또는 버전이 올바르지 않습니다.');
     }
     const source=manifest.source;
     if(typeof source.project!=='string'||typeof source.commit!=='string'||typeof source.treeSha256!=='string')throw new TreeResourceError('패시브 트리 출처 정보가 올바르지 않습니다.');
-    const tree=await this.readJson(requestedVersion,'tree.json',64*1024*1024);
+    if(this.options.expectedCommit&&source.commit!==this.options.expectedCommit)throw new TreeResourceError('패시브 트리 원본이 POK 런타임의 PoB 원본과 다릅니다.');
+    const treePath=await this.safePath(requestedVersion,'tree.json');
+    const treeBytes=await readFile(treePath);
+    if(createHash('sha256').update(treeBytes).digest('hex')!==manifest.treeFileSha256)throw new TreeResourceError('패시브 트리 데이터 해시가 매니페스트와 다릅니다.');
+    const tree=await this.readJsonText(treeBytes.toString('utf8'));
     if(!isRecord(tree)||!isRecord(tree.nodes)||!isRecord(tree.groups))throw new TreeResourceError('패시브 트리 데이터 형식이 올바르지 않습니다.');
     const assets:Record<string,PassiveTreeAsset>=Object.create(null);
     const files=new Map<string,ManifestAsset>();
@@ -72,7 +80,8 @@ export class PassiveTreeStore {
       const duplicate=files.get(entry.file);
       if(duplicate&&duplicate.mime!==entry.mime)throw new TreeResourceError('패시브 트리 이미지 형식이 충돌합니다.');
       files.set(entry.file,entry);
-      assets[name]={url:`pok-tree://assets/${requestedVersion}/${entry.file}`,mime:entry.mime,width:entry.width,height:entry.height,
+      const prefix=this.options.bundleId?`${this.options.bundleId}/`:'';
+      assets[name]={url:`pok-tree://assets/${prefix}${requestedVersion}/${entry.file}`,mime:entry.mime,width:entry.width,height:entry.height,
         ...(entry.x===undefined?{}:{x:entry.x}),...(entry.y===undefined?{}:{y:entry.y})};
     }
     return {data:{version:requestedVersion,tree:tree as unknown as PassiveTreeData['tree'],assets,
@@ -83,6 +92,11 @@ export class PassiveTreeStore {
     const path=await this.safePath(requestedVersion,file);
     if((await lstat(path)).size>limit)throw new TreeResourceError('패시브 트리 데이터 크기가 제한을 초과했습니다.');
     try{return JSON.parse(await readFile(path,'utf8'));}
+    catch(error){if(error instanceof SyntaxError)throw new TreeResourceError('패시브 트리 데이터가 손상되었습니다.');throw error;}
+  }
+
+  private readJsonText(text:string):unknown{
+    try{return JSON.parse(text);}
     catch(error){if(error instanceof SyntaxError)throw new TreeResourceError('패시브 트리 데이터가 손상되었습니다.');throw error;}
   }
 
