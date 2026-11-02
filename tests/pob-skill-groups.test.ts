@@ -24,3 +24,16 @@ test('native group projection rejects stale set, mismatched order, invalid selec
   assert.throws(()=>skillGroupEdit(xml,{...data,operation:{action:'inspect',setId:'1'}}),/조회/);
   assert.throws(()=>editBuild(xml,{type:'skill-native-order',setId:'1',order:['01']}),/출처/);
 });
+test('native copy and cross-set move preserve complete source XML with independent target objects',()=>{
+  let xml=fixture();xml=editBuild(xml,{type:'set-add',kind:'skills',title:'Destination',copyFrom:'1'});xml=editBuild(xml,{type:'active-set',kind:'skills',id:'1'});
+  const ids=parseBuild(xml).skillSets[0].groups.map(group=>group.id),base=result(xml),transfer={sourceSetId:'1',sourceGroupId:'1',targetSetId:'2',targetGroupId:String(ids.length+1),move:false};
+  const data:PobSkillGroups={...base,operation:{action:'copy',setId:'1',groupId:'1',targetSetId:'2'},order:ids,mainSocketGroup:1,calcsSkillNumber:1,transfer};
+  const copied=editBuild(xml,skillGroupEdit(xml,data)),doc=new DOMParser().parseFromString(copied,'application/xml'),sets=doc.getElementsByTagName('SkillSet');
+  assert.equal(sets[0].getElementsByTagName('Skill')[0].toString(),sets[1].getElementsByTagName('Skill')[ids.length].toString());assert.equal(parseBuild(copied).skillSets[0].groups.length,ids.length);assert.equal(parseBuild(copied).skillSets[1].groups.length,ids.length+1);
+  const moved=editBuild(xml,skillGroupEdit(xml,{...data,operation:{...data.operation,action:'move'},order:ids.slice(1),transfer:{...transfer,move:true}}));assert.equal(parseBuild(moved).skillSets[0].groups.length,ids.length-1);assert.equal(parseBuild(moved).skillSets[1].groups.at(-1)?.attributes.future,'1');
+  const local=editBuild(xml,skillGroupEdit(xml,{...data,operation:{...data.operation,targetSetId:'1'},order:[...ids,'1'],transfer:{...transfer,targetSetId:'1'}}));assert.equal(parseBuild(local).skillSets[0].groups.at(-1)?.attributes.future,'1');assert.deepEqual(parseBuild(local).skillSets[1],parseBuild(xml).skillSets[1]);
+});
+test('native transfer refuses missing/forged lineage, wrong target position and movement within the same set',()=>{
+  const xml=fixture(),base=result(xml),ids=parseBuild(xml).skillSets[0].groups.map(group=>group.id),data:PobSkillGroups={...base,operation:{action:'copy',setId:'1',groupId:'1',targetSetId:'1'},order:[...ids,'1'],mainSocketGroup:1,calcsSkillNumber:1,transfer:{sourceSetId:'1',sourceGroupId:'1',targetSetId:'1',targetGroupId:String(ids.length+1),move:false}};
+  assert.throws(()=>skillGroupEdit(xml,{...data,transfer:undefined}),/출처/);assert.throws(()=>skillGroupEdit(xml,{...data,transfer:{...data.transfer!,sourceGroupId:'2'}}),/출처/);assert.throws(()=>skillGroupEdit(xml,{...data,transfer:{...data.transfer!,targetGroupId:'99'}}),/출처/);assert.throws(()=>skillGroupEdit(xml,{...data,operation:{...data.operation,action:'move'},transfer:{...data.transfer!,move:true}}),/출처/);
+});

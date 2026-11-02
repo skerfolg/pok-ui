@@ -32,6 +32,7 @@ export interface ParsedBuild {
   party?:{buffers:Partial<Record<PartyName,string>>;exportEnabled:boolean};
 }
 export type BuildAtomicEdit =
+  | {type:'skill-copy-native';setId:string;groupId:string;targetSetId:string}
   | {type:'skill-native-order';setId:string;order:string[]}
   | {type:'main-skill-native';index:number}
   | {type:'tree-adopt-legacy'}

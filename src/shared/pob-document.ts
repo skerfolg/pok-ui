@@ -465,6 +465,11 @@ export function editBuild(xml: string, edit: BuildEdit): string {
       if(edit.value===undefined)gems[edit.gemIndex-1].removeAttribute(edit.key);
       else{requireInteger(edit.value,'스킬 선택값',edit.key.startsWith('skillPart')?1:0);gems[edit.gemIndex-1].setAttribute(edit.key,String(edit.value));}break;
     }
+    case 'skill-copy-native': {
+      if(edit.setId!==activeId(root,'skills'))throw new Error('현재 활성 스킬 세트에서만 복사할 수 있습니다.');
+      const source=getGroup(getSet(root,'skills',edit.setId),edit.groupId),target=getSet(root,'skills',edit.targetSetId);
+      target.appendChild(source.cloneNode(true));break;
+    }
     case 'skill-native-order': {
       if(edit.setId!==activeId(root,'skills'))throw new Error('현재 활성 스킬 세트만 관리할 수 있습니다.');
       const set=getSet(root,'skills',edit.setId),groups=children(set,'Skill');
