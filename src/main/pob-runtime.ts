@@ -17,6 +17,7 @@ import type {PobTreeRequest,PobTreeResult} from '../shared/pob-tree';
 import type {PobItemControlsRequest,PobItemControls} from '../shared/pob-item-controls';
 import type {PobEquipmentRequest,PobEquipment} from '../shared/pob-equipment';
 import type {PobLoadoutsRequest,PobLoadouts,PobLoadoutSelection} from '../shared/pob-loadouts';
+import {skillGroupEdit,type PobSkillGroups} from '../shared/pob-skill-groups';
 
 interface Manifest {
   schemaVersion:1;protocolVersion:1;runtimeId:string;commit:string;version:string;platform:string;
@@ -123,6 +124,9 @@ export class PobRuntime {
   }
   async loadouts(input:PobLoadoutsRequest):Promise<PobLoadouts>{
     const snapshot=structuredClone(input),parsed=parseBuild(snapshot.xml);projectActiveXml(snapshot.xml);
+    if(snapshot.skillGroups&&(snapshot.manage||snapshot.name||snapshot.treeWorkspace))throw new PobRuntimeError('POB_REQUEST','스킬 그룹 작업의 요청 출처가 둘 이상입니다.');
+    const skillSet=parsed.skillSets.find(set=>set.active);
+    if(snapshot.skillGroups&&(!skillSet||skillSet.id!==snapshot.skillGroups.setId))throw new PobRuntimeError('POB_REQUEST','현재 활성 스킬 세트를 선택해 주세요.');
     const adopt=snapshot.treeWorkspace?.action==='adopt',legacy=hasLegacyPassiveSpec(snapshot.xml);
     if(snapshot.treeWorkspace&&legacy&&!adopt)throw new PobRuntimeError('POB_TREE_LEGACY',LEGACY_TREE_WORKSPACE_MESSAGE);
     if(adopt&&!legacy)throw new PobRuntimeError('POB_TREE_LEGACY','옮길 단일 Spec 원문이 없습니다.');
@@ -130,7 +134,14 @@ export class PobRuntime {
     // Original Loadout management operates on canonical tree order, including filtered rows.
     if(snapshot.treeWorkspace&&(snapshot.manage||snapshot.name))throw new PobRuntimeError('POB_REQUEST','트리 작업의 요청 출처가 둘 이상입니다.');
     const canonicalSets=snapshot.treeWorkspace?{tree:canonical.trees.map(set=>set.id),items:canonical.itemSets.map(set=>set.id),skills:canonical.skillSets.map(set=>set.id),config:canonical.configs.map(set=>set.id)}:undefined;
-    const {result,manifest}=await this.request({op:'loadouts',xml:snapshot.xml,name:snapshot.name,manage:snapshot.manage,treeWorkspace:snapshot.treeWorkspace,canonicalSets},snapshot.runtimeId,undefined,snapshot.requestId);
+    const {result,manifest}=await this.request({op:'loadouts',xml:snapshot.xml,name:snapshot.name,manage:snapshot.manage,treeWorkspace:snapshot.treeWorkspace,canonicalSets,skillGroups:snapshot.skillGroups,canonicalSkillGroups:snapshot.skillGroups?skillSet!.groups.map(group=>group.id):undefined},snapshot.runtimeId,undefined,snapshot.requestId);
+    if(snapshot.skillGroups){
+      const data=result.skillGroups as PobSkillGroups|undefined;
+      if(!data||!isDeepStrictEqual(data.operation,snapshot.skillGroups)||data.setId!==skillSet!.id||!Array.isArray(data.groups)||!Array.isArray(data.order)||data.groups.length!==skillSet!.groups.length||data.groups.some((group,index)=>group.id!==skillSet!.groups[index].id||typeof group.canDelete!=='boolean'||typeof group.label!=='string'))throw new PobRuntimeError('POB_PROTOCOL','원본 스킬 그룹 응답의 요청·출처가 다릅니다.');
+      data.operation=snapshot.skillGroups;
+      if(snapshot.skillGroups.action!=='inspect')skillGroupEdit(snapshot.xml,data);
+      else if(!isDeepStrictEqual(data.order,skillSet!.groups.map(group=>group.id)))throw new PobRuntimeError('POB_PROTOCOL','원본 스킬 그룹 조회가 순서를 바꿨습니다.');
+    }
     if(!Array.isArray(result.choices)||!Array.isArray(result.diagnostics)||!result.identity||!result.equipment)throw new PobRuntimeError('POB_PROTOCOL','원본 통합 구성 응답이 올바르지 않습니다.');
     const map=(value:unknown):PobLoadoutSelection=>{
       const source=value as PobLoadoutSelection,index=Number(source?.tree),plan=result.sets as PobLoadouts['sets'];

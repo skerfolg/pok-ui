@@ -32,6 +32,8 @@ export interface ParsedBuild {
   party?:{buffers:Partial<Record<PartyName,string>>;exportEnabled:boolean};
 }
 export type BuildAtomicEdit =
+  | {type:'skill-native-order';setId:string;order:string[]}
+  | {type:'main-skill-native';index:number}
   | {type:'tree-adopt-legacy'}
   | {type:'loadout-native-sets';sets:PobLoadoutSets}
   | {type:'item-native';id:string;text:string;metadata:PobItemMetadata}

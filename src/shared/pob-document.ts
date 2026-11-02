@@ -465,6 +465,18 @@ export function editBuild(xml: string, edit: BuildEdit): string {
       if(edit.value===undefined)gems[edit.gemIndex-1].removeAttribute(edit.key);
       else{requireInteger(edit.value,'스킬 선택값',edit.key.startsWith('skillPart')?1:0);gems[edit.gemIndex-1].setAttribute(edit.key,String(edit.value));}break;
     }
+    case 'skill-native-order': {
+      if(edit.setId!==activeId(root,'skills'))throw new Error('현재 활성 스킬 세트만 관리할 수 있습니다.');
+      const set=getSet(root,'skills',edit.setId),groups=children(set,'Skill');
+      if(new Set(edit.order).size!==edit.order.length||edit.order.some(id=>!/^\d+$/.test(id)||String(Number(id))!==id||Number(id)<1||Number(id)>groups.length))throw new Error('원본 스킬 그룹 순서의 출처가 올바르지 않습니다.');
+      const copies=edit.order.map(id=>groups[Number(id)-1].cloneNode(true));
+      groups.forEach((group,index)=>{if(index<copies.length)set.replaceChild(copies[index],group);else set.removeChild(group);});
+      break;
+    }
+    case 'main-skill-native': {
+      const selected=activeId(root,'skills'),count=selected?children(getSet(root,'skills',selected),'Skill').length:0;
+      requireInteger(edit.index,'원본 주력 스킬 그룹',1,Math.max(1,count));build.setAttribute('mainSocketGroup',String(edit.index));break;
+    }
     case 'skill-add': {
       const set = getSet(root, 'skills', edit.setId);
       const group = document.createElement('Skill');

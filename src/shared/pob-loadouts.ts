@@ -1,6 +1,7 @@
 import type {BuildDocument,BuildEdit} from './contracts';
 import type {PobInspectionRequest} from './pob-inspection';
 import type {PobTreePatch} from './pob-tree';
+import type {PobSkillGroupOperation,PobSkillGroups} from './pob-skill-groups';
 import {editBuild,parseBuild} from './pob-document';
 export interface PobLoadoutSelection {tree:string;items:string;skills:string;config:string}
 export interface PobLoadoutOperation {action:'new'|'copy'|'rename'|'delete'|'custom'|'reorder';scope?:'tree'|'loadout';treeId?:string;index?:number;sourceName?:string;nextName?:string;title?:string;position?:number;sources?:PobLoadoutSelection}
@@ -8,9 +9,10 @@ export interface PobSetNode {tag:string;attributes:Record<string,string>;childre
 export interface PobSetEntry {id:string;sourceId?:string;copyFrom?:string;title?:string;node?:PobSetNode}
 export type PobLoadoutSets=Record<keyof PobLoadoutSelection,PobSetEntry[]>;
 export interface PobTreeWorkspaceOperation {action:'inspect'|'initialize'|'convert'|'convert-all'|'adopt'|'import-code'|'export-code';version?:string;mode?:'replace'|'copy';title?:string;classId?:number;ascendancyId?:number;code?:string}
-export interface PobLoadoutsRequest extends PobInspectionRequest {runtimeId?:string;requestId?:string;name?:string;manage?:PobLoadoutOperation;treeWorkspace?:PobTreeWorkspaceOperation}
+export interface PobLoadoutsRequest extends PobInspectionRequest {runtimeId?:string;requestId?:string;name?:string;manage?:PobLoadoutOperation;treeWorkspace?:PobTreeWorkspaceOperation;skillGroups?:PobSkillGroupOperation}
 export interface PobTreeCode {text?:string;version:string;warnings:string[];missingNodes:number[];sourceNodes?:number[];inputMissingNodes?:number[]}
 export interface PobLoadouts {
+  skillGroups?:PobSkillGroups;
   buildId:string;revision:number;xmlSha256:string;runtimeId:string;pobCommit:string;
   choices:{name:string;label:string;selection:PobLoadoutSelection}[];selection:PobLoadoutSelection;activeName?:string;requestedName?:string;
   identity:{className:string;ascendClassName:string};equipment:{useSecondWeaponSet:boolean;mainSocketGroup:number};diagnostics:{code:string;message:string;name?:string}[];
