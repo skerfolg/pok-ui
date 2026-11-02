@@ -1,5 +1,21 @@
 # 현재 작업
 
+## 연결 구성의 이름 기반 관리·관계 변화 기록 — 2026-11-03 (17차 진행)
+
+최종: named native6/기존 일반 native6, source `.local/linked-management-native-1793640282299/result.json` 및 Windows packaged `.local/linked-management-native-1793640658461/result.json` **각5개 그룹 통과**. 한국어 복사·혼합 관리 주소·명시적 생존 구성 삭제·undo/redo/revision4 재계산, 공유 spec의 두 연결 제외/실제 세트 보존, 입력 근거와 관계 변화의 재시작 보존을 확인했다. 두 크기 PNG를 직접 시각 확인했다. check160/build/pack:win 통과. 아래 실행 중 표기는 이 결과로 대체한다.
+
+manifest SHA256: runtime `cacd0ee25e46f9dde35484263f94a0e757847572845e7d957a3340998bba6584`, editor `ad1b8694208541a1fa5b44d3a53f977ce7c9c62f4a922cc913db3aef1a1cb05e`. 원본/엔진 소스·문서/ref 변경 없음. named reorder·모호한 이름/버전/특수 공유 조합과 전체 원본 기능은 여전히 미완료이며 #188 해결이나 원본 GUI/portable/모델 검증으로 확대 해석하지 않는다.
+
+검증 갱신: 최종 named native **6개 그룹 통과**, 기존 일반 관리 native **6개 그룹 재통과**. source `.local/linked-management-native-1793640282299/result.json` **5개 그룹 통과**: capability/미지원 reorder·preview 문서 격리, 한국어 raw-name 복사·혼합 index 미리보기, 생존 구성 명시 삭제/undo/redo·재계산, 공유 alias 두 연결 제외/저장 세트 보존·receipt, 재시작. 두 해상도 직접 시각 확인. Windows packaged 동선 실행 중이며 check160/build·pack:win 통과.
+
+원본 목록에는 있으나 ListControl에 없던 brace 구성을 원본 GetLoadoutByName/이름 기반 Popup·서비스로 rename/copy/delete한다. native가 동작별 capability와 opaque 이름/선택 가능한 생존 구성을 제공하며 renderer는 brace 문법을 파싱하지 않는다. 목록 기반 관리와 이름 기반 관리를 함께 지원하고, 마지막 일반 관리 행도 다른 연결 구성이 있으면 이름 기반 삭제를 사용할 수 있다. 이름 기반 삭제는 생존 구성을 명시적으로 요청받고 원본 Delete→Sync→GetLoadoutByName/SetActiveLoadout으로 새 위치를 조회한 뒤 같은 실제 객체가 선택됐는지 검사한다.
+
+원본 연산 전/후 연결 구성과 실제 세트 객체를 비교해 추가/제외/연결 변경을 표시한다. 공유 spec의 한 별칭 이름 변경이 다른 별칭까지 목록에서 없애는 것도 보이며, 실제 세트 제거와 구분한다. 적용 후 계산 receipt의 workspace_operation에 입력 revision/XML hash·검토 runtime·원본 선택/관리 요청·관계 변화를 자동 저장한다. 미리보기/실패/취소는 canonical XML을 바꾸지 않는다.
+
+초기 native5개 그룹 통과: linked raw rename, 한국어 이름 복사와 Life170/Dex25, 공유 spec rename의 두 연결 제외/저장 세트 보존, 명시적 생존 구성·혼합 목록 삭제, 잘못된 입력·미지원 이름 기반 reorder 후 격리. 중간 위치의 생존 spec이 이동하는 추가 사례를 포함한 native6와 실제 Electron/패키지 검사는 진행 중이다. 최초 native 검사의 ItemSet DTO에 없는 attributes 접근을 원문 marker 확인으로 수정했다(제품 데이터 손실이 아니었음). check160/build 통과. 원본 GUI·portable·실제 모델은 이번에 미수행이며 전체 목표는 active다.
+
+runtime `pob-41528f5ed360ff1e0ca5e39a4a47cae12e63053a7f4a8f6fa29eac8ac01611fe`, editor `pob-editor-f4e803b67e03d8b2fab251f28e2452b383615bf3506ff3de0f23d96d4ad3cd0a`, PoB pin/KB 비사용 유지. 디스크 공간 확보는 검증에 사용하지 않은 중간 adapter runtime1a38c606 백업 1개만 workspace 내부 경로/manifest ID/내용/reparse 확인 후 정리했다. 검증된 이전 runtime/사용자 workspace는 보존했고 엔진 저장소는 수정하지 않았다.
+
 ## 최신 체크포인트 — 2026-11-03, 16차
 
 UI 구현 커밋 **`a08ff0a01ca4617b88063e809034bd3eee2170c6`**, 브랜치 `skerfolg/coho`. 원본 Loadout 관리와 XML 출처 보존을 추가했다. native6/source 관리5/Windows packaged 관리5, 후속 표시 source2/packaged2, check160/build/pack:win 통과. 실제 결과/범위와 최초 검사 수정은 아래 16차 및 VALIDATION을 따른다. 과거 체크포인트의 ‘관리 미구현’은 당시 상태다.

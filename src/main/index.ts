@@ -222,6 +222,8 @@ function registerIpc():void{
       if(!['new','copy','rename','delete','custom','reorder'].includes(String(operation.action)))throw new Error('통합 구성 관리 연산이 올바르지 않습니다.');
       for(const key of ['index','position'])if(operation[key]!==undefined&&(!Number.isSafeInteger(operation[key])||Number(operation[key])<1))throw new Error('원본 관리 목록 위치가 올바르지 않습니다.');
       if(operation.title!==undefined)text(operation.title,4096,'원본 구성 이름');
+      for(const key of ['sourceName','nextName'])if(operation[key]!==undefined)text(operation[key],4096,'원본 구성 이름');
+      if(operation.sourceName!==undefined&&operation.index!==undefined)throw new Error('통합 구성 관리 대상의 출처가 둘 이상입니다.');
       if(operation.sources!==undefined){record(operation.sources);for(const key of ['tree','items','skills','config'])text(operation.sources[key],128,'원본 복사 세트');}
     }
     return pobRuntime.loadouts(request as unknown as import('../shared/pob-loadouts').PobLoadoutsRequest);

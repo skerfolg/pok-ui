@@ -1,5 +1,16 @@
 # 로컬 검증
 
+## 원본 이름 기반 연결 구성 관리 — 2026-11-03 (17차 진행)
+
+- 최종 Windows packaged `.local/linked-management-native-1793640658461/result.json` **5개 그룹 통과**, source `.local/linked-management-native-1793640282299/result.json`도 동일5개 그룹 통과. native6/기존 일반 native6/check160/build/pack:win 통과. capability별 제어·한국어 복사·미지원 reorder 표시, 혼합 index/name 관리·생존 구성 명시 삭제·정확한 undo/redo/revision4 계산, 공유 alias collateral 변화/실제 저장 세트 보존, 입력 revision/hash/runtime·관계 receipt와 XML의 재시작을 검사했다. 1920/1024 PNG 직접 시각 확인했다. 아래 진행 중은 이 최종 결과로 대체한다. 원본 GUI·portable·실제 모델은 미수행이다.
+
+- 최종 named native `.local/standalone-pob/linked-management-result.json` **6개 그룹 통과**, 기존 일반 관리 `.local/standalone-pob/loadout-management-result.json` **6개 그룹 재통과**. 관련 없는 첫/마지막 spec 사이에 있는 생존 brace 대상을 삭제 후 원본 재조회로 선택하고 실제 Life170/Dex25까지 확인했다. 원본 연결 비교는 숫자 spec ID가 아닌 객체 동일성으로 하므로 위치 이동을 거짓 구성 변경으로 표시하지 않는다.
+- source `.local/linked-management-native-1793640282299/result.json` **5개 그룹 통과**. opaque 이름 기반 rename/copy와 미지원 reorder 상태, 한국어 복사/reference 수치, 원본 index/named 혼합 목록의 명시적 생존 구성 삭제, undo/redo와 revision4 계산, 공유 spec rename의 두 연결 제외/저장 세트 보존, workspace_operation 입력 근거/관계 변화의 재시작 보존을 검사했다. 두 해상도 PNG 직접 시각 확인. Windows packaged 검사는 진행 중이며 check160/build/pack:win 통과.
+
+- native 최초5개 그룹 통과 (`.local/standalone-pob/linked-management-result.json`): 원본 raw-name rename·연결 목록 전후 변화, 한국어 복사·canonical lineage·실제 Life170/Dex25, 공유 spec 별칭 두 개의 목록 제외와 두 ItemSet 보존, 명시적 생존 구성/혼합 목록 삭제, missing/unknown/미지원 reorder 거부 후 다음 입력 불변. 최초 실행의 DTO 없는 attributes 접근은 raw XML marker 검증으로 고친 뒤 재실행했다. UI나 엔진 검사를 우회하지 않았다.
+- 현재 중간에 있는 brace spec을 삭제 후 원본 재조회로 선택하는 추가 native 사례, 기존 일반 관리 회귀 및 source/Windows packaged 전체 동선은 실행 중이다. check160/build 통과. Vite native-config/chunk 경고는 기존과 같으며 원본 GUI/portable/실제 모델 완료로 처리하지 않는다. 개인 입력은 사용하지 않았다.
+- native before/after 객체 관계에서 얻은 added/removed/changed와 입력 revision/hash/runtime을 계산 receipt에 자동 보관한다. 선택 이름은 opaque 값이며 renderer에서 brace 매칭/새 생존 구성 추정을 구현하지 않는다. 원본 ListControl이 없는 named reorder는 명시적으로 제공하지 않는다.
+
 ## 원본 Loadout 관리·XML lineage — 2026-11-03 (16차 진행)
 
 - 최종 표시 전용 Windows packaged `.local/loadout-management-native-1793638401983/result.json` **2개 그룹 통과**: 비활성 rename의 네 세트 before/after, 삭제할 네 세트·마지막 행의 viewport bounds, 취소 후 원문/revision 불변. 1920/1024 PNG 직접 시각 확인했다. 전체 source/packaged5개 그룹 이후의 변경은 검토 표시이며 관리/적용 backend는 같다. native6/check160/build/최종 pack:win도 통과했다. 아래 표시 검사 진행 중은 이 결과로 대체한다. 합성 입력만 사용했으며 portable·원본 GUI·실제 모델은 미수행이다.

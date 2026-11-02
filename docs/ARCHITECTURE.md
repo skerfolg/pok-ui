@@ -1,5 +1,7 @@
 # 구조와 배포 경계
 
+17차(2026-11-03): native 관리 metadata는 원본 목록 index 또는 원본이 제공한 sourceName 및 동작별 capability를 반환한다. named delete는 사용자 지정 nextName을 원본 API로 재조회/선택하고 실제 생존 객체의 동일성을 검증한다. 원본 구성의 객체 관계 전후 차이는 native에서 계산하며 UI는 결과를 표시한다. 적용 계산의 workspace_operation은 입력 revision/hash·검토 runtime·요청/선택·연결 변화만 자동 저장하며 개인 XML을 중복 저장하지 않는다. renderer는 brace/게임 규칙을 구현하지 않는다.
+
 16차(2026-11-03): loadout-management.lua는 원본 관리 컨트롤을 replay하고 Copy API의 객체 출처를 기록한다. native 관리 목록의 실제 순서를 보존하기 위해 Loadout은 명확한 active set 검증 후 canonical raw XML을 로드한다. `loadout-native-sets` 패치는 기존 노드를 유지/복제하고 새 노드만 원본 Save JSON으로 생성한다. 부모 섹션·공유 item library·unknown 필드는 재생성하지 않는다. 모든 변경/제거는 검토와 revision 검사를 거쳐 적용되며 취소/오류는 격리 요청 안에 머무른다.
 
 15차(2026-11-03): loadouts.lua는 원본 Build의 목록/이름·식별자 해석/동시 전환을 호출한다. main은 projectActiveXml의 spec 위치를 canonical 위치로 역매핑하고 입력/출처를 응답에 붙인다. `loadoutEdit`는 원본이 반환한 네 세트·직업·무기/주력 그룹만 원자 패치한다. renderer는 변경을 검토하고 explicit apply 후 새 계산하며, 요청별 취소·revision/XML/runtime/name 검사로 늦은 결과를 차단한다. Loadout 관리 CRUD/Custom/Reorder는 아직 별도 미구현이다. 새로운 매칭·게임 규칙을 renderer에 만들지 않는다.
