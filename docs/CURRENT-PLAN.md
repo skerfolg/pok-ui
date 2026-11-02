@@ -373,3 +373,21 @@ npm.cmd run build가 exit0이고 실제 main/preload/renderer 산출물 SHA를 �
 증거는 엔진 private r6-ui-app-build-v1.json 및 r6-electron-file-ui-v1/result.json이다.
 앱 소스 번들 build 대기는 이 범위에서 해소됐다. 설치 패키지·독립 backend·정상 엔진
 연결·실제 모델/오라클 전체 동선은 아직 미완료다. 원격 push는 승인 전 실행하지 않는다.
+
+
+## R6 독립 worker 클라이언트 — 2026-11-02
+
+사용자가 A안과 기존 `skerfolg/pok-r6-design-records` 원격 반영을 승인했다. draft PR #3을
+생성했으며 사용자 병합을 기다린다. `PobWorkerConnection`과 별도 worker identity 계약을
+추가했다. 기존 PoK/KB identity를 빈 값으로 대체하지 않는다. 정확한 XML revision과
+실행 소유자를 확인하고, 정상 종료 시 Native 정리 확인과 프로세스 종료를 기다린다.
+비정상 종료 후 정리가 확인되지 않으면 대체 worker 시작을 거부한다.
+
+실제 Node 자식 프로세스 기반 전송 테스트4개가 통과했다. 전체 `npm run check`는
+169통과·실패/skip0이며 타입/계층 검사도 통과했다. 전송 fixture의 수치는 Native 계산
+검증으로 집계하지 않는다. 실제 독립 Windows 번들은 엔진의 자체 봉인 검증을 통과했으나
+UI Node 자식에서 특정 PoB txt 파일 읽기가 EBADF로 실패했다. UI 연결 성공이 아니다.
+
+다음은 이 접근 오류의 원인 분리, schemaVersion2 카탈로그와 독립 수동 backend의 실제
+consumer 연결, 선택 PoK 분리, Electron 계산→저장→재시작 검증이다. 앱 main의 기존
+PoK 의존 계산 경로는 아직 교체하지 않았다. R6·배포 완료와 PoB 전체 기능 동등성을 선언하지 않는다.
