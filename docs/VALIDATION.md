@@ -1,5 +1,15 @@
 # 로컬 검증
 
+## 원본 스킬 그룹 순서·삭제 — 2026-11-03 (25차)
+
+- 최종 source `.local/skill-groups-native-1793660957383/result.json` 및 Windows packaged `.local/skill-groups-native-1793661015590/result.json` **각5개 그룹 통과**. pending/preview 취소·문서 격리, 원본 양방향 drag/중복 이름 source 선택·확인 삭제·두 selector, full numeric stats/unknown/비활성 XML·원문 보존, undo/redo/revision5 새 계산·저장/재시작·PoK 미연결을 확인했다. packaged는 실제 배포 exe와 그 resources에 포함된 runtime/editor를 사용했고 경로 junction도 확인했다. source/packaged의1920/1024 preview를 직접 시각 확인했다. 기존 `sets-config-desktop-smoke.cjs` source8(`.local/sets-config-native-1793660903295/result.json`)도 통과했다. 아래 진행 중을 이 최종 결과로 대체한다.
+- 중간 source `.local/skill-groups-native-1793660720723`와 packaged `.local/skill-groups-native-1793660764737`는4개 그룹 후 restart 전체 객체 비교에서 -0→JSON 0 표현 차이로 실패했다. 이전 evidence 기대 실패와 구분한다. 제품 계산/저장을 바꾸지 않고 기대 객체만 실제 JSON 저장 형식으로 비교해 최종 재실행했다. 원본 GUI/OS clipboard/portable/모델·전체 조합/장기 ledger 완료를 주장하지 않는다.
+- `npm run check` 186개·boundary/type 통과, build/pack:win 통과. `pob-skill-groups.test.ts` 3개: deep unknown/비활성 세트·형제 위치, 빈 세트/선택 fallback, 잘못된 요청/순서/선택/inspect 적용 거부. 첫 sandbox Node worker EPERM은 elevated 실행으로 통과했으며 제품 실패가 아니다.
+- `tests/pob-skill-groups-smoke.cjs` 실제 native 4개 그룹 통과, `.local/standalone-pob/skill-groups-result.json`: 중복 이름 양방향 drag·두 selector/전체 numeric output 보존, 원본 확인 삭제·마지막/유일 그룹 삭제의 새 계산, invalid source/position/비활성 요청 거부 후 다음 계산 불변. unknown group/gem attrs·비활성 세트와 원문을 보존했다.
+- 첫 source `.local/skill-groups-native-1793660531766/result.json`: 3개 그룹 뒤 redo receipt 기대에서 중단. pending/preview 취소·문서 전환, 두 크기 preview, 이동 source 선택 유지·양방향 이동·삭제/새 revision 계산까지는 통과했다. undo에서 다른 XML 계산 후 redo의 receipt 자동 복원은 기존 계약/구현에 없으며 장기 ledger 미완료를 드러냈다. 하네스의 잘못된 근거 계승 기대를 수정했으며 최종 source5/packaged5 재실행이 통과했다.
+- packaged 하네스는 이번부터 exe와 함께 배포된 resources의 runtime/editor를 별도 합성 workspace에 junction으로 연결해 그 실제 payload를 사용한다. 두 크기 source preview를 직접 시각 확인했다. 원본 PoB GUI/OS clipboard/portable/선택 PoK/모델·모든 특수 그룹 조합은 미수행이다.
+
+
 ## 노트 색상 편집 — 2026-11-03 (24차)
 
 - 최종 Windows packaged `.local/notes-native-1793659409290/result.json` **6개 그룹 통과**, source `.local/notes-native-1793659213134/result.json`도6개 그룹 통과. 긴 paint의 전체 높이·scroll 정합/코드·색상 edit/팔레트 접근성·원문/unknown·local/build undo·zoom·문서 격리/재시작·PoK 미연결을 확인했다. source/packaged 두 크기 직접 시각 확인, renderer pageerror 없음. 기존 sets-config 최종 source `.local/sets-config-native-1793659219771/result.json` **8개 그룹 통과**. 아래 진행 중은 parity2/unit7/check183/build/pack:win/source6/packaged6/기존8 통과로 대체한다. OS clipboard/IME·원본 GUI pixel/font parity·portable·실제 모델은 미수행이다.

@@ -1,5 +1,18 @@
 # 현재 작업
 
+## 원본 스킬 그룹 순서·삭제 — 2026-11-03 (25차)
+
+UI 구현 **`061319d42bcc242a5365dd7c3204d04cfaf117e9`**, 브랜치 `skerfolg/coho`. 다른 PC는 이후 인계 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다. 다음은 원본 그룹 복사/붙여넣기·세트 간 이동 계약과 generated-group lineage 조사, 원본 control/옵션/명령 전수 대응표 및 남은 전체 수동 기능이다. 전체 목표 active.
+
+기존 readLoadouts에 원본 SkillListControl의 순서/삭제 계약과 검토·적용·새 계산 UI를 연결했다. LoadSkill 객체 lineage로 중복 이름을 구분하며 deep canonical XML·비활성 세트·주력/Calcs 선택을 보존한다. 원본 source 그룹 삭제 제한과 복원 중 생성/교체된 그룹의 lineage 불충분은 명시 진단한다. [계약과 남은 범위](POB-SKILL-GROUPS.md)를 따른다. 그룹 복사/붙여넣기/세트 간 이동·장기 revision ledger 및 전체 원본 기능은 남으며 전체 목표 active다.
+
+최종 source `.local/skill-groups-native-1793660957383/result.json` / Windows packaged `.local/skill-groups-native-1793661015590/result.json` **각5개 그룹 통과**. native4/unit3/check186/build/pack:win 및 기존 sets-config source8(`.local/sets-config-native-1793660903295/result.json`) 통과. pending/preview 취소·문서 전환, 중복 이름 양방향 이동·source 선택 유지, 원본 확인 삭제·주력/Calcs selector·unknown/비활성 XML·전체 수치 보존, undo/redo/revision5 새 계산·저장/재시작·PoK 미연결을 확인했다. 두 크기 source/packaged preview를 직접 시각 확인했다. packaged 실행은 실제 exe와 포함된 runtime/editor payload를 사용했다. 아래 진행 중/하네스 실패는 이 최종 결과로 대체한다.
+
+중간 실패: 첫 source는3개 그룹 후 redo receipt를 잘못 기대해 중단됐다. 다른 XML의 계산을 거친 뒤 근거를 되살리는 장기 ledger는 아직 없다. 다음 source/packaged는4개 그룹 후 restart 비교에서 -0/JSON 0 표현 차이로 중단됐다. 하네스 기대만 보정해 위 최종 source5/packaged5로 재실행했고 제품 계산/저장은 바꾸지 않았다. 초기 실패를 전체 통과로 집계하지 않는다. 원본 GUI 왕복/portable·OS clipboard·선택 PoK/모델·전체 조합은 미수행/미완료다. 이번은 독립 수동 편집 보완이며 #188 해결/재평가 준비 완료를 선언하지 않는다.
+
+PoB 0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`, KB/PoK 비사용. runtime `pob-93debe057e4392651d0e374a93b9dfd5435e8159526060727541dc430d5cd904` / manifest SHA256 `e98bf09f7c0ef356d10bb6d90615be017769569f43858717c77964a114383f72`; editor `pob-editor-d8dc6fecbc8c8ddc6b8dbdf05275af58a5791af172f0b4b5610719e2b27afdd2` / SHA256 `8171aa2abeb80825c5aca250e279a352fb0f67cce8a2ef532af7ca7ab1a687da`. 원본/공유 엔진 소스·문서/ref 수정 없음. 공간 확보는 절대 workspace 경로·manifest identity·단일 known content·reparse 검사 후 비검증 intermediate bef56/94a667의 runtime/editor 백업4개만 제거했다. 검증 checkpoint/사용자 workspace는 보존했다.
+
+
 ## 노트 색상 편집·코드 보기·범위/초안 동작 — 2026-11-03 (24차)
 
 UI 구현 **`219b76b386dcad58a0e0cbebc3e05ee9c9105e71`**, 브랜치 `skerfolg/coho`. 다른 PC는 이후 인계 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다. 다음은 원본 세부 control/옵션/남은 전체 수동 기능과 입력 실패·장기 근거 감사다. 전체 목표 active.

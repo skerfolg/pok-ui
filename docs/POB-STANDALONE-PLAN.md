@@ -1,5 +1,8 @@
 # 독립 PoB 작업 공간 — 설계 및 기능 대응표
 
+25차(2026-11-03): 원본 SkillListControl의 위/아래 이동·확인 삭제를 검토/적용/새 계산으로 연결했다. LoadSkill object lineage로 중복 label/unknown/비활성 XML과 main/Calcs actor를 보존한다. native4/unit3/source5/Windows packaged5/기존 sets-config source8/check186/build/pack:win·두 크기 직접 확인 통과. generated-group lineage·복사/붙여넣기/세트 간 이동·전체 삭제/drag UI·장기 ledger와 나머지 전체 기능은 남는다. [계약/범위](POB-SKILL-GROUPS.md).
+
+
 2026-11-02 재개. 전체 목표는 PoK 미설치·미연결에서 원본 PoB의 모든 사용자 작업을 수행하고, 이후 선택 PoK 연결 시 양쪽 PoB 출처를 확인하는 것이다. 이 표는 완료 범위를 축소하지 않는다.
 
 ## 실행 경계
@@ -42,7 +45,7 @@ XML은 편집 정본이다. 계산은 제출 시점 XML을 격리된 원본 PoB�
 |---|---|---|
 | ImportTab / 빌드 관리 | 독립 새 빌드·직업 metadata, XML/공유코드/JSON 가져오기·내보내기, revision/undo/redo·저장/재시작, 검색·복사·이름/가상 폴더·삭제 보관함/복원 | 계정/캐릭터 가져오기, 원본 파일 기반 빌드 관리와 GUI 형식 왕복 검증 |
 | ItemsTab | 독립 base/unique/mod 카탈로그; 슬롯·원문·생성/장착/해제; rare affix/roll·quality·unique variant UI/원본 API; 세트 CRUD; 원본 단순 옵션 metadata/콜백·품질/소켓/룬 검토→적용→계산; 성유/원본 오염 팝업·고유 roll; 저장 목록 원본 장착 콜백; 동적 장비 내부 주얼·활성 무기/연동 스킬 전환 | 특수 오염/성유/장비 주얼 조합·카탈로그/원문 관련 부수 변경·affix/일반 범위/특수 제작 전체, 원본 필터·후보 비교/요구량 표시. variant/catalyst/cluster 연결 컨트롤과 모든 고유의 실제 동선 전수 검증 |
-| SkillsTab | 독립 gem/skill 카탈로그; 그룹/젬/레벨/퀄리티·활성·주력/Full DPS; 세트 CRUD; 원본 활성 효과/모드/부분/단계·지뢰 컨트롤 연결. Ice Nova 모드 변경 native 검증 | 미니언·아이템 부여 효과/모드, 단계형·지뢰 실제 빌드 UI 검증, 보조·소켓·요구량·호환성 전체. 현재 젬 외부 부여 효과는 미지원 진단 표시 |
+| SkillsTab | 독립 gem/skill 카탈로그; 원본 그룹 위/아래 이동·확인 삭제/두 selector 보존·검토/새 계산; 그룹/젬/레벨/퀄리티·활성·주력/Full DPS; 세트 CRUD; 원본 활성 효과/모드/부분/단계·지뢰 컨트롤 연결. Ice Nova 모드 변경 native 검증 | 그룹 복사/붙여넣기·세트 간 이동·전체 삭제/drag UI·generated-group lineage, 미니언·아이템 부여 효과/모드, 단계형·지뢰 실제 빌드 UI 검증, 보조·소켓·요구량·호환성 전체. 현재 젬 외부 부여 효과는 미지원 진단 표시 |
 | TreeTab / PassiveSpec | 0_1~0_5 좌표·이미지, 확대/이동/검색·상세·ID 편집, 세트 CRUD UI; 위치 기반 활성 번호 보존; 원본 경로 할당/종속 제거와 지도 강조, 무기 세트 1/2 색상·능력치 선택/재선택·일반 주얼 장착/해제의 native 패치; 원본 직업 reset/connect·전직 변경 미리보기/적용·새 계산; 초기 버전/직업 선택·복사/교체/전체 버전 변환 검토·새 계산 | 단축키·모든 직업/전직 조합과 활성 spec 전환의 표시 동기화 감사·특수 주얼/동적 그래프·특수 노드, 과거 버전별 동등성, 구형 혼합/다중 Spec 정규화·네트워크 tree URL/PoEPlanner·code 전체 조합 |
 | ConfigTab | 원본 7분류·651 정의의 표시/가용성·기본값·선택지·tooltip을 실제 XML로 평가하는 UI; 0/false/미설정; 세트 CRUD; 원문 고급 편집·placeholder 보존 | 모든 실제 빌드/부모 의존 조합·적/보스/상태 상호작용 전수 검증, 특수 툴팁·연관 위치 이동과 전체 UI 동등성 확인. 정의 개수는 기능 완료 수가 아님 |
 | CalcsTab | 독립 실제 계산; 원본 분류/표/포맷과 TEXT/TABLE 분해·modifier 출처; 그룹/버프 모드/플레이어·미니언 선택; Calcs 전용 효과/모드/부분/단계·지뢰; revision/XML hash/runtime 귀속·과거 저장값 분리 | 반경 지도 시각화·분해 출처 위치 이동, 미니언 종류/전용 스킬 컨트롤, 원본 GUI 및 모든 지원 빌드·컨트롤 동등성 검증 |

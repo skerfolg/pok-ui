@@ -1,5 +1,8 @@
 # 구조와 배포 경계
 
+25차: `readLoadouts.skillGroups`는 SkillsTab.LoadSkill의 원본 삽입 객체를 임시 관측하고 SkillListControl drag/OnSelDelete 및 CalcSetup을 실행한다. host는 source inventory/요청 순서를 검증하고 `skill-native-order`로 기존 DOM 전체를 source 순서대로 배치한다. 주력/Calcs 선택은 native 반환값이다. NativeSkillGroups는 XML hash/revision/runtime·generation에 귀속한 검토/취소/적용/계산 receipt만 담당한다. generated-group lineage가 없으면 진단/거부하고 이름 매칭이나 renderer 계산으로 우회하지 않는다. 계약/미완료 범위는 POB-SKILL-GROUPS를 따른다.
+
+
 24차: 노트 canonical raw text와 presentation projection을 분리한다. renderer의 color escape/CRLF offset mapping은 visible selection/beforeinput을 raw range로 변환하고, 원본 SetColor 규약으로 서식을 편집한다. color span과 textarea의 font/width/padding/scroll을 동기화하며 paint pre는 일반 코드블록의 높이 제한을 상속하지 않는다. raw/colored view·font zoom·local draft history는 XML/revision을 바꾸지 않는다. 기존 notes patch로 명시 적용하고 unknown XML/원본/undo를 보존한다. 붙여넣기/HTML은 텍스트로 다루며 임의 HTML/CSS를 실행하지 않는다. 규약/참고 source provenance와 실제 미검증 범위는 POB-NOTES를 따른다.
 
 23차: item/gem catalog 접근은 native data/runtime source·ID·commit 및 양쪽 지원 tree 목록에 귀속한다. defaultTreeVersion은 new-build 기본값이며 과거 지원 tree에 대한 global data의 금지 기준이 아니다. 직업 metadata는 기존 native 버전별 control을 사용한다. 공통 request 경계는 XML/item buildXml/party supportXml의 모든 canonical Spec에 선언된 version을 검사해 unsupported popup/close 후 남은 객체를 요청한 문맥으로 사용하지 못하게 한다. root Spec/생략 version의 원본 계약과 game targetVersion을 이 검사로 재해석하지 않는다. renderer도 unsupported inactive 세트를 표시하며 원문/세트를 제거하거나 최신 version으로 바꿔 검사하지 않는다.
