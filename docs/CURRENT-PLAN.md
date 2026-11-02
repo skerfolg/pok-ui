@@ -1,5 +1,19 @@
 # 현재 작업
 
+## 초기 트리·원본 버전 변환 — 2026-11-03 (20차)
+
+최종 source `.local/tree-workspace-native-1793650856862/result.json` / Windows packaged `.local/tree-workspace-native-1793650959965/result.json` **각7개 그룹 통과**. native 작업6·legacy guard1·기존 native tree5·check167/build/pack:win 통과. 명시 초기 버전/직업, 복사/교체/전체 변환, 미적용/입력 변경/대기 취소·문서 격리, unknown/originalXml, undo/redo/revision6 새 계산, bare Warrior 초기화, legacy 실제 IPC 거부/원문0, 다중 문서/계산/receipt 재시작을 확인했다. 두 해상도의 source/packaged 검토 화면 직접 시각 확인. 아래 실행 중/중간 실패는 이 최종 결과로 대체한다.
+
+PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB/PoK 비사용. runtime `pob-ac7d54149c8c54f756b1379a4ec977d59aff2675602a04061c0ae784b55d32a9`(1711파일), manifest SHA256 `748777f51573dcfbdf6c6c0f582b5565db54108ffedaa0de8c03c7a86f1e28b1`; editor `pob-editor-c6079d8bbc361f6d21d70ed45674936abb01deed9561acd1970bcd17d1b7bce5`, manifest SHA256 `b79eeaeda31bfb397a0bd04993eb38850c97d9a8ec9223407a456f7e1f28e24e`. 원본/공유 엔진 소스·문서/ref 변경 없음.
+
+남은 범위: root의 단일 Spec 직접 편집/정규화, 트리 URL 동선·전수 버전/직업/전직/특수 주얼, 원본 control/옵션/명령 전수 대응표, 고급 아이템·스킬/미니언·계산/파티/노트·네트워크/옵션/단축키, 실제 PoB GUI 왕복·portable·선택 PoK/AI 결합/호환 검증. 이번 새 엔진 결함은 확인하지 않았으며 root Spec은 엔진이 읽을 수 있으나 UI canonical 편집 형식이 아직 대응하지 않는 제약이다. 지원 수동 작업은 가능하지만 #188의 최종 조합·실물 피드백·에이전트 재설계 검증을 하지 않았으므로 해결/재평가 준비 완료를 선언하지 않는다. 전체 목표 active.
+
+원본 버전 dropdown의 Convert/Copy + Convert popup 및 ConvertAll, 초기화된 원본 spec의 직업/전직·이름 컨트롤을 기존 readLoadouts 경로에 연결했다. 트리가 없는 XML에서는 버전/직업을 명시 선택하며, 조회 결과는 적용할 수 없다. 변환 spec은 기존 canonical XML의 source/copy lineage와 native Save의 알려진 최종 필드를 반영해 unknown 필드를 보존한다. 새 UI는 요청·revision/XML/hash/runtime 확인과 명시 미리보기·적용/새 계산·자동 receipt를 사용한다. 전체 기능 목표는 유지한다.
+
+추가 보완: native JSON의 객체 키 순서와 요청 내용을 구분해 비교하고 UI에는 검증된 원래 요청 순서로 돌려준다. 섹션이 전혀 없는 문서에서 새 parent를 자기 자식처럼 replace하던 canonical sets 삽입을 수정했다. 버전 변환에는 원본 최종 Save의 알려진 전체 상태를 반영해 로드 시 정규화된 노드/소켓이 다시 잔류하지 않게 하며, 원래 XML의 unknown 자식/속성은 보존한다. UI는 엔진 복원 후의 연산 변화와 저장 입력→변환본의 실제 노드/소켓 차이를 함께 표시한다. 초기화/복사/교체/전체 변환/빈 문서의 실제 계산은 중간 native 실행에서 통과했으며 최종 미복원 ID/거부 검사·GUI는 실행 중이다. 하네스의 없는 Notes 처리, PoB2 루트·주력 그룹 기본값, 유효 직업 없는 별도 fixture 오류는 제품/엔진 결함으로 집계하지 않는다.
+
+첫 native inventory에서 미로드 과거 tree에 UpdateClassDropdowns를 호출해 nil 오류가 났다. 원본 main:LoadTree의 lazy loading 계약을 호출하도록 보완했다. 이후 런타임 staging/check가 C: ENOSPC로 중단됐다. workspace 절대 경로·내용 whitelist·reparse 검사 후 15~17시 생성 runtime/editor 백업12개와 정확한 실패 staging1개만 정리해 약4.2GB를 확보했다. 18/19차 검증 백업·사용자 작업 공간·엔진 소스는 보존했다. 검사 재실행 중이며 아직 native/GUI/패키지 성공을 선언하지 않는다.
+
 ## TreeView 원본 관리·미변경 XML 섹션 보존 — 2026-11-03 (19차)
 
 UI 구현 **`e21b30be39266f1845064d4fa6a1968354e97d2a`**, 브랜치 `skerfolg/coho`. 다른 PC에서는 이 구현 이후의 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다. 다음은 트리 없는 문서의 원본 초기화/생성 및 버전 선택·변환 API 조사/연결, 원본 control/명령 전수 목록의 세분화, 고급 장비·스킬/미니언·특수 트리·옵션/네트워크/단축키/노트·GUI 왕복·portable·선택 PoK/AI 잔여 결합이다. 전체 목표는 active다.

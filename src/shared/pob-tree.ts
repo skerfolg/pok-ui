@@ -1,5 +1,5 @@
 import type {PobInspectionRequest} from './pob-inspection';
-export interface PobTreePatch {attributes:Record<string,string>;buildAttributes?:Record<string,string>;weaponSets?:Record<string,string>;attributeOverrides?:Record<string,string>;sockets?:Record<string,string>;url?:string}
+export interface PobTreePatch {attributes:Record<string,string>;buildAttributes?:Record<string,string>;weaponSets?:Record<string,string>;attributeOverrides?:Record<string,string>;sockets?:Record<string,string>;url?:string;replaceState?:boolean}
 export interface PobTreeRequest extends PobInspectionRequest {runtimeId?:string;nodeId?:number;action?:'allocate'|'deallocate'|'attribute'|'jewel'|'character';allocMode?:number;attributeIndex?:number;jewelItemId?:number;classId?:number;ascendancyId?:number;classChoice?:'reset'|'connect'}
 export interface PobTreeResult {
   buildId:string;revision:number;xmlSha256:string;runtimeId:string;pobCommit:string;treeVersion:string;

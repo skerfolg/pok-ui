@@ -5,7 +5,8 @@ import { isAbsolute, join, relative, resolve } from 'node:path';
 import { sha256File } from '../../scripts/file-integrity.mjs';
 import type { PobRuntimeInfo } from '../shared/pob-runtime';
 import type { BuildDocument, Calculation } from '../shared/contracts';
-import { projectActiveXml,parseBuild } from '../shared/pob-document';
+import { projectActiveXml,parseBuild,hasLegacyPassiveSpec,LEGACY_TREE_WORKSPACE_MESSAGE } from '../shared/pob-document';
+import {isDeepStrictEqual} from 'node:util';
 import { xmlHash } from './build-proposals';
 import type {PobEditorCatalog} from '../shared/pob-editor';
 import type {ItemRenderRequest,ItemRenderResult} from '../shared/game-data';
@@ -122,8 +123,11 @@ export class PobRuntime {
   }
   async loadouts(input:PobLoadoutsRequest):Promise<PobLoadouts>{
     const snapshot=structuredClone(input),parsed=parseBuild(snapshot.xml);projectActiveXml(snapshot.xml);
+    if(snapshot.treeWorkspace&&hasLegacyPassiveSpec(snapshot.xml))throw new PobRuntimeError('POB_TREE_LEGACY',LEGACY_TREE_WORKSPACE_MESSAGE);
     // Original Loadout management operates on canonical tree order, including filtered rows.
-    const {result,manifest}=await this.request({op:'loadouts',xml:snapshot.xml,name:snapshot.name,manage:snapshot.manage},snapshot.runtimeId,undefined,snapshot.requestId);
+    if(snapshot.treeWorkspace&&(snapshot.manage||snapshot.name))throw new PobRuntimeError('POB_REQUEST','트리 작업의 요청 출처가 둘 이상입니다.');
+    const canonicalSets=snapshot.treeWorkspace?{tree:parsed.trees.map(set=>set.id),items:parsed.itemSets.map(set=>set.id),skills:parsed.skillSets.map(set=>set.id),config:parsed.configs.map(set=>set.id)}:undefined;
+    const {result,manifest}=await this.request({op:'loadouts',xml:snapshot.xml,name:snapshot.name,manage:snapshot.manage,treeWorkspace:snapshot.treeWorkspace,canonicalSets},snapshot.runtimeId,undefined,snapshot.requestId);
     if(!Array.isArray(result.choices)||!Array.isArray(result.diagnostics)||!result.identity||!result.equipment)throw new PobRuntimeError('POB_PROTOCOL','원본 통합 구성 응답이 올바르지 않습니다.');
     const map=(value:unknown):PobLoadoutSelection=>{
       const source=value as PobLoadoutSelection,index=Number(source?.tree),plan=result.sets as PobLoadouts['sets'];
@@ -133,6 +137,8 @@ export class PobRuntime {
       return selection;
     };
     if(snapshot.manage&&!result.sets)throw new PobRuntimeError('POB_PROTOCOL','원본 관리 연산의 세트 출처가 없습니다.');
+    if(snapshot.treeWorkspace&&(!result.sets||!isDeepStrictEqual((result.treeWorkspace as PobLoadouts['treeWorkspace'])?.operation,snapshot.treeWorkspace)))throw new PobRuntimeError('POB_PROTOCOL','원본 트리 작업 응답이 요청과 다릅니다.');
+    if(snapshot.treeWorkspace)result.treeWorkspace={...result.treeWorkspace as NonNullable<PobLoadouts['treeWorkspace']>,operation:snapshot.treeWorkspace};
     return{...result,operation:snapshot.manage,choices:result.choices.map((value:unknown)=>{const choice=value as PobLoadouts['choices'][number];if(typeof choice.name!=='string'||typeof choice.label!=='string')throw new PobRuntimeError('POB_PROTOCOL','원본 통합 구성 이름이 올바르지 않습니다.');return{...choice,selection:map(choice.selection)};}),selection:map(result.selection),buildId:snapshot.buildId,revision:snapshot.revision,xmlSha256:xmlHash(snapshot.xml),runtimeId:manifest.runtimeId,pobCommit:manifest.commit} as PobLoadouts;
   }
   async calcs(input:PobCalcsRequest):Promise<PobCalcs>{

@@ -1,22 +1,7 @@
 -- Original PassiveSpec owns all pathing, dependency and allocation decisions.
-return function(editor)
+return function(editor,states)
   local function array()return setmetatable({},{__jsontype='array'})end
-  local function state(spec)
-    local xml={elem='Spec'};spec:Save(xml)
-    local result={attributes=xml.attrib,weaponSets={},attributeOverrides={},sockets={}}
-    for _,node in ipairs(xml)do
-      if node.elem=='URL' then result.url=node[1]
-      elseif node.elem:match('^WeaponSet%d+$')then result.weaponSets[node.elem]=node.attrib.nodes or ''
-      elseif node.elem=='Overrides'then for _,entry in ipairs(node)do if entry.elem=='AttributeOverride'then result.attributeOverrides=entry.attrib end end end
-      if node.elem=='Sockets'then for _,entry in ipairs(node)do result.sockets[entry.attrib.nodeId]=entry.attrib.itemId end end
-    end
-    return result
-  end
-  local function differences(a,b)
-    local changes={};for key,value in pairs(b)do if a[key]~=value then changes[key]=value end end
-    for key in pairs(a)do if b[key]==nil then changes[key]='' end end
-    return changes
-  end
+  local state,differences=states.read,states.differences
   return function(request)
     editor.load(request.xml)
     local spec=build.spec;spec.allocMode=request.allocMode or 0;spec:BuildAllDependsAndPaths()

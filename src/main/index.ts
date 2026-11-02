@@ -218,6 +218,13 @@ function registerIpc():void{
     record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');
     if(!Number.isSafeInteger(request.revision)||Number(request.revision)<0)throw new Error('통합 구성 리비전이 올바르지 않습니다.');
     if(request.runtimeId!==undefined)text(request.runtimeId,128,'PoB 런타임');if(request.requestId!==undefined)text(request.requestId,128,'PoB 요청 ID');if(request.name!==undefined)text(request.name,4096,'원본 통합 구성 이름');
+    if(request.treeWorkspace!==undefined){record(request.treeWorkspace);const operation=request.treeWorkspace;
+      if(request.manage!==undefined||request.name!==undefined||!['inspect','initialize','convert','convert-all'].includes(String(operation.action)))throw new Error('원본 트리 작업이 올바르지 않습니다.');
+      if(operation.version!==undefined){text(operation.version,40,'트리 버전');if(!/^\d+_\d+$/.test(operation.version))throw new Error('트리 버전 형식이 올바르지 않습니다.');}
+      if(operation.mode!==undefined&&!['replace','copy'].includes(String(operation.mode)))throw new Error('트리 변환 방식이 올바르지 않습니다.');
+      for(const key of ['classId','ascendancyId'])if(operation[key]!==undefined&&(!Number.isSafeInteger(operation[key])||Number(operation[key])<0))throw new Error('원본 직업 선택이 올바르지 않습니다.');
+      if(operation.title!==undefined)text(operation.title,4096,'초기 트리 이름');
+    }
     if(request.manage!==undefined){record(request.manage);const operation=request.manage;
       if(!['new','copy','rename','delete','custom','reorder'].includes(String(operation.action)))throw new Error('통합 구성 관리 연산이 올바르지 않습니다.');
       if(operation.scope!==undefined&&!['tree','loadout'].includes(String(operation.scope)))throw new Error('원본 순서 변경 범위가 올바르지 않습니다.');

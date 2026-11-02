@@ -1,5 +1,20 @@
 # 로컬 검증
 
+## 초기 트리·원본 버전 변환 — 2026-11-03 (20차)
+
+- 최종 Windows packaged `.local/tree-workspace-native-1793650959965/result.json` **7개 그룹 통과**. source7과 같은 전체 동선과 다중 문서 재시작·PoK 미연결을 확인했다. 1920/1024 packaged PNG도 직접 시각 확인했으며 원본 경고·저장 입력 차이·적용/취소/미리보기 버튼이 접근 가능하다. renderer pageerror 없음. 아래 진행 중은 최종 source7/packaged7/native6/legacy1/기존tree5/check167/build/pack:win 통과로 대체한다. 원본 PoB GUI·portable·실제 모델·모든 버전/직업/전직/특수 조합은 미수행/미완료다. 개인 XML·대화·세션을 사용하지 않았다.
+
+- 최종 source `.local/tree-workspace-native-1793650856862/result.json` **7개 그룹 통과**. 명시 버전/직업·미적용 preview/입력 변경/대기 취소·문서 격리, source 유지 Copy + Convert/0_1 지도3149노드·26/26이미지, replace·1920/1024 검토, ConvertAll의 동일 최종 XML/수치와 undo/redo/revision6 계산, missing tree의0_1 Ranger/Life170·unknown/originalXml 보존, bare Warrior·기본 세트/새 계산·receipt, legacy 실제 IPC 거부/원본0, 다중 문서 저장/재시작과 계산6/초기화receipt 복원을 확인했다. renderer pageerror 없음. 두 크기의 source 변환 preview/원본 경고/저장 입력과 변환본 차이·적용 버튼을 직접 시각 확인했다. 최종 packaged는 진행 중이다.
+
+- 최종 native `tests/pob-tree-workspace-smoke.cjs` **6개 그룹 통과**, `.local/standalone-pob/tree-workspace-result.json`: 초기0_1 Ranger/Life170, source 유지 Copy + Convert/활성 adjacent/Life170, replace/ConvertAll 동일 전체 수치, 모든 기본 섹션 없는 문서의 stock 초기 생성·실계산, 미복원 저장9999999 제외/다음 계산, invalid/blank/existing/no-op 거부 후 기준값 보존. 별도 legacy-only 실행 **1개 그룹 통과**, `.local/standalone-pob/tree-workspace-legacy-result.json`: 원본 Build.savers가 지원하는 root Spec을 빈 트리로 오인하지 않고 inspect/initialize를 `POB_TREE_LEGACY`로 거부한다. 이 구형 형식의 편집/정규화는 UI 미지원이며 엔진 결함으로 분류하지 않는다.
+- 기존 native tree **5개 그룹 통과**, `.local/standalone-pob/tree-result.json`: 경로/종속 해제·무기/능력치 및 실제 Fireball4.4583333333333→6.01875 회귀. 공유 tree-state 추출 후에도 원본 연산 유지. 최신 check **167 passed**, boundary/type 통과, build/최종 pack:win 통과. 실제 source/Windows packaged 전체 동선은 진행 중이다.
+- 첫 source `.local/tree-workspace-native-1793650078030/result.json`은 변환·undo/redo·새 계산3개 그룹 이후 초기 생성 버튼의 비활성으로 중단했다. 계산 가능한 트리가 필요하다는 gate를 초기 생성에도 쓴 UI 결함이었다. 검증된 runtime 준비 상태를 별도 초기 생성 prop으로 전달했고, 버전/직업 검사는 원본에서 계속 수행한다. 최종 source/packaged 재검사 중이며 실패 실행을 완료로 집계하지 않는다.
+- 이후 source `.local/tree-workspace-native-1793650508177/result.json` / packaged `.local/tree-workspace-native-1793650663743/result.json`은 초기 생성·bare Warrior 계산까지 5개 그룹을 통과했으나 legacy 선택 직후 디스크가 이전 문서의 debounce 저장 상태여서 하네스 XML 비교가 실패했다. renderer의 legacy 진단과 실제 IPC 거부는 이미 확인했고 저장 완료 후 legacy revision0/XML 불변도 따로 확인했다. 선택한 문서 ID의 저장 완료를 polling하도록 고쳤으며 최종 재실행 중이다. 사용자 데이터 오염으로 분류하거나 실패 실행을 전체 통과로 집계하지 않는다.
+
+- native 검사 작성/실행 중. 초기0_1 Ranger 생성, Copy + Convert의 원본 유지/변환본 활성화, replace와 ConvertAll의 동일 수치, Tree/Items/Skills/Config 없는 문서의 초기화·실제 계산을 중간 실행에서 확인했다. 미복원 저장 ID·거부 후 상태 보존을 포함한 최종 native 실행 및 source/packaged는 아직 진행 중이다. 전체 동선 완료로 집계하지 않는다.
+- 발견/수정: 구 tree는 main:LoadTree 후 class dropdown을 조회해야 한다. Lua JSON 키 순서 비교는 내용 비교/검증된 요청 echo로 바꿨다. 빈 parent를 set으로 취급해 replaceChild가 실패하던 공통 삽입 경로를 수정했다. 버전 변환의 full Save 정합·unknown 소켓 metadata 보존과 새 parent 생성 unit을 추가했다. 최신 해당 XML 단위10개 통과; 전체166/check 재실행 중. build 통과, Vite 기존 loader/chunk 경고 남음.
+- 하네스 오류: 없는 Notes를 serialize, PoB1 루트 태그, 주력 그룹0, 직업 없는 createBlankXml을 잘못된 노드 회귀에 사용한 것을 수정했다. 클래스 없는 Spec의 원본 거부를 엔진 결함으로 분류하지 않는다. ENOSPC로 runtime staging/check가 중단된 시도는 검증 성공이 아니며, 검증된18/19차 백업과 사용자 데이터는 보존한 채 15~17시 생성 백업12개/정확한 실패 staging만 경로·내용·reparse 확인 후 정리했다.
+
 ## TreeView 원본 관리 — 2026-11-03 (19차)
 
 - 최종 source `.local/tree-management-native-1793647818011/result.json`도 **6개 그룹 통과**, Windows packaged와 같은 전체 동선을 확인했다. renderer pageerror/crash 없음. 아래 실행 중 기록은 최종 source6/packaged6/native 관리5/export2/기존 세트4/check162/build/pack:win 통과로 대체한다. 원본 PoB GUI·portable·실제 모델·전수 동등성은 미수행/미완료다.

@@ -5,6 +5,8 @@ import {partyNames,type PartyName} from './pob-party';
 
 /** Also enforced on edited output; documents remain small enough to parse in the renderer. */
 export const MAX_XML_BYTES = 10 * 1024 * 1024;
+export const LEGACY_TREE_WORKSPACE_MESSAGE='기존 단일 Spec 트리가 있습니다. 이 UI의 초기 생성으로 덮어쓸 수 없습니다. 원본 PoB에서 Tree/Spec 형식으로 저장한 뒤 가져와 편집해 주세요. 원본 XML은 보존됩니다.';
+export function hasLegacyPassiveSpec(xml:string):boolean{return children(readXml(xml).documentElement!,'Spec').length>0;}
 
 // PoB's XML reader expects literal attribute whitespace, unlike a standard XML parser.
 // Only touch quoted attributes, never text, comments, CDATA or processing instructions.
@@ -306,6 +308,7 @@ export function editBuild(xml: string, edit: BuildEdit): string {
         for(const [key,value] of Object.entries(patch.attributeOverrides!)){if(!['strNodes','dexNodes','intNodes'].includes(key)||typeof value!=='string')throw new Error('원본 능력치 노드 패치가 올바르지 않습니다.');node.setAttribute(key,value);}
       }
       if(patch.url!==undefined){let node=child(spec,'URL');if(!node){node=document.createElement('URL');spec.appendChild(node);}replaceDirectText(node,patch.url);}
+      if(patch.replaceState&&patch.sockets){for(const socket of children(child(spec,'Sockets'),'Socket')){const id=attr(socket,'nodeId');if(!/^\d+$/.test(id))throw new Error('변환할 원본 주얼 소켓 ID를 해석할 수 없습니다.');if(!(id in patch.sockets))socket.setAttribute('itemId','0');}}
       if(Object.keys(patch.sockets||{}).length){
         let sockets=child(spec,'Sockets');if(!sockets){sockets=document.createElement('Sockets');spec.appendChild(sockets);}
         for(const [nodeId,itemId] of Object.entries(patch.sockets!)){
@@ -356,7 +359,7 @@ export function editBuild(xml: string, edit: BuildEdit): string {
         const entries=edit.sets[kind];if(!Array.isArray(entries)||!entries.length)throw new Error('원본 관리 연산에는 모든 종류의 세트가 필요합니다.');
         const plannedIds=new Set<string>();for(const [index,entry]of entries.entries()){if(!entry||typeof entry.id!=='string'||!/^\d+$/.test(entry.id)||plannedIds.has(entry.id)||kind==='tree'&&entry.id!==String(index+1))throw new Error('원본 관리 세트 ID/순서가 올바르지 않습니다.');plannedIds.add(entry.id);}
         const existing=sets(root,kind);if(entries.length===existing.length&&entries.every((entry,index)=>entry.sourceId===setId(existing[index],index,kind)&&entry.id===setId(existing[index],index,kind)&&entry.copyFrom===undefined&&entry.node===undefined&&(entry.title===undefined||entry.title===attr(existing[index],'title'))))continue;
-        const parent=explicitSets(root,kind),all=sets(root,kind),sources=new Map(all.map((node,index)=>[setId(node,index,kind),node])),ids=new Set<string>(),retained=new Set<string>();
+        const parent=explicitSets(root,kind),all=sets(root,kind).filter(node=>node!==parent),sources=new Map(all.map((node,index)=>[setId(node,index,kind),node])),ids=new Set<string>(),retained=new Set<string>();
         const next=entries.map((entry,index)=>{
           if(!entry||typeof entry.id!=='string'||!/^\d+$/.test(entry.id)||ids.has(entry.id)||kind==='tree'&&entry.id!==String(index+1))throw new Error('원본 관리 세트 ID/순서가 올바르지 않습니다.');ids.add(entry.id);
           if([entry.sourceId!==undefined,entry.copyFrom!==undefined,entry.node!==undefined].filter(Boolean).length!==1)throw new Error('원본 세트의 출처가 명확하지 않습니다.');

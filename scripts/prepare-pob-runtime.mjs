@@ -46,6 +46,8 @@ await copy(join(workspace,'runtime','pob','inspect.lua'),'inspect.lua');
 await copy(join(workspace,'runtime','pob','calcs.lua'),'calcs.lua');
 await copy(join(workspace,'runtime','pob','party.lua'),'party.lua');
 await copy(join(workspace,'runtime','pob','tree.lua'),'tree.lua');
+await copy(join(workspace,'runtime','pob','tree-state.lua'),'tree-state.lua');
+await copy(join(workspace,'runtime','pob','tree-workspace.lua'),'tree-workspace.lua');
 await copy(join(workspace,'runtime','pob','item-controls.lua'),'item-controls.lua');
 await copy(join(workspace,'runtime','pob','item-popups.lua'),'item-popups.lua');
 await copy(join(workspace,'runtime','pob','equipment.lua'),'equipment.lua');

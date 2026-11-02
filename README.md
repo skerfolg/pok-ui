@@ -6,7 +6,7 @@ PoE2 빌드와 대화를 관리하는 Electron + React + TypeScript 앱. 지식�
 
 **2026-11-03 현재 방향:** 목표는 **PoK·AI 없이 PoB 전체 작업을 완결하는 독립 pok-ui**다. [현재 진행](docs/CURRENT-PLAN.md)과 [독립 런타임 설계·준비 절차](docs/POB-STANDALONE-PLAN.md)를 따른다. [10월 인계](docs/HANDOFF-20261030.md)는 요구 변경과 당시 검증의 기록이다. 연동 시 양쪽 PoB 버전 호환성을 확인하며, 아래 과거 엔진 자동 실행·번들 설명을 최신 기본 경로로 사용하지 않는다.
 
-**현재 구현과 한계:** 원본 PoB 0.23.1/`5d173cb`의 독립 계산·카탈로그·트리·새 빌드·아이템 생성과 여러 편집/비교/통합 구성 동선을 구현했다. PoK·Python·KB 없이 합성 빌드를 실제 Electron과 Windows unpacked에서 편집·계산·저장/재시작했다. PoK는 명시적으로 선택할 때만 연결한다. check162/build 통과는 전체 PoB 동등성, portable, 원본 GUI 왕복, 실제 AI 모델 동선의 완료를 뜻하지 않는다. 세부 기능별 상태와 남은 범위는 위 계획/검증 문서를 따른다.
+**현재 구현과 한계:** 원본 PoB 0.23.1/`5d173cb`의 독립 계산·카탈로그·트리·새 빌드·아이템 생성과 여러 편집/비교/통합 구성 동선을 구현했다. PoK·Python·KB 없이 합성 빌드를 실제 Electron과 Windows unpacked에서 편집·계산·저장/재시작했다. PoK는 명시적으로 선택할 때만 연결한다. check167/build 통과는 전체 PoB 동등성, portable, 원본 GUI 왕복, 실제 AI 모델 동선의 완료를 뜻하지 않는다. 세부 기능별 상태와 남은 범위는 위 계획/검증 문서를 따른다.
 
 ## 실행
 
@@ -43,6 +43,8 @@ npm start
 검증 항목과 외부 XML을 사용한 화면 테스트 방법은 [검증 기록](docs/VALIDATION.md)에 있다.
 
 ## 현재 구현
+
+2026-11-03 20차: 트리 없는 문서에서 원본 버전·직업/전직을 선택해 초기 생성하고, 기존 트리는 원본 Copy + Convert/교체/전체 변환을 검토·적용·새 계산한다. unknown XML과 원본을 유지하고 저장 입력/복원 후 노드·소켓 변화를 표시한다. native6/구형 guard1/기존 tree5/source7/Windows packaged7/check167/build/pack:win·두 크기 확인 통과. 구형 root Spec은 별도 진단과 원문 보존을 제공하며 직접 편집/정규화는 아직 미지원이다. 전체 원본 기능·전수 조합·GUI 왕복/portable는 남는다.
 
 2026-11-03 19차: 기존 트리 세트 메뉴에서 비활성/통합 구성 밖 트리도 원본 컨트롤로 생성·복사·이름 변경·삭제·이동한다. 신규/복사는 원본처럼 현재 활성 트리를 유지하고 검토 후 적용·새 계산한다. 구버전 지도 오류는 원본 tree.lua export로 수정했다. native 관리5/export2/source6/Windows packaged6/기존 세트4/check162/build/pack:win·두 해상도 확인 통과. 트리 없는 문서 생성·버전 변환·모든 특수 조합·원본 GUI 왕복/portable는 남는다.
 
