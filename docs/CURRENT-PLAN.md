@@ -1,5 +1,13 @@
 # 현재 작업
 
+## 최신 체크포인트 — 2026-11-03, 18차
+
+UI 구현 **`0ed5f6edf48d7d8c0a7d21b32fc371310f78cf36`**, 브랜치 `skerfolg/coho`. 원본 PassiveSpecListControl 드래그로 연결/공유 구성도 순서를 이동하며 실제 활성 네 객체·주력/무기·계산값을 보존한다. native5/source5/Windows packaged5/기존 named native6/check160/build/pack:win 및 두 크기 확인 통과. 아래 17차의 named reorder 미노출은 이번 tree scope 계약으로 보완했다. legacy loadout scope는 유지했다.
+
+PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB 비사용. runtime `pob-5ec8df28dba66882da39f0c6b704f243ee3b1d177808888958f3bc17374db671` / manifest SHA256 `ba8131e1f1f3d207708668dbdd6ec78e3a157198e40078b5e19e3320f0a0dac1`; editor `pob-editor-9dbdc28948d5c3d2bd8e210bd28b1ba713971e1f1b1fee9b850116e6e84c8dda` / manifest SHA256 `a7145d697ad5fd1c7beb30ca3b4a593ba7971157686690504b882a77990142ca`. 원본/공유 엔진 소스·문서/ref 변경 없음.
+
+다음은 구성에 속하지 않는 spec을 포함한 TreeView 원본 관리 API 연결, 모든 버전/이름 모호성·특수 공유 조합, 전체 원본 control 및 고급 장비/스킬·미니언/특수 트리·네트워크/옵션/단축키/노트 동등성, 실제 PoB GUI 왕복·portable·선택 PoK/AI 잔여 결합이다. 전체 목표는 active다. signed zero 표현 차이는 검사에서만 처리했으며 게임 계산을 수정하지 않았다. #188 해결·재평가 준비 완료를 선언하지 않는다.
+
 ## 원본 트리 드래그를 통한 연결 구성 순서 — 2026-11-03 (18차 진행)
 
 최종: native5/source `.local/linked-reorder-native-1793642912224/result.json` 및 Windows packaged `.local/linked-reorder-native-1793643190539/result.json` **각5개 그룹 통과**. 기존 named 관리 native6도 재통과했다. 양방향 이동·공유 별칭·중복 title의 실제 활성 객체/전체 수치 보존, 취소·문서 격리, 정확한 undo/redo·revision4 계산과 이동 근거의 재시작을 확인했다. 1920/1024 PNG 직접 시각 확인. check160/build/pack:win 통과. 아래 진행 중 표기는 이 결과로 대체한다.
