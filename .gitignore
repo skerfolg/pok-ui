@@ -1,6 +1,8 @@
 node_modules/
 dist/
 release/
+resources/pob-worker/*
+!resources/pob-worker/.gitkeep
 resources/pok-runtime/*
 !resources/pok-runtime/.gitkeep
 resources/passive-tree/*

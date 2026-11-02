@@ -20,6 +20,7 @@
     "runtime:stage": "node scripts/stage-runtime.mjs",
     "prepare:data-bundle": "node scripts/prepare-data-bundle.mjs",
     "bundle:prepare": "node scripts/prepare-bundle.mjs",
+    "bundle:prepare-manual": "tsx scripts/prepare-manual-bundle.ts",
     "bundle:prepare-checkout": "node scripts/prepare-checkout-bundle.mjs",
     "build:local-exe": "npm run build && node scripts/build-local-exe.mjs",
     "verify:data-bundle": "node scripts/verify-data-bundle.mjs",

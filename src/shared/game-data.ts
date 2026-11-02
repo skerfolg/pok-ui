@@ -1,3 +1,5 @@
+import type {PobWorkerIdentity} from './pob-worker';
+
 export type CatalogEntryType = 'base' | 'unique' | 'mod' | 'gem' | 'skill';
 
 export interface RuntimeIdentity {
@@ -55,12 +57,14 @@ export interface DataBundleInfo {
   bundleId?: string;
   runtimeMode?: RuntimeMode;
   identity?: RuntimeIdentity;
+  workerIdentity?: PobWorkerIdentity;
+  manualRuntime?: {identitySha256:string;workerInstance:string};
   defaultTreeVersion?: string;
   supportedTreeVersions?: string[];
   classes?: CatalogClass[];
   catalog?: {
-    schemaVersion: 1;
-    extractorVersion: '1';
+    schemaVersion: 1 | 2;
+    extractorVersion: '1' | '2';
     entries: number;
     classes: number;
     digest: string;
@@ -106,4 +110,13 @@ export interface EngineVerification {
   reason?: string;
   expected: RuntimeIdentity;
   actual?: unknown;
+}
+
+export interface AgentRuntimeIdentity {
+  format:'pok.agent-connection.v1';
+  serverInstance:string;
+  loadedCommit:string;
+  sourceCommit:string;
+  declaredPobCommit:string;
+  claim:'git_process_and_declared_pin_not_native_execution_identity';
 }

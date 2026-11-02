@@ -5,7 +5,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { xmlHash } from './build-proposals';
-import type { RuntimeIdentity } from '../shared/game-data';
+import type { RuntimeIdentity, AgentRuntimeIdentity } from '../shared/game-data';
 import { join, resolve } from 'node:path';
 import { compareIdentity, type GameDataLaunchDescriptor } from './game-data';
 import type { Settings, ConnectionInfo, BuildDocument, Calculation } from '../shared/contracts';
@@ -34,6 +34,21 @@ export function assertDesktopContract(info:unknown, tools:PokTool[]):void {
   if(!info||typeof info!=='object'||!('identity' in info))missing.unshift('runtime identity');
   if(missing.length)throw new PokCompatibilityError('연결된 POK의 데스크톱 계약이 부족합니다: '+missing.join(', ')+'. 이 엔진 커밋의 desktop runtime·카탈로그 지원이 필요합니다. 기존 번들로 계산하거나 버전 검증을 생략할 수 없습니다.');
 }
+export function assertAgentContract(info:unknown,tools:PokTool[],expectedPobCommit:string):AgentRuntimeIdentity {
+  const object=(value:unknown):value is Record<string,unknown>=>!!value&&typeof value==='object'&&!Array.isArray(value);
+  const required=['server_info','get_server_capabilities','search_kb','read_design_record','capture_design_material','compute_pob_document'];
+  const missing=required.filter(name=>!tools.some(tool=>tool.name===name));
+  if(missing.length)throw new PokCompatibilityError('선택 PoK의 에이전트 계약이 부족합니다: '+missing.join(', '));
+  const designTool=tools.find(tool=>tool.name==='read_design_record');
+  if(!object(designTool?.inputSchema.properties)||!('record_ref' in designTool.inputSchema.properties))throw new PokCompatibilityError('선택 PoK의 설계 조회 파라미터가 호환되지 않습니다.');
+  if(!object(info)||info.stale!==false||info.identity_status!=='verified'||typeof info.loaded_commit!=='string'||typeof info.source_commit!=='string'||!/^[0-9a-f]{7,40}$/.test(info.loaded_commit)||info.loaded_commit!==info.source_commit)throw new PokCompatibilityError('PoK의 로드된 소스 버전을 확인할 수 없습니다. 서버를 다시 시작해 주세요.');
+  const declaration=info.pob_runtime_declaration;
+  if(!object(declaration)||declaration.format!=='pok.pob-runtime-declaration.v1'||declaration.claim!=='configured_pin_not_observed_execution'||declaration.status!=='declared'||declaration.pob_commit!==expectedPobCommit||!/^[0-9a-f]{40}$/.test(expectedPobCommit))throw new PokCompatibilityError('선택 PoK의 PoB pin을 현재 수동 계산 묶음과 확인할 수 없습니다. 호환되는 엔진을 선택해 주세요.');
+  const capabilities=info.capabilities,execution=object(capabilities)?capabilities.request_execution:undefined;
+  if(!object(execution)||typeof execution.server_instance!=='string'||!execution.server_instance)throw new PokCompatibilityError('PoK 실행 세션 식별자가 없습니다.');
+  return {format:'pok.agent-connection.v1',serverInstance:execution.server_instance,loadedCommit:info.loaded_commit,sourceCommit:info.source_commit,declaredPobCommit:expectedPobCommit,claim:'git_process_and_declared_pin_not_native_execution_identity'};
+}
+
 export class PokToolError extends Error {
   constructor(message: string, readonly details?: unknown) { super(message); this.name = 'PokToolError'; }
 }
@@ -53,6 +68,7 @@ export class PokConnection {
   private connectPromise?: Promise<ConnectionInfo>;
   private generation = 0;
   private expectedIdentity?: RuntimeIdentity;
+  private expectedAgent?: AgentRuntimeIdentity;
   private operationQueue: Promise<void> = Promise.resolve();
   private infoRequest?:Promise<unknown>;
   private toolsRequest?:Promise<void>;
@@ -74,25 +90,26 @@ export class PokConnection {
     })().finally(()=>{if(this.toolsRequest===pending)this.toolsRequest=undefined;});
     this.toolsRequest=pending;return pending;
   }
-  bindIdentity(identity: RuntimeIdentity): void { this.expectedIdentity = identity; }
+  bindIdentity(identity: RuntimeIdentity): void { this.expectedIdentity = identity; this.expectedAgent = undefined; }
   tools: PokTool[] = [];
   root = '';
   python = '';
-  get connected():boolean{return Boolean(this.client&&this.expectedIdentity&&!this.connectPromise);}
+  get connected():boolean{return Boolean(this.client&&(this.expectedIdentity||this.expectedAgent)&&!this.connectPromise);}
   private connectionLost(client:Client,message:string):void {
     if(this.client!==client)return;
-    this.generation++;this.client=undefined;this.transport=undefined;this.expectedIdentity=undefined;this.tools=[];
+    this.generation++;this.client=undefined;this.transport=undefined;this.expectedIdentity=undefined;this.expectedAgent=undefined;this.tools=[];
     this.infoRequest=undefined;this.operationQueue=Promise.resolve();
     this.toolsRequest=undefined;
     this.onDisconnected?.(message);
   }
   requireReady():void {
     if(this.connectPromise)throw new Error('POK 연결 확인이 진행 중입니다. 연결된 뒤 다시 시도해 주세요.');
-    if(!this.client||!this.expectedIdentity)throw new Error('POK 연결을 먼저 확인해 주세요.');
+    if(!this.client||(!this.expectedIdentity&&!this.expectedAgent))throw new Error('POK 연결을 먼저 확인해 주세요.');
   }
   async close(): Promise<void> {
     this.generation++;
     this.expectedIdentity = undefined;
+    this.expectedAgent = undefined;
     this.operationQueue = Promise.resolve();
     this.infoRequest=undefined;
     this.toolsRequest=undefined;
@@ -101,12 +118,12 @@ export class PokConnection {
     await client?.close().catch(() => undefined);
     this.transport = undefined;
   }
-  connect(settings: Settings['pok'], bundledRoot: string, dataHome?: string, cacheHome?: string, launch?: GameDataLaunchDescriptor): Promise<ConnectionInfo> {
+  connect(settings: Settings['pok'], bundledRoot: string, dataHome?: string, cacheHome?: string, launch?: GameDataLaunchDescriptor, agentPobCommit?:string): Promise<ConnectionInfo> {
     if (this.connectPromise) return this.connectPromise;
-    this.connectPromise = this.open(settings, bundledRoot, dataHome, cacheHome, launch).finally(() => { this.connectPromise = undefined; });
+    this.connectPromise = this.open(settings, bundledRoot, dataHome, cacheHome, launch, agentPobCommit).finally(() => { this.connectPromise = undefined; });
     return this.connectPromise;
   }
-  private async open(settings: Settings['pok'], bundledRoot: string, dataHome?: string, cacheHome?: string, launch?: GameDataLaunchDescriptor): Promise<ConnectionInfo> {
+  private async open(settings: Settings['pok'], bundledRoot: string, dataHome?: string, cacheHome?: string, launch?: GameDataLaunchDescriptor, agentPobCommit?:string): Promise<ConnectionInfo> {
     await this.close();
     try {
       const root = resolve(settings.mode === 'bundled' ? launch?.root || bundledRoot : settings.root);
@@ -135,8 +152,9 @@ export class PokConnection {
       this.transport = transport; this.client = client; this.root = root;
       await client.connect(transport, { timeout: 60_000 });
       await this.refreshTools();
-      assertDesktopTools(this.tools);
+      if(agentPobCommit===undefined)assertDesktopTools(this.tools);
       const info = await this.callResult('server_info', {});
+      if(agentPobCommit!==undefined){this.expectedAgent=assertAgentContract(info,this.tools,agentPobCommit);return {connected:true,profile:'agent',agentIdentity:this.expectedAgent,info,tools:this.tools.map(tool=>tool.name)};}
       return { connected: true, info, tools: this.tools.map(t => t.name) };
     } catch (error) {
       const tools=this.tools.map(t=>t.name);
@@ -226,7 +244,7 @@ export class PokConnection {
     throw new Error('POK 결과의 페이지 수가 자동 회수 한도를 넘었습니다. 필요한 결과 범위를 줄여 다시 계산해 주세요.');
   }
   private async performCall(name: string, args: Record<string, unknown>, budgetMs?: number): Promise<unknown> {
-    const client=this.client;const generation=this.generation;const expected=this.expectedIdentity;const deadline=budgetMs===undefined?undefined:performance.now()+budgetMs;
+    const client=this.client;const generation=this.generation;const expected=this.expectedIdentity;const expectedAgent=this.expectedAgent;const deadline=budgetMs===undefined?undefined:performance.now()+budgetMs;
     if (!client) throw new Error('먼저 POK에 연결해 주세요.');
     if (!this.tools.some(t => t.name === name)) throw new Error('연결된 POK에 없는 도구입니다: ' + name);
     const sameConnection=()=>{if(client!==this.client||generation!==this.generation)throw new Error('요청 도중 POK 연결이 변경되었습니다.');};
@@ -235,6 +253,12 @@ export class PokConnection {
       sameConnection();
       if (info.stale === true) throw new Error('POK 소스가 변경되었습니다. 데이터 묶음을 다시 준비해 주세요.');
       assertRuntimeIdentity(info.identity, expected);
+    }
+    if(name!=='server_info'&&expectedAgent){
+      const info=await this.callResult('server_info',{});
+      sameConnection();
+      const actual=assertAgentContract(info,this.tools,expectedAgent.declaredPobCommit);
+      if(JSON.stringify(actual)!==JSON.stringify(expectedAgent))throw new Error('선택 PoK의 실행 세션이나 소스가 변경됐습니다. 다시 연결해 주세요.');
     }
     sameConnection();
     const defaultTimeout=name==='server_info'?15_000:name==='render_pob_item'?45_000:1_800_000;

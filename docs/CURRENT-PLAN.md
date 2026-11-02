@@ -1,19 +1,26 @@
 # 현재 작업
 
-## R6 현재 작업 — 독립 worker 방향 확정
+## R6 현재 작업 — Windows 독립 수동 경로 검증
 
-main/d15bdab의 U0와 coho/4b86309를 통합한 WIP는 d33b3c3이다. 원본 coho/main은 유지한다.
-2026-11-02 사용자가 A안과 이 브랜치의 원격 반영·draft PR 생성을 승인했다.
-PoB 코어는 형제 엔진의 기존 src/pok/pob가 소유하고 UI는 독립 worker를 번들한다.
-PoK·KB·AI 연결은 수동 편집·계산의 필수가 아니며 renderer에 게임 규칙을 복제하지 않는다.
+사용자가 승인한 A안을 구현 중이다. 코어는 형제 엔진 src/pok/pob가 소유하며 UI는
+standalone worker를 소비한다. 원본 coho/main과 d33b3c3 이력은 보존한다. 기존 draft
+PR #3은 사용자 승인으로 원격 반영했으며 엔진 worker는 draft PR #153이다. 병합하지 않았다.
 
-현재 WIP의 npm run check는 경계·타입·165검사 모두 통과했고 npm run build도 통과했다.
-이전의 실제 Electron 저장/충돌/재시작·설계 기록 표시 검증은 해당 범위의 증거로 보존한다.
-현재 worker/독립 카탈로그/새 runtime bundle과 선택 PoK 연결은 아직 구현·검증 중이다.
-새 standalone 배포나 PoB 전체 기능 동등성·실제 모델 통합 완료를 선언하지 않는다.
+수동 bundle v2의 worker·카탈로그·표시 트리를 검증하고 main의 계산/아이템 렌더를 연결했다.
+선택 PoK는 별도 agent 프로필이며 미연결/불일치가 수동 계산을 막지 않는다. 기존 desktop
+identity의 KB 해시를 채워 위장하지 않는다. 문서 hash/리비전과 실제 제출 XML·worker 세션을
+구분하고 콜드 앱의 저장 수치를 새 계산으로 표시하지 않는다. UI192검사와 앱 build가 통과했다.
 
-다음 작업은 승인한 WIP의 원격 PR 준비와 A안의 실제 runtime producer/IPC 연결이다.
-엔진 worker 작업 트리: C:/Users/SKKim1107/orca/workspaces/poe2-ai-wiki/pok-r6-worker.
+실제 Electron에서 PoK 없이 새 문서·레벨2 편집·Native 계산/저장(Life78, Ranger/level2)과
+1280×800/1680×950 화면을 확인했다. 후속 재시작 검사에서는 원본 실행 자료를 보존한
+복사본을 두 번 시작해 원문/계산 완전 일치·콜드 runtime 미검증·재계산 필요/수치—를 통과했다.
+실제 화면 검증이 수치 패널의 전달 누락을 찾아냈고 수정 후 현재 계산 DOM 판정을 확인했다.
+null/빈 값/비유한수의0 오표시도 렌더 회귀로 막았다. 초기 harness의 저장 시점 실패와 숨김
+창 screenshot timeout은 보존하며 전체 성공 실행으로 덮어쓰지 않는다.
+
+다음은 최신 변경의 원격 CI, 실제 프로바이더·배포/설치와 macOS 독립 runtime, 기본 출고
+경로 전환이다. 현재 배포 스크립트 기본값은 기존 v1이며 installer/PoB 전체 기능 동등성/
+새 모델 빌드 품질·R6 전체 완료를 선언하지 않는다. R5 동결/보충 시행은 변경하지 않는다.
 
 ## 이전 U0 기록
 
@@ -428,3 +435,25 @@ npm check173검사·앱 build가 통과했다. Native 전체 검사가 병행 �
 null을0으로 바꾸지 않으며 원래 값/경로가 사라지지 않게 했다. 계산 필드의 수치 타입과
 missing stats·allocated nodes·meta도 검사한다. 새 회귀를 포함한 전송9개와 전체
 npm check174개·앱 build가 통과했다. 기존 main에 이 경로를 실제로 연결하는 일은 남아 있다.
+
+
+## R6 수동 bundle v2·실제 앱과 선택 PoK — 2026-11-02
+
+- ManualGameDataStore는 worker manifest·카탈로그·트리/이미지 bytes를 결박하고 표시
+  트리의 원본 SHA를 worker 파일 목록과 대조한다. 캐시된 앱에서 새 bundle로 몰래
+  업그레이드하지 않으며 실행 descriptor는 변경된 파일/Python을 거부한다.
+- ManualPobBackend는 준비와 계산의180초 절대 기한·실제 입력/원문 hash·worker 세션을
+  결박한다. 이전 작업 정리가 남았거나 종료된 controller는 새 작업을 받지 않는다.
+- server_info의 설정 pin 선언은 Native identity가 아니다. agent 연결은73도구의 현재
+  코어와 실제 stdio로 성공했고 다른 pin을 거부했다. 각 호출의 세션/소스 선언을 확인한다.
+- clean worker v3와 실제 카탈로그13945항목·직업8개·0_5 트리4914노드/153이미지
+  (누락0)를 조립한 수동 bundle은 pokbundle-8fc8f110298a2a495cf9cb27df882e40이다.
+- Node CLI는 txt 읽기/경로 탐색에서 EBADF를 냈으나 실제 Electron은 검증 목록 변경
+  없이 Native 계산을 완료했다. 개발 테스트는 Electron 실행 파일을 명시했다.
+- math 실행 v2/v3의 저장 직전 읽기 실패, v4의 수치 패널 연결 발견, v5의 숨김 창
+  screenshot timeout을 보존했다. v5의 실제 입력·Native 결과·현재 계산 DOM과
+  r6-electron-restore-v1의 두 번 재시작을 각각 범위대로 근거로 사용한다.
+
+공개 소스 검사는192통과·실패/skip0, 타입/계층·앱 build 통과다. 기존 엔진22a2959의
+원격 Native integration은 Windows/macOS 각각156통과·실패/skip0이며 macOS 새
+배포 Python을 검증한 것으로 해석하지 않는다. 최신 선택 PoK 메타데이터 후속 CI는 별도다.

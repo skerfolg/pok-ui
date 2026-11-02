@@ -51,3 +51,14 @@ export type WorkerCatalog = Omit<CatalogExport, 'schemaVersion' | 'extractorVers
     exporterVersion: '2';
   };
 };
+
+export interface ManualBundleManifest {
+  format: 'pok.ui-manual-bundle.v2';
+  schemaVersion: 2;
+  bundleId: string;
+  identity: PobWorkerIdentity;
+  worker: {path:string;manifest:string;sha256:string};
+  catalog: {path:string;sha256:string};
+  trees: {path:string;defaultVersion:string;supportedVersions:string[]};
+  files: {path:string;size:number;sha256:string}[];
+}

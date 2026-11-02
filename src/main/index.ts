@@ -12,6 +12,8 @@ import { StateStore, validateState } from './storage';
 import { importDocument, exportDocument, validateBuild } from './pob-files';
 import { PokConnection, assertDesktopContract, assertRuntimeIdentity, effectivePokSettings } from './pok';
 import { GameDataStore, GameDataError } from './game-data';
+import {createGameDataStore,ManualGameDataStore} from './manual-game-data';
+import {ManualPobBackend} from './manual-pob';
 import type { DataBundleInfo, CatalogQuery, CatalogEntryType, ItemRenderRequest, ItemRenderResult } from '../shared/game-data';
 import type { BuildProposalDraft } from '../shared/contracts';
 import { parseBuild } from '../shared/pob-document';
@@ -30,7 +32,8 @@ const pok=new PokConnection();
 let connectionInfo:ConnectionInfo={connected:false,managed:app.isPackaged};
 let connectionTask:Promise<ConnectionInfo>|undefined;
 let agent:AgentManager;
-let gameData:GameDataStore;
+let gameData:GameDataStore|ManualGameDataStore;
+let manualBackend:ManualPobBackend|undefined;
 let chatImages:ChatImageStore;
 let bundleInfo:DataBundleInfo = {status:'missing'};
 const stateWrites=new WorkspaceMutations();
@@ -78,7 +81,16 @@ function settings(value:unknown):asserts value is Settings['pok']{
 }
 function applyTheme():void{nativeTheme.themeSource=state.settings.theme;if(window&&!window.isDestroyed())applyWindowChrome(window,nativeTheme.shouldUseDarkColors);}
 function bundledRuntimeRoot():string{return app.isPackaged?join(process.resourcesPath,'pok-runtime'):join(app.getAppPath(),'resources','pok-runtime');}
-function dataRoot():string{return app.isPackaged?process.resourcesPath:join(app.getAppPath(),'resources');}
+function dataRoot():string{
+  const override=!app.isPackaged?process.env.POK_UI_BUNDLE_DIR:undefined;
+  if(override&&!isAbsolute(override))throw new Error('POK_UI_BUNDLE_DIR는 절대 경로여야 합니다.');
+  return override??(app.isPackaged?process.resourcesPath:join(app.getAppPath(),'resources'));
+}
+async function verifiedDataContext(){
+  bundleInfo=await gameData.getInfo();
+  if(bundleInfo.status!=='ready'||!bundleInfo.bundleId)throw new Error(bundleInfo.error||'검증된 게임 데이터 묶음이 필요합니다.');
+  return {bundleId:bundleInfo.bundleId};
+}
 async function verifiedContext() {
   bundleInfo = await gameData.getInfo();
   if (bundleInfo.status !== 'ready' || !bundleInfo.identity || !bundleInfo.bundleId) throw new Error(bundleInfo.error || '검증된 게임 데이터 묶음이 필요합니다.');
@@ -91,27 +103,32 @@ function assertBuildVersion(build:BuildDocument):void {
 }
 function bundleResourceRoot():string{return app.isPackaged?process.resourcesPath:join(app.getAppPath(),'resources');}
 function publishConnection(info:ConnectionInfo):ConnectionInfo {
-  connectionInfo={...info,managed:app.isPackaged};
+  connectionInfo={...info,managed:app.isPackaged&&!manualBackend};
   if(window&&!window.isDestroyed())window.webContents.send('pok:connection',connectionInfo);
   return connectionInfo;
 }
 function connectEngine(requested:Settings['pok']):Promise<ConnectionInfo> {
   if(quitting)return Promise.resolve({connected:false,managed:app.isPackaged});
   if(connectionTask)return connectionTask;
-  const selected=effectivePokSettings(requested,app.isPackaged);
+  const selected=effectivePokSettings(requested,app.isPackaged&&!manualBackend);
   publishConnection({connected:false,connecting:true});
   proposals.clear();agent?.invalidateContext();
   connectionTask=(async()=>{
     try {
-      const context=await verifiedContext();
-      const launch=selected.mode==='bundled'?await gameData.getLaunchDescriptor():undefined;
+      const context=await verifiedDataContext();
+      const legacyIdentity=bundleInfo.identity;
+      const agentPin=manualBackend?bundleInfo.workerIdentity?.pob_commit:undefined;
+      if(manualBackend&&(!agentPin||selected.mode==='bundled'))throw new Error('선택 PoK 연결에는 호환되는 PoK 폴더와 Python을 선택해 주세요. 수동 PoB 계산은 별도로 사용할 수 있습니다.');
+      if(!manualBackend&&!legacyIdentity)throw new Error('검증된 PoK desktop identity가 없습니다.');
+      const launch=selected.mode==='bundled'&&gameData instanceof GameDataStore?await gameData.getLaunchDescriptor():undefined;
       if(quitting)return {connected:false,managed:app.isPackaged};
-      const result=await pok.connect(selected,bundledRuntimeRoot(),join(app.getPath('userData'),'engine'),join(app.getPath('userData'),'cache','pok'),launch);
+      const result=await pok.connect(selected,bundledRuntimeRoot(),join(app.getPath('userData'),'engine'),join(app.getPath('userData'),'cache','pok'),launch,agentPin);
       if(!result.connected)return publishConnection({...result,connecting:false,compatibility:result.compatibility??'engine-unavailable'});
+      if(manualBackend)return publishConnection({...result,bundleId:context.bundleId,connecting:false,profile:'agent',compatibility:'agent-ready'});
       assertDesktopContract(result.info,pok.tools);
-      assertRuntimeIdentity((result.info as Record<string,unknown>)?.identity,context.identity);
-      pok.bindIdentity(context.identity);
-      return publishConnection({...result,...context,connecting:false,compatibility:'ready'});
+      assertRuntimeIdentity((result.info as Record<string,unknown>)?.identity,legacyIdentity!);
+      pok.bindIdentity(legacyIdentity!);
+      return publishConnection({...result,...context,identity:legacyIdentity,connecting:false,compatibility:'ready'});
     } catch(error) {
       await pok.close();
       return publishConnection({connected:false,connecting:false,compatibility:'incompatible',error:String(error)});
@@ -126,7 +143,7 @@ function registerIpc():void{
   handle('pok:save-state',(value:unknown,expected:unknown)=>track(stateWrites.run(async()=>{
     validateState(value);record(expected);
     await assertWorkspaceTransition(state,value,expected as Record<string,string>);
-    value.settings.pok=effectivePokSettings(value.settings.pok,app.isPackaged);
+    value.settings.pok=effectivePokSettings(value.settings.pok,app.isPackaged&&!manualBackend);
     await store.save(value);
     state=value;applyTheme();
   })));
@@ -169,7 +186,7 @@ function registerIpc():void{
     if(Buffer.byteLength(JSON.stringify(args))>32*1024*1024)throw new Error('도구 인자가 너무 큽니다.');
     return pok.call(name,args);
   });
-  handle('pok:data-bundle-info',()=>gameData.getInfo());
+  handle('pok:data-bundle-info',async()=>{const info=await gameData.getInfo(),manualRuntime=manualBackend?.getRuntimeVerification();return {...info,...(manualRuntime?{manualRuntime}:{})};});
   handle('pok:query-pob-catalog',async(query:unknown)=>{
     record(query);
     if(query.query!==undefined)text(query.query,512,'검색어');
@@ -181,10 +198,11 @@ function registerIpc():void{
   });
   handle('pok:get-pob-catalog-entry',async(type:unknown,id:unknown)=>{text(type,32,'카탈로그 유형');text(id,512,'카탈로그 ID');return gameData.getEntry(type as never,id);});
   handle('pok:render-pob-item',async(request:unknown)=>{
-    pok.requireReady();
     record(request);text(request.kind,20,'아이템 종류');text(request.id,1000,'아이템 ID');
     if(!['base','unique','rare'].includes(String(request.kind)))throw new Error('지원하지 않는 아이템 종류입니다.');
     if(Buffer.byteLength(JSON.stringify(request))>1000000)throw new Error('아이템 요청이 너무 큽니다.');
+    if(manualBackend)return manualBackend.renderItem(request as unknown as ItemRenderRequest);
+    pok.requireReady();
     const context=await verifiedContext();
     const before=await pok.call('server_info',{}) as Record<string,unknown>;
     assertRuntimeIdentity(before.identity,context.identity);
@@ -194,10 +212,14 @@ function registerIpc():void{
     if(result.ok&&typeof result.text!=='string')throw new Error('아이템 원문이 누락되었습니다.');
     return result;
   });
-  handle('pok:compute',async(value:unknown)=>{validateBuild(value);const context=await verifiedContext();assertBuildVersion(value);return pok.compute(value,context);});
+  handle('pok:compute',async(value:unknown)=>{
+    validateBuild(value);
+    if(manualBackend){await verifiedDataContext();assertBuildVersion(value);return manualBackend.compute(value);}
+    const context=await verifiedContext();assertBuildVersion(value);return pok.compute(value,context);
+  });
   handle('pok:apply-build-proposal',(id:unknown)=>track(stateWrites.run(async()=>{
     text(id,128,'제안 ID');
-    const context=await verifiedContext();
+    const context=await verifiedDataContext();
     const proposal=proposals.get(id);
     const current=state.builds.find(b=>b.id===proposal?.buildId);
     const next=proposals.prepare(id,current,context.bundleId);
@@ -221,7 +243,7 @@ function registerIpc():void{
     }
     const request=value as unknown as AgentRequest;
     if(request.build){
-      const context=await verifiedContext();
+      const context=await verifiedDataContext();
       const stored=state.builds.find(build=>build.id===request.build!.id)!;
       request.build={...request.build,xmlSha256:xmlHash(request.build.xml),bundleId:context.bundleId,designRef:stored.design?.recordRef??null,acquisitionMetadataJson:stored.acquisitionMetadataJson??null};
     }
@@ -285,7 +307,7 @@ function createWindow():void{
     "object-src 'none'","base-uri 'none'","frame-ancestors 'none'","form-action 'none'"
   ].join('; ');
   contents.session.webRequest.onHeadersReceived((details,callback)=>callback({responseHeaders:{...details.responseHeaders,'Content-Security-Policy':[csp]}}));
-  window.once('ready-to-show',()=>window?.show());
+  window.once('ready-to-show',()=>{if(app.isPackaged||process.env.POK_UI_TEST_HIDDEN!=='1')window?.show();});
   window.on('closed',()=>{window=undefined;});
   void (developmentUrl?window.loadURL(developmentUrl):window.loadFile(renderer));
 }
@@ -299,7 +321,8 @@ void app.whenReady().then(async()=>{
     catch{return new Response('이미지를 읽을 수 없습니다.',{status:404});}
   });
   app.setAppUserModelId('dev.pok.desktop');
-  gameData=new GameDataStore(dataRoot(),{allowCheckout:!app.isPackaged});
+  gameData=await createGameDataStore(dataRoot(),{allowCheckout:!app.isPackaged});
+  if(gameData instanceof ManualGameDataStore){manualBackend=new ManualPobBackend(gameData,join(app.getPath('userData'),'cache','pob-worker'));connectionInfo={connected:false,managed:false,profile:'agent'};}
   // Show the workspace while the immutable bundle is checked; editing gates await getInfo().
   void gameData.getInfo().then(info=>{bundleInfo=info;});
   protocol.handle('pok-tree',async request=>{
@@ -314,6 +337,7 @@ void app.whenReady().then(async()=>{
   const dataDirectory=join(app.getPath('userData'),'workspace');
   store=new StateStore(dataDirectory,()=>{
     const fresh=createDefaultState();
+    if(manualBackend)fresh.settings.pok={mode:'checkout',root:'',python:'',luajit:''};
     const sibling=resolve(dirname(app.getAppPath()),'poe2-ai-wiki');
     const hasBundle=existsSync(join(bundledRuntimeRoot(),'resources','runtime-manifest.json'));
     if(!app.isPackaged&&!hasBundle&&existsSync(join(sibling,'src','pok'))&&existsSync(join(sibling,'knowledge'))){
@@ -324,7 +348,7 @@ void app.whenReady().then(async()=>{
     }
     return fresh;
   });
-  try{state=await store.load();state.settings.pok=effectivePokSettings(state.settings.pok,app.isPackaged);}
+  try{state=await store.load();state.settings.pok=effectivePokSettings(state.settings.pok,app.isPackaged&&!manualBackend);}
   catch(error){
     const result=await dialog.showMessageBox({type:'error',title:'POK 저장 파일 오류',message:String(error),
       detail:'기존 데이터는 덮어쓰지 않습니다. 데이터 폴더를 확인한 후 앱을 다시 실행해 주세요.',
@@ -342,7 +366,7 @@ void app.whenReady().then(async()=>{
     if(window&&!window.isDestroyed())window.webContents.send('pok:agent-event',event);
   },join(dataDirectory,'agent-workspace'),gameData,{dataHome:join(app.getPath('userData'),'engine'),cacheHome:join(app.getPath('userData'),'cache','pok')});
   applyTheme();registerIpc();createWindow();
-  void connectEngine(state.settings.pok);
+  if(!manualBackend)void connectEngine(state.settings.pok);
   if(store.recoveryMessage)await dialog.showMessageBox(window!,{type:'warning',title:'저장 파일 복구',message:store.recoveryMessage});
 }).catch(error=>{dialog.showErrorBox('POK 시작 오류',String(error));app.quit();});
 app.on('activate',()=>{if(!window&&state)createWindow();});
@@ -353,6 +377,6 @@ app.on('before-quit',event=>{
   event.preventDefault();quitting=true;
   void(async()=>{
     try{await Promise.allSettled([...writes]);await store?.flush();}
-    finally{agent?.close();await pok.close();app.quit();}
+    finally{agent?.close();const results=await Promise.allSettled([pok.close(),...(manualBackend?[manualBackend.close()]:[])]);for(const result of results)if(result.status==='rejected')console.error('PoB/PoK cleanup unconfirmed',result.reason);app.quit();}
   })();
 });

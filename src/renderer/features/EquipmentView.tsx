@@ -61,7 +61,7 @@ export function EquipmentView({ parsed, edit, catalogEnabled = true, connected =
   async function renderAndEquip(kind: 'base' | 'unique' | 'rare') {
     if (rendering) return;
     if (!catalogEnabled) { setCatalogStatus('현재 트리 버전에서는 카탈로그 아이템을 적용할 수 없습니다.'); return; }
-    if (!connected) { setCatalogStatus('pok 엔진 연결 후 장착할 수 있습니다. 카탈로그 조회는 계속 가능합니다.'); return; }
+    if (!connected) { setCatalogStatus('PoB 계산기를 준비한 후 장착할 수 있습니다. 카탈로그 조회는 계속 가능합니다.'); return; }
     const entry = kind === 'unique' ? selectedUnique : selectedBase;
     if (!entry) return;
     const submitted = { ...renderContext.current };
@@ -156,7 +156,7 @@ export function EquipmentView({ parsed, edit, catalogEnabled = true, connected =
               <button className="primary" disabled={!canRenderCatalog || rendering !== '' || !rareMods.length} onClick={() => void renderAndEquip('rare')}>{rendering === 'rare' ? '생성 중...' : '레어 장착'}</button>
             </div>}
           </div>
-          <p className="muted library-note">{catalogStatus || (connected ? '카탈로그 항목은 고정된 PoB 데이터에서 아이템 텍스트를 생성한 뒤에만 적용합니다.' : 'pok 엔진 연결 전에도 카탈로그 조회는 가능하지만 장착은 연결 후 사용할 수 있습니다.')}</p></div></div>
+          <p className="muted library-note">{catalogStatus || (connected ? '카탈로그 항목은 고정된 PoB 데이터에서 아이템 텍스트를 생성한 뒤에만 적용합니다.' : '카탈로그를 조회할 수 있습니다. 장착하려면 PoB 계산기가 필요합니다.')}</p></div></div>
       </div>
     </div>
   </section>;

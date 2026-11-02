@@ -79,17 +79,20 @@ export class PobWorkerConnection {
   constructor(private readonly startupTimeoutMs = 180_000) {
     if (!Number.isSafeInteger(startupTimeoutMs) || startupTimeoutMs <= 0 || startupTimeoutMs > 180_000) throw new RangeError('PoB worker 시작 기한이 올바르지 않습니다.');
   }
+  get workerInstance(): string | undefined { return this.connected ? this.instance : undefined; }
+  get busy(): boolean { return [...this.pending.values()].some(request => !['cancel', 'shutdown', 'runtime_info'].includes(request.method)); }
   get connected(): boolean { return !!this.child && !!this.identity && !this.closing; }
 
-  connect(launch: WorkerLaunchDescriptor): Promise<{identity: PobWorkerIdentity; provenance: WorkerProvenance}> {
+  connect(launch: WorkerLaunchDescriptor, timeoutMs = this.startupTimeoutMs): Promise<{identity: PobWorkerIdentity; provenance: WorkerProvenance}> {
+    if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0 || timeoutMs > this.startupTimeoutMs) return Promise.reject(new Error('PoB worker 시작 기한이 올바르지 않습니다.'));
     if (this.connecting) return Promise.reject(new Error('PoB worker 연결이 이미 진행 중입니다.'));
     this.connecting = true;
-    return this.connectOwned(launch).finally(() => { this.connecting = false; });
+    return this.connectOwned(launch, timeoutMs).finally(() => { this.connecting = false; });
   }
 
-  private async connectOwned(launch: WorkerLaunchDescriptor): Promise<{identity: PobWorkerIdentity; provenance: WorkerProvenance}> {
+  private async connectOwned(launch: WorkerLaunchDescriptor, timeoutMs: number): Promise<{identity: PobWorkerIdentity; provenance: WorkerProvenance}> {
     await this.close();
-    const deadline = performance.now() + this.startupTimeoutMs;
+    const deadline = performance.now() + timeoutMs;
     assertWorkerIdentity(launch.identity);
     this.closing = false; this.instance = undefined; this.bytes = Buffer.alloc(0); this.errors = ''; this.fault = undefined; this.cleanupConfirmed = true;
     const generation = ++this.generation;
@@ -99,7 +102,7 @@ export class PobWorkerConnection {
     this.child = child;
     this.exited = new Promise(resolve => child.once('close', () => resolve()));
     const hello = new Promise<RecordValue>((resolve, reject) => { this.hello = {resolve, reject}; });
-    const helloTimer = setTimeout(() => this.hello?.reject(new Error('PoB worker 초기 통신 시간이 초과됐습니다.')), this.startupTimeoutMs);
+    const helloTimer = setTimeout(() => this.hello?.reject(new Error('PoB worker 초기 통신 시간이 초과됐습니다.')), timeoutMs);
     child.stdout.on('data', (chunk: Buffer) => { if (this.child === child && generation === this.generation) this.read(chunk); });
     child.stderr.on('data', (chunk: Buffer) => { if (this.child === child) this.errors = (this.errors + chunk.toString('utf8')).slice(-16_384); });
     child.on('error', error => this.lost(child, error.message));
@@ -165,6 +168,7 @@ export class PobWorkerConnection {
   }
 
   request(method: string, params: RecordValue = {}, timeout = 180_000): Promise<RecordValue> {
+    if (!Number.isSafeInteger(timeout) || timeout <= 0 || timeout > 180_000) return Promise.reject(new Error('PoB worker 요청 기한이 올바르지 않습니다.'));
     const child = this.child;
     if (!child || this.fault || this.closing && method !== 'shutdown' && method !== 'cancel') return Promise.reject(new Error('PoB worker가 연결되지 않았습니다.'));
     const id = randomUUID();
@@ -181,10 +185,10 @@ export class PobWorkerConnection {
     });
   }
 
-  async compute(xml: string, stats?: string[]): Promise<WorkerCalculation> {
+  async compute(xml: string, stats?: string[], timeoutMs = 180_000): Promise<WorkerCalculation> {
     if (!this.connected) throw new Error('PoB 계산 런타임을 먼저 준비해 주세요.');
     const revision = 'sha256:' + createHash('sha256').update(xml, 'utf8').digest('hex');
-    const response = await this.request('compute_xml', {xml, expected_xml_revision: revision, ...(stats ? {stats} : {})});
+    const response = await this.request('compute_xml', {xml, expected_xml_revision: revision, ...(stats ? {stats} : {})}, timeoutMs);
     const result = response.result;
     if (!record(result) || result.xml_revision !== revision || !record(result.stats)) throw new Error('계산 결과의 실제 입력이 다릅니다.');
     assertWorkerIdentity(result.identity);
@@ -195,9 +199,9 @@ export class PobWorkerConnection {
     return {...result, execution:response.execution, ...(changes === undefined ? {} : {wire_normalizations:changes})} as unknown as WorkerCalculation;
   }
 
-  async exportCatalog(): Promise<WorkerCatalog> {
+  async exportCatalog(timeoutMs = 180_000): Promise<WorkerCatalog> {
     if (!this.connected || !this.identity) throw new Error('PoB 계산 런타임을 먼저 준비해 주세요.');
-    const response = await this.request('export_catalog');
+    const response = await this.request('export_catalog', {}, timeoutMs);
     if (!record(response.result)) throw new Error('PoB 카탈로그 결과가 없습니다.');
     assertWorkerIdentity(response.result.identity);
     if (response.result.identity.sha256 !== this.identity.sha256) throw new Error('카탈로그 생성 중 런타임 출처가 변경됐습니다.');
@@ -205,9 +209,9 @@ export class PobWorkerConnection {
     return response.result.catalog;
   }
 
-  async renderItem(request: ItemRenderRequest): Promise<ItemRenderResult> {
+  async renderItem(request: ItemRenderRequest, timeoutMs = 180_000): Promise<ItemRenderResult> {
     if (!this.connected || !this.identity) throw new Error('PoB 계산 런타임을 먼저 준비해 주세요.');
-    const response = await this.request('render_item', {...request});
+    const response = await this.request('render_item', {...request}, timeoutMs);
     const result = response.result;
     if (!record(result) || result.ok !== true || typeof result.text !== 'string' || !result.text) throw new Error('PoB 아이템 원문 결과가 없습니다.');
     assertWorkerIdentity(result.identity);

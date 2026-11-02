@@ -1,6 +1,6 @@
 import type { BuildInputs, DesignRecordReference, DesignRecordSnapshot } from './build-revision';
 import type { CalculationProvenance } from './calculation-context';
-import type { CatalogEntry, CatalogEntryType, CatalogQuery, CatalogQueryResult, DataBundleInfo, ItemRenderRequest, ItemRenderResult, RuntimeIdentity } from './game-data';
+import type { CatalogEntry, CatalogEntryType, CatalogQuery, CatalogQueryResult, DataBundleInfo, ItemRenderRequest, ItemRenderResult, RuntimeIdentity, AgentRuntimeIdentity } from './game-data';
 import type { PassiveTreeData } from './passive-tree';
 
 export type { CatalogEntry, CatalogEntryType, CatalogQuery, CatalogQueryResult, DataBundleInfo, ItemRenderRequest, ItemRenderResult } from './game-data';
@@ -54,7 +54,7 @@ export interface Settings {
   trade: { league: string };
 }
 export interface AppState { schemaVersion: 1 | 2; settings: Settings; chats: Chat[]; builds: BuildDocument[]; activeBuildId?: string; activeChatId?: string }
-export interface ConnectionInfo { connected: boolean; connecting?: boolean; managed?: boolean; bundleId?: string; identity?: RuntimeIdentity; compatibility?: 'ready' | 'engine-unavailable' | 'incompatible'; info?: unknown; tools?: string[]; error?: string }
+export interface ConnectionInfo { connected: boolean; connecting?: boolean; managed?: boolean; bundleId?: string; identity?: RuntimeIdentity; profile?:'desktop'|'agent'; agentIdentity?:AgentRuntimeIdentity; compatibility?: 'ready' | 'agent-ready' | 'engine-unavailable' | 'incompatible'; info?: unknown; tools?: string[]; error?: string }
 export interface BuildProposalDraft { inputs?:BuildInputs; baseDesignRevision?:string|null; buildId: string; baseRevision: number; baseXmlSha256: string; bundleId: string; xml: string; summary: string }
 export interface BuildProposal extends BuildProposalDraft { proposalId: string; changes: string[] }
 export interface AgentRequest { chatId: string; prompt: string; history: Message[]; images?:ChatImage[]; providerThreadId?: string; build?: { id: string; name: string; revision: number; xml: string; xmlSha256?: string; bundleId?: string; designRef?:DesignRecordReference|null; acquisitionMetadataJson?:string|null } }

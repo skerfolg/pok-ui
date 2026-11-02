@@ -4,7 +4,7 @@ PoE2 빌드와 대화를 관리하는 Electron + React + TypeScript 앱. 지식�
 
 소스 저장소: [skerfolg/pok-ui](https://github.com/skerfolg/pok-ui). UI 소스는 [MIT License](LICENSE)를 따른다. PoB·게임 이미지와 의존성에는 각 원본 라이선스가 적용된다.
 
-**2026-10-30 현재 방향과 인계:** [다른 PC 재개 문서](docs/HANDOFF-20261030.md)를 먼저 읽는다. 목표는 **PoK·AI 없이 PoB 작업을 완결하는 독립 pok-ui**이며, PoK도 UI 없이 독립 동작한다. 연동 시 양쪽 PoB 버전 호환성을 확인한다. 현재 구현은 이 목표에 미달하며, 아래 엔진 자동 실행·번들 준비 설명은 기존 구현의 설명이다. 이번 검증은 UI 검사 128개·코드 빌드·일부 Electron 수동 동선까지이고, 전체 PoB 기능·최신 엔진 계산·AI 전체 동선·portable 성공을 뜻하지 않는다.
+**2026-11-02 구현 상태:** 승인한 독립 worker 방식으로 Windows 수동 계산·카탈로그·원문 저장을 연결했다. 실제 Electron에서 PoK 없이 Native 계산과 저장/재시작을 검증했다. 선택 PoK는 별도 agent 프로필로 연결한다. UI192검사·코드 build가 통과했으며 배포 기본 경로 전환·macOS 독립 Python·실제 프로바이더 전체 동선은 남아 있다. installer/PoB 전체 기능 동등성이나 빌드 생성 품질 개선을 선언하지 않는다. [진행 상태](docs/CURRENT-PLAN.md)와 [구조](docs/ARCHITECTURE.md)를 기준으로 재개한다.
 
 ## 실행
 
@@ -15,7 +15,7 @@ npm ci
 npm run dev
 ```
 
-앱 시작 시 main 프로세스가 POK를 자동으로 실행하고 연결한다. 개발에서는 `pok 설정`에 저장한 체크아웃/Python 또는 번들 설정을 사용한다. 배포 앱은 저장된 개발 경로를 사용하지 않고 검증된 번들 POK로 연결한다. 수동 버튼은 재연결용이며, 화면 새로고침으로 엔진을 다시 실행하지 않는다.
+v2 수동 묶음에서는 PoK를 자동 실행하지 않고 계산 요청 시 독립 PoB worker를 준비한다. 기존 v1 묶음에서만 아래 PoK 자동 연결을 사용한다. 개발에서는 `pok 설정`에 저장한 체크아웃/Python 또는 번들 설정을 사용한다. 배포 앱은 저장된 개발 경로를 사용하지 않고 검증된 번들 POK로 연결한다. 수동 버튼은 재연결용이며, 화면 새로고침으로 엔진을 다시 실행하지 않는다.
 
 ```sh
 npm run check
@@ -82,3 +82,18 @@ npm run dist:win
 생성된 리소스·실행 파일·사용자 작업 공간은 Git에 넣지 않는다. 앱은 리소스를 읽기 전용으로 사용하고 사용자 데이터 폴더에 저장한다. macOS 패키지는 별도 native 검증이 필요하다.
 
 엔진은 main 프로세스에서 MCP stdio로 실행한다. `POK_DATA_HOME`과 `POK_CACHE_HOME`은 사용자 데이터 아래로 지정하며 배포 리소스는 읽기 전용으로 취급한다. 엔진 업데이트와 UI 업데이트는 각 저장소에서 관리한다.
+
+
+## 독립 수동 묶음 개발 검증
+
+형제 엔진의 worker_pack으로 clean runtime을 만들고, 그 worker의 export_catalog로 만든
+카탈로그와 같은 PoB 원본에서 변환한 표시 트리를 준비한다. UI는 게임 데이터를 계산하거나
+KB에서 raw 편집 ID를 대신 만들지 않는다.
+
+```sh
+npm run bundle:prepare-manual -- --worker-root <worker-bundle> --catalog <catalog.json> --trees-root <passive-tree> --output <new-directory>
+```
+
+기존 출력은 덮어쓰지 않는다. 준비한 절대 경로를 개발 환경의 POK_UI_BUNDLE_DIR에 지정해
+앱을 실행한다. 이 경로는 배포 앱에서는 사용하지 않는다. 기존 dist:win/dist:mac은 아직
+v1 출고 검사를 사용하므로 새 standalone 배포 완료 명령으로 해석하지 않는다.
