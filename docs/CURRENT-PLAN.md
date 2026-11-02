@@ -2,6 +2,8 @@
 
 ## 초기 트리·원본 버전 변환 — 2026-11-03 (20차)
 
+UI 구현 **`dc36350249ebb356050be81dc17c71b2a19baa9f`**, 브랜치 `skerfolg/coho`. 다른 PC에서는 이 구현 이후의 인계 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다. 다음은 구형 root Spec 정규화/직접 편집, 원본 tree URL·control/옵션/명령의 세부 대응표와 남은 고급 기능을 계속 구현한다. 아래19차의 ‘초기 생성·버전 변환이 다음’은 이번에 보완했으며 전체 목표는 유지한다.
+
 최종 source `.local/tree-workspace-native-1793650856862/result.json` / Windows packaged `.local/tree-workspace-native-1793650959965/result.json` **각7개 그룹 통과**. native 작업6·legacy guard1·기존 native tree5·check167/build/pack:win 통과. 명시 초기 버전/직업, 복사/교체/전체 변환, 미적용/입력 변경/대기 취소·문서 격리, unknown/originalXml, undo/redo/revision6 새 계산, bare Warrior 초기화, legacy 실제 IPC 거부/원문0, 다중 문서/계산/receipt 재시작을 확인했다. 두 해상도의 source/packaged 검토 화면 직접 시각 확인. 아래 실행 중/중간 실패는 이 최종 결과로 대체한다.
 
 PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB/PoK 비사용. runtime `pob-ac7d54149c8c54f756b1379a4ec977d59aff2675602a04061c0ae784b55d32a9`(1711파일), manifest SHA256 `748777f51573dcfbdf6c6c0f582b5565db54108ffedaa0de8c03c7a86f1e28b1`; editor `pob-editor-c6079d8bbc361f6d21d70ed45674936abb01deed9561acd1970bcd17d1b7bce5`, manifest SHA256 `b79eeaeda31bfb397a0bd04993eb38850c97d9a8ec9223407a456f7e1f28e24e`. 원본/공유 엔진 소스·문서/ref 변경 없음.
