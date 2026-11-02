@@ -391,3 +391,14 @@ UI Node 자식에서 특정 PoB txt 파일 읽기가 EBADF로 실패했다. UI �
 다음은 이 접근 오류의 원인 분리, schemaVersion2 카탈로그와 독립 수동 backend의 실제
 consumer 연결, 선택 PoK 분리, Electron 계산→저장→재시작 검증이다. 앱 main의 기존
 PoK 의존 계산 경로는 아직 교체하지 않았다. R6·배포 완료와 PoB 전체 기능 동등성을 선언하지 않는다.
+
+
+## R6 원격 CI와 동시 연결 회귀 — 2026-11-02
+
+동시 connect 요청이 초기화 중 worker 소유권을 덮어쓰지 못하도록 차단했다. runtime_info는
+실제 worker의 제어 응답 계약에 맞춰 소비한다. 전송 테스트5개와 전체 npm check170개,
+앱 build를 통과했다. 원격9c64ef4 CI에서는 기존 번들 테스트가 Linux에서 Windows
+전용 exporter.cmd를 실행해 EACCES로 실패했다. fixture 실행기를 Windows cmd/POSIX sh로
+분기하고 실제 Node 경로와 POSIX 실행 비트를 사용하도록 수정했다. Windows에서 번들
+관련7검사와 타입 검사를 재통과했으며 POSIX 결과는 후속 원격 CI에서 확인한다.
+이 CI fixture 결함은 독립 번들의 UI EBADF 읽기 오류와 구분한다.

@@ -32,6 +32,7 @@ function launch(mode = 'normal'): WorkerLaunchDescriptor {
     input.on('line',line=>{
       const r=JSON.parse(line);
       if(r.method==='initialize')emit({id:r.id,ok:true,result:{identity,provenance:{mode:'bundled',bundle_manifest_verified:true}},execution:{owner}});
+      else if(r.method==='runtime_info')emit({id:r.id,ok:true,identity});
       else if(r.method==='compute_xml') {
         if(mode==='crash') {input.close(); process.exitCode=1;process.stdin.destroy();return;}
         emit({id:r.id,ok:true,result:{identity,xml_revision:mode==='wrong-revision'?'wrong':'sha256:'+crypto.createHash('sha256').update(r.params.xml).digest('hex'),stats:{Life:1}},execution:{owner}});
@@ -57,6 +58,8 @@ test('worker transport binds exact XML revision and confirms shutdown', async ()
   try {
     const actual = await worker.connect(launch());
     assert.equal(actual.identity.sha256, identity().sha256);
+    const runtime = await worker.request('runtime_info');
+    assert.equal((runtime.identity as PobWorkerIdentity).sha256, actual.identity.sha256);
     const xml = '<PathOfBuilding>\r\n</PathOfBuilding>';
     const result = await worker.compute(xml);
     assert.equal(result.xml_revision, 'sha256:' + createHash('sha256').update(xml).digest('hex'));
@@ -80,4 +83,12 @@ test('unconfirmed native cleanup blocks replacement after a worker crash', async
   await assert.rejects(worker.compute('<PathOfBuilding/>'),/종료/);
   await assert.rejects(worker.close(),/종료.*확인/);
   await assert.rejects(worker.connect(launch()),/종료.*확인/);
+});
+
+
+test('simultaneous connects cannot replace a worker being initialized', async () => {
+  const worker = new PobWorkerConnection();
+  const first = worker.connect(launch());
+  await assert.rejects(worker.connect(launch()), /이미 진행 중/);
+  try {await first; assert.equal(worker.connected,true);} finally {await worker.close();}
 });

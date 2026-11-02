@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -74,6 +74,18 @@ async function fixture() {
   };
 }
 
+async function scriptLauncher(directory: string, name: string): Promise<string> {
+  const windows = process.platform === 'win32';
+  const path = join(directory, name + (windows ? '.cmd' : '.sh'));
+  const quote = (value: string) => "'" + value.replace(/'/g, "'\\''") + "'";
+  const body = windows
+    ? '@echo off\r\n"' + process.execPath + '" "%~dp0' + name + '.js" %*\r\n'
+    : '#!/bin/sh\nexec ' + quote(process.execPath) + ' "$(dirname "$0")/' + name + '.js" "$@"\n';
+  await writeFile(path, body, 'utf8');
+  if (!windows) await chmod(path, 0o755);
+  return path;
+}
+
 async function runtimeArtifact(directory: string, options: { badExport?: boolean } = {}) {
   const root = join(directory, options.badExport ? 'bad-runtime' : 'runtime-artifact');
   const digestIdentity = {
@@ -99,7 +111,8 @@ fs.writeFileSync(out, JSON.stringify({
 }, null, 2)+'\\n');
 `;
   await writeFile(join(root, 'exporter.js'), exporterJs, 'utf8');
-  await writeFile(join(root, 'exporter.cmd'), '@echo off\r\nnode "%~dp0exporter.js" %*\r\n', 'utf8');
+  const launcher = await scriptLauncher(root, 'exporter');
+  const launcherName = process.platform === 'win32' ? 'exporter.cmd' : 'exporter.sh';
   const manifest = {
     format_version: 1,
     version: digestIdentity.pok.version,
@@ -107,10 +120,10 @@ fs.writeFileSync(out, JSON.stringify({
     pob_commit: digestIdentity.pob.commit,
     pob_root: 'pob',
     ui_tree_versions: ['0_5'],
-    entrypoint: ['exporter.cmd', 'serve'],
+    entrypoint: [launcherName, 'serve'],
     identity: digestIdentity,
     sha256: {
-      'exporter.cmd': sha256(await readFile(join(root, 'exporter.cmd'))),
+      [launcherName]: sha256(await readFile(launcher)),
       'exporter.js': sha256(await readFile(join(root, 'exporter.js')))
     }
   };
@@ -133,9 +146,7 @@ fs.writeFileSync(path.join(dir,'ATTRIBUTION.md'),'fixture');
 fs.writeFileSync(path.join(dir,'POB-LICENSE.md'),'fixture');
 fs.writeFileSync(path.join(dir,'manifest.json'),JSON.stringify({schemaVersion:1,version,treeFile:'tree.json',assets:{icon:{file:'icon.webp',mime:'image/webp',width:1,height:1}},source:{project:'fixture',commit:rev,treeSha256:crypto.createHash('sha256').update('source').digest('hex'),files:{'tree.json':crypto.createHash('sha256').update('source').digest('hex')}},treeFileSha256:crypto.createHash('sha256').update(tree).digest('hex'),diagnostics:{missingArtwork:[]},counts:{nodes:0,assetNames:1,imageFiles:1}},null,2)+'\\n');
 `, 'utf8');
-  const cmd = join(directory, 'tree-converter.cmd');
-  await writeFile(cmd, '@echo off\r\nnode "%~dp0tree-converter.js" %*\r\n', 'utf8');
-  return cmd;
+  return scriptLauncher(directory, 'tree-converter');
 }
 
 test('prepare and verify data bundle bind runtime, catalog, tree and file hashes', async () => {

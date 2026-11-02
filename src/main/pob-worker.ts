@@ -45,12 +45,19 @@ export class PobWorkerConnection {
   private bytes = Buffer.alloc(0);
   private errors = '';
   private closing = false;
+  private connecting = false;
   private fault?: string;
   private cleanupConfirmed = true;
   private exited?: Promise<void>;
   get connected(): boolean { return !!this.child && !!this.identity && !this.closing; }
 
-  async connect(launch: WorkerLaunchDescriptor): Promise<{identity: PobWorkerIdentity; provenance: WorkerProvenance}> {
+  connect(launch: WorkerLaunchDescriptor): Promise<{identity: PobWorkerIdentity; provenance: WorkerProvenance}> {
+    if (this.connecting) return Promise.reject(new Error('PoB worker 연결이 이미 진행 중입니다.'));
+    this.connecting = true;
+    return this.connectOwned(launch).finally(() => { this.connecting = false; });
+  }
+
+  private async connectOwned(launch: WorkerLaunchDescriptor): Promise<{identity: PobWorkerIdentity; provenance: WorkerProvenance}> {
     await this.close();
     assertWorkerIdentity(launch.identity);
     this.closing = false; this.instance = undefined; this.bytes = Buffer.alloc(0); this.errors = ''; this.fault = undefined; this.cleanupConfirmed = true;
@@ -111,7 +118,7 @@ export class PobWorkerConnection {
         if (typeof value.id !== 'string') throw new Error('PoB worker 응답 ID가 없습니다.');
         const waiting = this.pending.get(value.id);
         if (!waiting) throw new Error('현재 요청에 속하지 않는 worker 응답입니다.');
-        if ((value.ok === true && !['shutdown', 'cancel'].includes(waiting.method) && !record(value.execution)) || (record(value.execution) && value.execution.owner !== this.instance)) {
+        if ((value.ok === true && !['shutdown', 'cancel', 'runtime_info'].includes(waiting.method) && !record(value.execution)) || (record(value.execution) && value.execution.owner !== this.instance)) {
           waiting.reject(new Error('다른 worker 인스턴스의 실행 응답입니다.'));
           throw new Error('다른 worker 인스턴스의 실행 응답입니다.');
         }
