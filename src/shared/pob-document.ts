@@ -7,6 +7,9 @@ import {partyNames,type PartyName} from './pob-party';
 export const MAX_XML_BYTES = 10 * 1024 * 1024;
 export const LEGACY_TREE_WORKSPACE_MESSAGE='기존 단일 Spec 트리가 있습니다. 초기 생성 대신 원본 PoB의 복원 결과를 검토해 편집 형식으로 옮겨 주세요. 적용 전에는 원문이 바뀌지 않습니다.';
 export function hasLegacyPassiveSpec(xml:string):boolean{return children(readXml(xml).documentElement!,'Spec').length>0;}
+export function unsupportedTreeVersions(xml:string,supported:readonly string[]):{id:string;version:string}[]{
+  const root=readXml(xml).documentElement!;return children(child(root,'Tree'),'Spec').flatMap((spec,index)=>{const version=attr(spec,'treeVersion');return version&&!supported.includes(version)?[{id:String(index+1),version}]:[];});
+}
 
 // PoB's XML reader expects literal attribute whitespace, unlike a standard XML parser.
 // Only touch quoted attributes, never text, comments, CDATA or processing instructions.

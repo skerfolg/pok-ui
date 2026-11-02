@@ -1,5 +1,17 @@
 # 현재 작업
 
+## 과거 지원 트리의 공통 카탈로그 — 2026-11-03 (23차)
+
+최종 source `.local/catalog-versions-native-1793656910921/result.json` / Windows packaged `.local/catalog-versions-native-1793657050359/result.json` **각5개 그룹 통과**. native6/check176/build/pack:win 통과. old0_1/latest0_5 원본 item/mod/gem 선택→적용→full numeric stats 일치, tree version/unknown/originalXml 보존, old undo4/redo5·새 계산, unsupported active/inactive 진단·카탈로그/계산 차단/원문0, 저장/재시작·PoK 미연결을 확인했다. source/packaged 두 크기의 과거 tree catalog/선택·적용 버튼과 수치를 직접 시각 확인했다. 아래 진행 중/하네스 실패는 이 최종 결과로 대체한다.
+
+PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB/PoK 비사용. 이번은 UI/host 변경이며22차 runtime `pob-c3830dc62a9a39bc4040d36bb0ce4448bf5378c4bc5c5849b33a2f7a9906d74e` / manifest SHA256 `3ec5a25f4040e3af75e32df6ae225f5be92e95568cab35304ed02a753d0d6cd7`, editor `pob-editor-d5ab4c116002fb1972629c9803e305127415c3826f6be2903c7a2ee78a33acbe` / SHA256 `f90c7de4c5c0ed873f44da523120a85cef6f35ceaa8f62f16bd2653f230cd885`를 그대로 검증/사용했다. 원본/공유 엔진 소스·문서/ref 변경 없음. [로드 계약 최소 재현/필요 계약](POB-LOAD-CONTRACT.md)을 별도로 남겼다.
+
+남은 범위: 원본 control/옵션/명령 전수 대응표, 고급 아이템·스킬/미니언·특수 트리·계산/파티/노트/네트워크/단축키, 혼합 구형 입력 선택과 다른 종류의 load 실패 감사, 전체 revision 장기 근거, 원본 GUI 왕복/portable·선택 PoK/AI 검증. legacy AI 제안 경로의 version 조건은 이번 수동 catalog gate 변경과 별도로 남는다. 모든 직업·아이템·젬·조건 조합 및 #188 해결/재평가 준비 완료를 선언하지 않는다. 전체 목표 active.
+
+원본 Build의 self.data=data는 tree와 독립적인 공통 item/gem/skill 데이터다. UI가 defaultTreeVersion과 일치할 때만 catalog를 허용하던 조건을 출처 일치/runtime ID/commit·양쪽 supportedTreeVersions 확인으로 바꿨다. 직업/전직은 기존 버전별 native control을 유지하며 최신 catalog class ID를 과거 tree에 매핑하지 않는다. 원문 편집·초기 생성과 catalog 준비/지원 오류도 구분한다.
+
+첫 native 실행은0_1~0_5 모두 원본 rare Strength7→15/Fireball4.4583333333333 계산을 통과했으나, unsupported9_99의 Item API는 원본 headless의 XML load 종료 후에도 거부되지 않고 결과를 반환했다. 요청한 문맥의 복원 성공으로 간주할 수 없으며 기본 빌드 계산 수치로 바뀌었는지까지 측정하지 않았다. 이를 성공으로 기록하지 않고 `.local/standalone-pob/catalog-versions-before-guard.json`에 보존했다. host는 모든 canonical Spec의 명시 treeVersion을 XML/item context/support XML에서 검사해 미지원 active/inactive를 실행 전에 POB_TREE_VERSION으로 거부한다. build.targetVersion을 treeVersion으로 추정하지 않고 root legacy Spec의 실제 복원 계약도 유지한다. 원본/공유 엔진 소스는 수정하지 않았다. 전체 check/실제 source/packaged 검증은 진행 중이다.
+
 ## 원본 트리 코드 가져오기·내보내기 — 2026-11-03 (22차)
 
 UI 구현 **`ade5cdaa4dedfa9a065bc71421b5d5214e3b7ae5`**, 브랜치 `skerfolg/coho`. 다른 PC는 이후 인계 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다. 다음 재개는 과거 tree의 catalog gate 근거 감사와 원본 세부 control/남은 수동 기능을 따른다. 트리 code를 서비스 URL/전체 빌드 export로 취급하지 않는다. 전체 목표는 active다.

@@ -1,5 +1,7 @@
 # 구조와 배포 경계
 
+23차: item/gem catalog 접근은 native data/runtime source·ID·commit 및 양쪽 지원 tree 목록에 귀속한다. defaultTreeVersion은 new-build 기본값이며 과거 지원 tree에 대한 global data의 금지 기준이 아니다. 직업 metadata는 기존 native 버전별 control을 사용한다. 공통 request 경계는 XML/item buildXml/party supportXml의 모든 canonical Spec에 선언된 version을 검사해 unsupported popup/close 후 남은 객체를 요청한 문맥으로 사용하지 못하게 한다. root Spec/생략 version의 원본 계약과 game targetVersion을 이 검사로 재해석하지 않는다. renderer도 unsupported inactive 세트를 표시하며 원문/세트를 제거하거나 최신 version으로 바꿔 검사하지 않는다.
+
 22차: treeWorkspace의 import-code/export-code는 원본 popup의 필드/Copy callback과 명시 version의 PassiveSpec.DecodeURL을 사용한다. versionless code에 latest를 추정하지 않는다. 원본 allocator의 missing lookup을 관측하고 export의 실제 sourceNodes와 원문 노드를 host에서 비교해 로더 누락과 code 왕복 누락을 분리한다. export/inspect는 loadoutEdit가 적용을 거부하고, import만 fresh native Spec을 추가한다. renderer에는 byte parser/번역/게임 규칙이 없다. copyText IPC는 Electron의 Promise 완료를 기다린다. 동일 owner/XML/hash/runtime의 재계산에는 이전 edit 근거만 workspace_operation_source로 source revision과 함께 계승하며 수치/provenance는 항상 새 결과다. 다른 입력/engine 또는 새 명시 operation에는 이를 계승하지 않는다.
 
 21차: `tree-adopt-legacy`는 단일 root Spec/Tree 부재를 검증해 동일한 DOM 노드를 원래 위치의 Tree 아래로 옮긴다. native 요청은 정규화 전 원문을 로드하고 `adopt`로 원본 복원 후 Save의 known state를 전달한다. host가 검증한 source ID1을 native lineage에 연결하며 loadoutEdit는 구조 이동→clone/placement→known-state 패치→identity 순으로 적용한다. raw의 선언 버전을 UI가 모델 버전으로 추정하지 않는다. NativeTreeWorkspace의 adopt 검토는 버전/직업 선택과 분리하며, unknown metadata와 원문/undo를 보존한다. 혼합/다중 입력은 임의의 첫/마지막 spec을 선택하지 않고 거부한다.

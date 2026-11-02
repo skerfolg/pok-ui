@@ -6,7 +6,7 @@ PoE2 빌드와 대화를 관리하는 Electron + React + TypeScript 앱. 지식�
 
 **2026-11-03 현재 방향:** 목표는 **PoK·AI 없이 PoB 전체 작업을 완결하는 독립 pok-ui**다. [현재 진행](docs/CURRENT-PLAN.md)과 [독립 런타임 설계·준비 절차](docs/POB-STANDALONE-PLAN.md)를 따른다. [10월 인계](docs/HANDOFF-20261030.md)는 요구 변경과 당시 검증의 기록이다. 연동 시 양쪽 PoB 버전 호환성을 확인하며, 아래 과거 엔진 자동 실행·번들 설명을 최신 기본 경로로 사용하지 않는다.
 
-**현재 구현과 한계:** 원본 PoB 0.23.1/`5d173cb`의 독립 계산·카탈로그·트리·새 빌드·아이템 생성과 여러 편집/비교/통합 구성 동선을 구현했다. PoK·Python·KB 없이 합성 빌드를 실제 Electron과 Windows unpacked에서 편집·계산·저장/재시작했다. PoK는 명시적으로 선택할 때만 연결한다. check173/build 통과는 전체 PoB 동등성, portable, 원본 GUI 왕복, 실제 AI 모델 동선의 완료를 뜻하지 않는다. 세부 기능별 상태와 남은 범위는 위 계획/검증 문서를 따른다.
+**현재 구현과 한계:** 원본 PoB 0.23.1/`5d173cb`의 독립 계산·카탈로그·트리·새 빌드·아이템 생성과 여러 편집/비교/통합 구성 동선을 구현했다. PoK·Python·KB 없이 합성 빌드를 실제 Electron과 Windows unpacked에서 편집·계산·저장/재시작했다. PoK는 명시적으로 선택할 때만 연결한다. check176/build 통과는 전체 PoB 동등성, portable, 원본 GUI 왕복, 실제 AI 모델 동선의 완료를 뜻하지 않는다. 세부 기능별 상태와 남은 범위는 위 계획/검증 문서를 따른다.
 
 ## 실행
 
@@ -43,6 +43,8 @@ npm start
 검증 항목과 외부 XML을 사용한 화면 테스트 방법은 [검증 기록](docs/VALIDATION.md)에 있다.
 
 ## 현재 구현
+
+2026-11-03 23차: 같은 고정 PoB의 과거 지원 tree에서도 공통 item/gem 카탈로그를 사용할 수 있다. 최신 기본 tree와의 일치 조건을 제거하고 source/runtime ID/commit·지원 범위를 검증한다. 원본0_1~0_5 전부의 장비+8 Strength/Fireball 계산과 source/Windows packaged의 old/current 실제 편집·undo/restart·미지원 active/inactive 보존을 native6/source5/packaged5/check176/build/pack:win·두 크기에서 확인했다. 미지원 선언 version은 item/compute/support 문맥에서도 실행 전에 거부한다. [원본 로드 계약의 남은 한계](docs/POB-LOAD-CONTRACT.md)를 따르며 전체 원본 기능 완료는 아니다.
 
 2026-11-03 22차: 원본 트리 code 가져오기·내보내기와 copy IPC를 연결했다. versionless code의 버전을 명시하고 loader 누락/code 왕복 누락·전직/무기/주얼·인코더 한계를 구분한다. partial 근거는 재시작과 같은 입력 재측정에도 원래 revision으로 남기며 수치는 새 계산만 사용한다. native8/빈 문서1/source7/Windows packaged7/check173/build/pack:win·두 크기를 확인했다. rich clipboard 보호로 copy IPC만 검증했고 OS write는 미수행이다. 네트워크 단축 링크/PoEPlanner 및 전체 PoB 동등성은 남는다. [원본 제한](docs/POB-CODE-LIMITATIONS.md)을 따른다.
 

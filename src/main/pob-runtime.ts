@@ -5,7 +5,7 @@ import { isAbsolute, join, relative, resolve } from 'node:path';
 import { sha256File } from '../../scripts/file-integrity.mjs';
 import type { PobRuntimeInfo } from '../shared/pob-runtime';
 import type { BuildDocument, Calculation } from '../shared/contracts';
-import { projectActiveXml,parseBuild,editBuild,hasLegacyPassiveSpec,LEGACY_TREE_WORKSPACE_MESSAGE } from '../shared/pob-document';
+import { projectActiveXml,parseBuild,editBuild,hasLegacyPassiveSpec,LEGACY_TREE_WORKSPACE_MESSAGE,unsupportedTreeVersions } from '../shared/pob-document';
 import {isDeepStrictEqual} from 'node:util';
 import { xmlHash } from './build-proposals';
 import type {PobEditorCatalog} from '../shared/pob-editor';
@@ -196,6 +196,11 @@ export class PobRuntime {
       const manifest=await this.manifest();
       requireCurrent();
       if(expectedRuntimeId&&expectedRuntimeId!==manifest.runtimeId)throw new PobRuntimeError('POB_CHANGED','카탈로그와 실행 중인 PoB의 출처가 다릅니다. 데이터를 다시 준비해 주세요.');
+      const args=submitted.args as Record<string,unknown>|undefined;
+      for(const [label,xml]of [['빌드 XML',submitted.xml],['지원 빌드 XML',submitted.supportXml],['아이템 문맥 XML',args?.buildXml]] as const){
+        if(typeof xml!=='string')continue;const unsupported=unsupportedTreeVersions(xml,manifest.supportedTreeVersions);
+        if(unsupported.length)throw new PobRuntimeError('POB_TREE_VERSION',`${label}의 미지원 트리 ${unsupported.map(tree=>`${tree.id}:${tree.version}`).join(', ')}를 현재 고정 PoB에 로드할 수 없습니다. 원문을 보존합니다.`);
+      }
       if(generation!==this.generation)throw new PobRuntimeError('POB_CANCELLED','PoB 계산이 취소되었습니다.');
       const result=await this.run(manifest,submitted,generation,requestId);
       const after=await this.manifest();

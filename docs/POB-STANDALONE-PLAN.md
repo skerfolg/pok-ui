@@ -12,6 +12,8 @@ XML은 편집 정본이다. 계산은 제출 시점 XML을 격리된 원본 PoB�
 
 ## 기능 대응표 (원본 Classes/*Tab.lua 기준, 조사/구현 지속)
 
+23차(2026-11-03): 지원되는 과거 tree에서도 같은 original item/gem/skill data를 쓰므로 default tree 일치 gate를 source/runtime ID/commit·지원 범위 확인으로 바꿨다. 버전별 class/ascendancy는 기존 native control을 유지한다. 미지원 tree popup 이후에도 item 생성이 반환된 원본 load 문제를 발견해 모든 canonical Spec의 명시 version을 host에서 실행 전에 검증한다. native6(0_1~0_5·거부)/source5/Windows packaged5/check176/build/pack:win·두 크기 확인 통과. 과거 tree 카탈로그가 제한된다는 이전 gate 설명은 이번에 보완했다. [로드 계약](POB-LOAD-CONTRACT.md)의 다른 실패/전수 조합과 남은 전체 원본 기능은 계속 감사한다.
+
 22차(2026-11-03): 원본 export Copy/명시 version DecodeURL의 tree code 가져오기·내보내기·copy IPC를 연결했다. 현재 pin은 URL prefix/버전이 없는 code를 내므로 웹 공유 링크로 표시하지 않는다. loader 누락·code 왕복 누락/미포함 필드·고급 전직 한계와 부분 복원을 구분하고 source/revision/known-state를 보존한다. 같은 입력 재측정에는 과거 edit 근거만 별도 source revision으로 보존하고 숫자는 새 계산을 쓴다. native8/빈 문서1/source7/Windows packaged7/check173/build/pack:win·두 크기 확인 통과. 실제 OS clipboard는 rich 원본 보호 때문에 미수행이며 copy IPC만 확인했다. [원본 제한/남은 서비스 계약](POB-CODE-LIMITATIONS.md)을 따른다. 네트워크 단축 링크/PoEPlanner 및 모든 code 조합 완료가 아니다.
 
 21차(2026-11-03): 단일 root Spec을 원본 PoB의 실제 복원 결과로 검토한 뒤 현재 Tree/Spec 편집 형식으로 옮긴다. 원문 선언 버전과 실제 복원 버전이 다르면 드러내며 버전 업그레이드는 별도 선택이다. 동일 DOM/source lineage·native known-state 적용으로 unknown/루트 형제·비트리 XML과 원문/undo를 보존한다. native4/source5/Windows packaged5/check169/build/pack:win·두 크기 직접 시각 확인 통과. 구형 단일 Spec 자체를 편집할 수 없다는20차 제약은 이 명시 전환으로 보완했으며, Tree 혼합/여러 root Spec의 자동 해석과 전수 조합은 남는다.
@@ -114,6 +116,8 @@ node tests/pob-tree-adoption-smoke.cjs
 node tests/tree-adoption-desktop-smoke.cjs
 node tests/pob-tree-code-smoke.cjs
 node tests/tree-code-desktop-smoke.cjs
+node tests/pob-catalog-versions-smoke.cjs
+node tests/catalog-versions-desktop-smoke.cjs
 npm run verify:pob
 ```
 

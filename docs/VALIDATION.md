@@ -1,5 +1,18 @@
 # 로컬 검증
 
+## 지원 트리 공통 카탈로그·로드 전 검사 — 2026-11-03 (23차)
+
+- 최종 Windows packaged `.local/catalog-versions-native-1793657050359/result.json` **5개 그룹 통과**, source5와 동일한 old/current catalogue→원본 수치/unknown·version 보존→undo/redo/재측정→unsupported active/inactive 차단→저장/재시작을 확인했다. 두 크기의 old catalogue/원본 모드 선택/그룹 적용·새 수치를 직접 시각 확인했다. renderer pageerror 없음. 아래 진행 중은 native6/source5/packaged5/check176/build/pack:win 통과로 대체한다. 원본 GUI/portable/실물·전수 조합/모델은 미수행/미완료다. 개인 XML·세션을 사용하지 않았다.
+
+- 최종 source `.local/catalog-versions-native-1793656910921/result.json` **5개 그룹 통과**: old0_1/latest0_5의 원본 base/mod/gem catalogue 선택·장착/그룹 적용·full numeric stats 일치, old tree 원문/unknown/revision3→undo4/redo5·새 계산, 두 해상도, unsupported active/inactive의 진단·버튼 차단/원문0, 저장/재시작·PoK 미연결. renderer pageerror 없음. 두 크기의 과거 tree gem catalog와 적용 버튼/숫자를 직접 시각 확인했다. 첫 packaged `.local/catalog-versions-native-1793656848762/result.json`도 같은 이전 검색 하네스 오류였으며 수정본으로 최종 재실행 중이다.
+
+- 첫 source `.local/catalog-versions-native-1793656666472/result.json`은 old0_1/current0_5의 장비·젬·native full stats와 old undo/redo·두 크기3개 그룹을 통과한 뒤, 미지원 inactive 문서에서 검색 결과를 찾지 못해 멈췄다. 문서별 검색 state가 초기화되는데 하네스가 새 검색을 하지 않은 오류여서 새 문서에서 Iron Ring을 다시 검색하도록 고쳤다. 제품의 미지원 진단이 표시됐고 원문은 유지됐다. 최종 source/packaged는 재검사 중이며 이 실패를 전체 완료로 집계하지 않는다.
+
+- check **176 passed**, boundary/type 통과, build 통과. catalog gate는 같은 source/runtime ID/commit과 양쪽 지원 범위를 검사한다. 최신 기본 tree와 다르다는 이유로 차단하지 않는다. 미지원 비활성 선언도 실행 전에 확인하고 game targetVersion을 treeVersion으로 해석하지 않는 unit을 추가했다.
+- native `tests/pob-catalog-versions-smoke.cjs` **6개 그룹 통과**, `.local/standalone-pob/catalog-versions-result.json`:0_1~0_5 각각 원본 version별 class control로 초기화·같은 item/mod/gem catalogue 적용·Strength7→15/Fireball4.4583333333333 실제 계산 성공. 미지원 active/inactive/item buildXml/party supportXml은 POB_TREE_VERSION, 다른 runtime ID도 거부한다. renderer에 item/gem/트리의 게임 판단 규칙을 넣지 않았다.
+- 첫 실행은 지원5개를 통과했으나 unsupported Item API가 거부되지 않았다. `.local/standalone-pob/catalog-versions-before-guard.json`을 보존했고 이를 요청 문맥 복원 성공으로 취급하지 않는다. [로드 계약 재현/필요 계약](POB-LOAD-CONTRACT.md)에 관측과 코드 근거를 분리했다. 현재 declared canonical Spec version 검사는 host에서 실행 전에 수행하며 원본/공유 엔진은 수정하지 않았다. 다른 종류의 모든 원본 load 실패까지 해결했다는 뜻은 아니다.
+- 실제 source/Windows packaged·old/current 카탈로그/아이템·젬/계산·두 크기·undo/restart와 미지원 진단은 실행 중이다. 전체 버전/직업/아이템/스킬 조합·실물 입력·원본 GUI/portable/모델은 미수행/미완료다.
+
 ## 원본 트리 코드 — 2026-11-03 (22차)
 
 - 최종 Windows packaged `.local/tree-code-native-1793655107706/result.json` **7개 그룹 통과**. source7과 같은 code/partial/새 수치·원본 근거 분리/빈 문서·다중 문서/재시작·PoK 미연결을 확인했다. source/packaged 1920/1024의 미복원 ID/원문·버전·적용 버튼을 직접 시각 확인했다. renderer pageerror 없음. packaged도 clipboard=`ipc-only-rich-clipboard-preserved`: 실제 IPC 전달만 검증하고 OS clipboard 쓰기는 기존 rich 원본 보호를 위해 미수행이다. 아래 진행 중은 native8/빈 문서1/source7/packaged7/check173/build/pack:win 통과로 대체한다. 실제 서비스 링크/전체 code 조합·OS clipboard write·원본 PoB GUI·portable·실제 모델은 미수행/미완료다.

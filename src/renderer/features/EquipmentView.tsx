@@ -69,7 +69,7 @@ export function EquipmentView({ parsed, edit, catalogEnabled = true, runtimeRead
 
   async function renderAndEquip(kind: 'base' | 'unique' | 'rare') {
     if (rendering) return;
-    if (!catalogEnabled) { setCatalogStatus('현재 트리 버전에서는 카탈로그 아이템을 적용할 수 없습니다.'); return; }
+    if (!catalogEnabled) { setCatalogStatus('카탈로그와 독립 PoB의 출처·지원 범위를 확인해 주세요.'); return; }
     if (!runtimeReady) { setCatalogStatus('독립 PoB 런타임을 준비한 뒤 장착할 수 있습니다.'); return; }
     const entry = kind === 'unique' ? selectedUnique : selectedBase;
     if (!entry) return;
