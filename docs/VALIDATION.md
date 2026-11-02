@@ -1,5 +1,18 @@
 # 로컬 검증
 
+## 노트 색상 편집 — 2026-11-03 (24차)
+
+- 최종 Windows packaged `.local/notes-native-1793659409290/result.json` **6개 그룹 통과**, source `.local/notes-native-1793659213134/result.json`도6개 그룹 통과. 긴 paint의 전체 높이·scroll 정합/코드·색상 edit/팔레트 접근성·원문/unknown·local/build undo·zoom·문서 격리/재시작·PoK 미연결을 확인했다. source/packaged 두 크기 직접 시각 확인, renderer pageerror 없음. 기존 sets-config 최종 source `.local/sets-config-native-1793659219771/result.json` **8개 그룹 통과**. 아래 진행 중은 parity2/unit7/check183/build/pack:win/source6/packaged6/기존8 통과로 대체한다. OS clipboard/IME·원본 GUI pixel/font parity·portable·실제 모델은 미수행이다.
+
+- 최종 접근성 group/입력 라벨까지 반영한 source `.local/notes-native-1793659213134/result.json`6개 그룹 통과, check183/build/최종 pack:win 통과. 두 번째 sets-config `.local/sets-config-native-1793658905255/result.json`은 더 넓어진 팔레트 aria-label 때문에 느슨한 getByLabel('PoB 노트')가2개를 찾았다. 팔레트는 명시 group/고유 라벨로 분리하고 하네스는 exact input label을 쓰도록 고쳤다. 현재 기존 전체 회귀와 최종 packaged를 실행 중이다.
+
+- 최종 source `.local/notes-native-1793658898504/result.json` **6개 그룹 통과**. 첫 source6 이후 실제 PNG 검토에서 global pre max-height가 paint 레이어를 중간에 자르고 내부 scrollbar를 만들던 UI 결함을 발견했다. notes-paint만 max-height/overflow를 분리하고 실제 client/scroll height 검사로 강화했다. 수정 후 source6/두 크기를 다시 실행·직접 시각 확인했다. 이전 `.local/notes-native-1793658479882`의 기능 통과를 긴 텍스트 표시 검증 완료로 확대하지 않는다.
+- 기존 sets-config 첫 실행 `.local/sets-config-native-1793658606699/result.json`은 노트 이전에 오래된 tree delete 버튼 locator에서 중단했다. 최신 원본 popup의 preview/세트 적용과 inactive copy 명시 선택에 맞게 회귀 하네스를 고쳤고 재실행 중이다. 제품을 예전 동작으로 되돌리거나 실패를 통과로 집계하지 않았다.
+
+- check **183 passed**, boundary/type 통과, build 통과. parser/offset/range/반복 문자/Unicode/CRLF/unknown literal unit7개 통과. `tests/pob-notes-parity-smoke.cjs`2개 그룹 통과(`.local/standalone-pob/notes-parity-result.json`): 수정하지 않은 pinned NotesTab.SetColor의 cursor/range·한글/emoji/CRLF·indexed/unknown 처리와 named presets12개 일치. headless 참고 테스트의 모든 write/settings/process 실행을 차단했다.
+- source `.local/notes-native-1793658479882/result.json` **6개 그룹 통과**: indexed/hex render·HTML 비실행·view toggle/원문0, 원본 범위 색칠/로컬undo, 실제 caret의 반복 문자·한글/emoji·synthetic clipboard 이벤트, keyboard/wheel zoom·scroll/backdrop sync/1920/1024, Ctrl+Enter/XML unknown·build undo/redo, 초안 문서 격리·저장/재시작·PoK 미연결. 두 크기를 직접 시각 확인했다. renderer pageerror 없음. OS clipboard는 건드리지 않았고 실제 OS IME 입력은 미수행이다.
+- 초기 notes fixture는 createBlankXml에 Notes section이 항상 있다고 잘못 가정해 launch 전 실패했다. section을 명시 생성해 보완했으며 검증 성공으로 집계하지 않는다. 최종 packaged/기존 sets-config 회귀는 진행 중이다. 원본 GUI와 DLL의 pixel/font parity는 [규약/출처 문서](POB-NOTES.md)의 범위를 따르며 완료로 주장하지 않는다.
+
 ## 지원 트리 공통 카탈로그·로드 전 검사 — 2026-11-03 (23차)
 
 - 최종 Windows packaged `.local/catalog-versions-native-1793657050359/result.json` **5개 그룹 통과**, source5와 동일한 old/current catalogue→원본 수치/unknown·version 보존→undo/redo/재측정→unsupported active/inactive 차단→저장/재시작을 확인했다. 두 크기의 old catalogue/원본 모드 선택/그룹 적용·새 수치를 직접 시각 확인했다. renderer pageerror 없음. 아래 진행 중은 native6/source5/packaged5/check176/build/pack:win 통과로 대체한다. 원본 GUI/portable/실물·전수 조합/모델은 미수행/미완료다. 개인 XML·세션을 사용하지 않았다.

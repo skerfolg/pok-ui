@@ -1,5 +1,17 @@
 # 현재 작업
 
+## 노트 색상 편집·코드 보기·범위/초안 동작 — 2026-11-03 (24차)
+
+최종 source `.local/notes-native-1793659213134/result.json` / Windows packaged `.local/notes-native-1793659409290/result.json` **각6개 그룹 통과**. 원본 NotesTab parity2/unit7/check183/build/pack:win 및 기존 sets-config source8(`.local/sets-config-native-1793659219771/result.json`) 통과. 전체 높이/스크롤·색상/코드보기·원본 범위 색칠·actual caret/로컬 undo·zoom·clipboard synthetic 이벤트·한글/emoji/CRLF·원문/unknown·build undo/redo·초안 문서 격리/재시작을 확인했다. 두 크기의 source/packaged 전체 높이 paint를 직접 시각 확인했다. 아래 진행 중과 이전 clipped PNG/하네스 실패를 이 최종 결과로 대체한다.
+
+PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB/PoK 비사용. 이번 UI-only 변경은 기존 runtime `pob-c3830dc62a9a39bc4040d36bb0ce4448bf5378c4bc5c5849b33a2f7a9906d74e` / manifest SHA256 `3ec5a25f4040e3af75e32df6ae225f5be92e95568cab35304ed02a753d0d6cd7`, editor `pob-editor-d5ab4c116002fb1972629c9803e305127415c3826f6be2903c7a2ee78a33acbe` / SHA256 `f90c7de4c5c0ed873f44da523120a85cef6f35ceaa8f62f16bd2653f230cd885`를 그대로 검증/사용했다. 추가 graphics 규약 source는 POB-NOTES의 별도 commit이며 배포 DLL의 정확한 source commit/원본 GUI pixel parity를 확인한 것은 아니다. 원본/공유 엔진 소스·문서/ref 수정 없음.
+
+남은 범위: 실제 OS IME/clipboard·원본 GUI font/render parity, 원본 control/옵션/명령 전수 대응표·고급 스킬/미니언/아이템/트리·계산/파티/네트워크/단축키, 혼합 입력·다른 load 실패·장기 revision 근거, 원본 GUI 왕복/portable·선택 PoK/모델 검증. 합성 notes/UI 검증을 전체 빌드·언어·원본 기능 동등성/게임 성립으로 확대하지 않는다. #188 해결/재평가 준비 완료를 선언하지 않는다. 전체 목표 active.
+
+원문과 표시 문자열의 offset mapping/색상 span·투명 textarea를 분리해 코드가 숨겨진 상태에서도 직접 편집한다. indexed/hex 색상·named preset, raw toggle, 원본 SetColor 범위 동작, beforeinput caret/반복 문자·한글/emoji·CRLF, local undo/redo, zoom/scroll, copy/cut/paste 이벤트의 원문 코드 보존을 연결했다. view/zoom은 build revision을 만들지 않으며 적용/기존 XML patch만 저장한다. unknown notes metadata/원문/undo는 유지한다. [원본 규약/차이/출처](POB-NOTES.md)를 따른다.
+
+check183/build 통과, 원본 NotesTab Lua parity2·표시/편집 unit7 통과. 실제 source `.local/notes-native-1793658479882/result.json`6개 그룹 통과, 두 크기의 색상/코드편집·원문 보존·줌/undo·저장/재시작 확인. 초기 fixture는 Notes tag 없는 createBlankXml을 가정하지 않아 앱 시작 전에 실패했고 section을 명시 생성하도록 보완했다. packaged/기존 세트·조건 회귀는 진행 중이다. 실제 OS IME/clipboard/원본 PoB GUI pixel/font parity와 전체 PoB 기능 완료는 주장하지 않는다. 원본/공유 엔진 소스는 수정하지 않았다.
+
 ## 과거 지원 트리의 공통 카탈로그 — 2026-11-03 (23차)
 
 UI 구현 **`4ebeaa0ab4ab62c662dc287d505a761228bd0e04`**, 브랜치 `skerfolg/coho`. 다른 PC는 이후 인계 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다.22차의 과거 tree catalog gate 감사는 이번에 완료했고, 전체 원본 control/남은 수동 기능·다른 load 실패 감사는 계속한다. 전체 목표 active.

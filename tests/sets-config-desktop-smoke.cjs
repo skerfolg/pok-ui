@@ -12,6 +12,7 @@ async function launch(){app=await electron.launch({executablePath:path.join(root
 async function manage(name,action,title){
   await page.getByLabel(name+' 세트 관리').click();await page.getByRole('button',{name:name+' 세트 '+action,exact:true}).click();
   if(title!==undefined){await page.getByLabel(name+' 세트 이름',{exact:true}).fill(title);await page.getByRole('button',{name:'세트 적용',exact:true}).click();}
+  else if(name==='패시브'){await poll(()=>page.getByRole('button',{name:'세트 적용',exact:true}).isEnabled(),Boolean);await page.getByRole('button',{name:'세트 적용',exact:true}).click();}
   else await page.getByRole('button',{name:'선택한 세트 삭제',exact:true}).click();
 }
 (async()=>{
@@ -37,20 +38,21 @@ async function manage(name,action,title){
   report.passed.push('skill set copy, rename and deletion preserve copied native mode metadata and original set');
   for(const [view,name,key] of [['장비','장비','itemSets'],['패시브트리','패시브','trees'],['설정','전투 조건','configs']]){
     await page.getByRole('button',{name:view,exact:true}).click();await manage(name,'복사',name+' copy');await poll(current,b=>parseBuild(b.xml)[key].length===2);
+    if(key==='trees'){await page.getByLabel('패시브 세트',{exact:true}).selectOption('2');await poll(current,b=>parseBuild(b.xml).trees.find(tree=>tree.active)?.id==='2');}
     await manage(name,'삭제');await poll(current,b=>parseBuild(b.xml)[key].length===1);
   }
   report.passed.push('item, tree and config set controls edit and remove independent copies with stable active selection');
-  await page.getByRole('button',{name:'노트',exact:true}).click();const note='^xFF0000Synthetic 한글 <&>\n\tline2';await page.getByLabel('PoB 노트').fill(note);await page.getByRole('button',{name:'노트 적용',exact:true}).click();build=await poll(current,b=>parseBuild(b.xml).notes===note);
+  await page.getByRole('button',{name:'노트',exact:true}).click();const note='^xFF0000Synthetic 한글 <&>\n\tline2';await page.getByLabel('PoB 노트',{exact:true}).fill(note);await page.getByRole('button',{name:'노트 적용',exact:true}).click();build=await poll(current,b=>parseBuild(b.xml).notes===note);
   await page.getByRole('button',{name:'되돌리기',exact:true}).click();await poll(current,b=>parseBuild(b.xml).notes==='');
-  await page.getByLabel('PoB 노트').fill(note);await page.getByRole('button',{name:'노트 적용',exact:true}).click();const saved=await poll(current,b=>parseBuild(b.xml).notes===note);
+  await page.getByLabel('PoB 노트',{exact:true}).fill(note);await page.getByRole('button',{name:'노트 적용',exact:true}).click();const saved=await poll(current,b=>parseBuild(b.xml).notes===note);
   report.passed.push('notes preserve literal colour codes, Korean and XML-special characters, with undo');
   for(const [width,height] of [[1920,1080],[1024,768]]){await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(...size),[width,height]);for(const view of ['스킬','설정','노트']){await page.getByRole('button',{name:view,exact:true}).click();if(view==='설정')await page.getByText('현재 리비전의 원본 컨트롤',{exact:true}).waitFor();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:path.join(directory,view+'-'+width+'.png')});}}
   await app.close();app=undefined;await launch();build=await current();assert.equal(build.xml,saved.xml);assert.equal(build.originalXml,saved.originalXml);assert.equal(build.revision,saved.revision);assert.equal((await page.evaluate(()=>window.pok.getPokConnection())).connected,false);
   report.passed.push('sets, native options and notes survive restart; all new screens fit both desktop sizes');
   await page.getByRole('button',{name:'새 빌드',exact:true}).first().click();const second=await poll(current,b=>b.id!==saved.id);
   await page.getByRole('button',{name:'새 빌드',exact:true}).first().click();const third=await poll(current,b=>b.id!==second.id);
-  await page.getByRole('button',{name:'노트',exact:true}).click();await page.getByLabel('PoB 노트').fill('UNAPPLIED TRIAL');
-  await page.getByLabel('현재 빌드',{exact:true}).selectOption(second.id);await poll(()=>page.getByLabel('PoB 노트').inputValue(),value=>value==='');
+  await page.getByRole('button',{name:'노트',exact:true}).click();await page.getByLabel('PoB 노트',{exact:true}).fill('UNAPPLIED TRIAL');
+  await page.getByLabel('현재 빌드',{exact:true}).selectOption(second.id);await poll(()=>page.getByLabel('PoB 노트',{exact:true}).inputValue(),value=>value==='');
   assert.equal(parseBuild((await current()).xml).notes,'');report.passed.push('an unapplied note draft never leaks into another build with identical saved notes');
   await page.getByRole('button',{name:'장비',exact:true}).click();await page.getByText('아이템 원문 편집',{exact:true}).click();await page.getByLabel('아이템 원문',{exact:true}).fill('UNAPPLIED ITEM');
   await page.getByLabel('현재 빌드',{exact:true}).selectOption(third.id);assert.equal(await page.getByLabel('아이템 원문',{exact:true}).inputValue(),'');

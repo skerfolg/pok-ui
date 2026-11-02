@@ -1,5 +1,7 @@
 # 구조와 배포 경계
 
+24차: 노트 canonical raw text와 presentation projection을 분리한다. renderer의 color escape/CRLF offset mapping은 visible selection/beforeinput을 raw range로 변환하고, 원본 SetColor 규약으로 서식을 편집한다. color span과 textarea의 font/width/padding/scroll을 동기화하며 paint pre는 일반 코드블록의 높이 제한을 상속하지 않는다. raw/colored view·font zoom·local draft history는 XML/revision을 바꾸지 않는다. 기존 notes patch로 명시 적용하고 unknown XML/원본/undo를 보존한다. 붙여넣기/HTML은 텍스트로 다루며 임의 HTML/CSS를 실행하지 않는다. 규약/참고 source provenance와 실제 미검증 범위는 POB-NOTES를 따른다.
+
 23차: item/gem catalog 접근은 native data/runtime source·ID·commit 및 양쪽 지원 tree 목록에 귀속한다. defaultTreeVersion은 new-build 기본값이며 과거 지원 tree에 대한 global data의 금지 기준이 아니다. 직업 metadata는 기존 native 버전별 control을 사용한다. 공통 request 경계는 XML/item buildXml/party supportXml의 모든 canonical Spec에 선언된 version을 검사해 unsupported popup/close 후 남은 객체를 요청한 문맥으로 사용하지 못하게 한다. root Spec/생략 version의 원본 계약과 game targetVersion을 이 검사로 재해석하지 않는다. renderer도 unsupported inactive 세트를 표시하며 원문/세트를 제거하거나 최신 version으로 바꿔 검사하지 않는다.
 
 22차: treeWorkspace의 import-code/export-code는 원본 popup의 필드/Copy callback과 명시 version의 PassiveSpec.DecodeURL을 사용한다. versionless code에 latest를 추정하지 않는다. 원본 allocator의 missing lookup을 관측하고 export의 실제 sourceNodes와 원문 노드를 host에서 비교해 로더 누락과 code 왕복 누락을 분리한다. export/inspect는 loadoutEdit가 적용을 거부하고, import만 fresh native Spec을 추가한다. renderer에는 byte parser/번역/게임 규칙이 없다. copyText IPC는 Electron의 Promise 완료를 기다린다. 동일 owner/XML/hash/runtime의 재계산에는 이전 edit 근거만 workspace_operation_source로 source revision과 함께 계승하며 수치/provenance는 항상 새 결과다. 다른 입력/engine 또는 새 명시 operation에는 이를 계승하지 않는다.

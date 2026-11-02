@@ -12,6 +12,8 @@ XML은 편집 정본이다. 계산은 제출 시점 XML을 격리된 원본 PoB�
 
 ## 기능 대응표 (원본 Classes/*Tab.lua 기준, 조사/구현 지속)
 
+24차(2026-11-03): Notes의 색상 편집/raw view/원본 범위 color callback 규약·named preset·local undo/redo·zoom/scroll·문서 격리/원문 보존을 연결했다. Lua NotesTab parity2/unit7/source6/Windows packaged6/기존 sets-config8/check183/build/pack:win·두 크기 확인 통과. 이전 Notes의 색상 렌더링/범위 편집 미구현은 이 대표 구현으로 보완했다. 실제 OS IME/clipboard·원본 GUI font/pixel parity 및 모든 입력/단축키 조합은 아직 미검증이다. [규약](POB-NOTES.md)을 따른다.
+
 23차(2026-11-03): 지원되는 과거 tree에서도 같은 original item/gem/skill data를 쓰므로 default tree 일치 gate를 source/runtime ID/commit·지원 범위 확인으로 바꿨다. 버전별 class/ascendancy는 기존 native control을 유지한다. 미지원 tree popup 이후에도 item 생성이 반환된 원본 load 문제를 발견해 모든 canonical Spec의 명시 version을 host에서 실행 전에 검증한다. native6(0_1~0_5·거부)/source5/Windows packaged5/check176/build/pack:win·두 크기 확인 통과. 과거 tree 카탈로그가 제한된다는 이전 gate 설명은 이번에 보완했다. [로드 계약](POB-LOAD-CONTRACT.md)의 다른 실패/전수 조합과 남은 전체 원본 기능은 계속 감사한다.
 
 22차(2026-11-03): 원본 export Copy/명시 version DecodeURL의 tree code 가져오기·내보내기·copy IPC를 연결했다. 현재 pin은 URL prefix/버전이 없는 code를 내므로 웹 공유 링크로 표시하지 않는다. loader 누락·code 왕복 누락/미포함 필드·고급 전직 한계와 부분 복원을 구분하고 source/revision/known-state를 보존한다. 같은 입력 재측정에는 과거 edit 근거만 별도 source revision으로 보존하고 숫자는 새 계산을 쓴다. native8/빈 문서1/source7/Windows packaged7/check173/build/pack:win·두 크기 확인 통과. 실제 OS clipboard는 rich 원본 보호 때문에 미수행이며 copy IPC만 확인했다. [원본 제한/남은 서비스 계약](POB-CODE-LIMITATIONS.md)을 따른다. 네트워크 단축 링크/PoEPlanner 및 모든 code 조합 완료가 아니다.
@@ -46,7 +48,7 @@ XML은 편집 정본이다. 계산은 제출 시점 XML을 격리된 원본 PoB�
 | CalcsTab | 독립 실제 계산; 원본 분류/표/포맷과 TEXT/TABLE 분해·modifier 출처; 그룹/버프 모드/플레이어·미니언 선택; Calcs 전용 효과/모드/부분/단계·지뢰; revision/XML hash/runtime 귀속·과거 저장값 분리 | 반경 지도 시각화·분해 출처 위치 이동, 미니언 종류/전용 스킬 컨트롤, 원본 GUI 및 모든 지원 빌드·컨트롤 동등성 검증 |
 | CompareTab | AI 제안 검토/적용/undo; 일반 두 빌드/세트 조합의 원본 계산·활성 구성/수치 차이; XML/revision/runtime 기록; 해당 문서의 선택 세트 적용·최종 재계산 | 원본 비교 탭의 모든 표시/검색/연산, 다른 문서로 구성 복사·개별 변경 병합, 고급 구성 전체 검증 |
 | PartyTab | 7종 버퍼 편집/unknown 보존; native 지원 출력 생성·대상별 Import/Append/Clear 미리보기·revision 적용/계산; 미해석/Unknown 진단 | 일시적 disable/rebuild 상태, URL 직접 가져오기, 모든 지원/링크/전투 조합과 원본 GUI 동등성 |
-| NotesTab | 원문 편집·색상 코드 삽입·크기 조절·적용/undo·저장/재시작; 한글/특수 문자·unknown metadata 보존 | 색상 렌더링/코드 표시 모드, 원본 단축키·범위 색상 편집의 전체 동등성 |
+| NotesTab | 원문 편집·색상 코드 삽입·크기 조절·적용/undo·저장/재시작; 한글/특수 문자·unknown metadata 보존 | OS IME/clipboard·원본 GUI의 font/pixel·전체 단축키/입력 조합 검증 |
 | 원본 Main/Options | UI 테마·밀도·최근 대화·저장 | 원본 옵션/작업 관리/네트워크 기능별 대체·호환 범위 조사 |
 | Build Loadouts | 원본 목록/이름·brace 연결과 네 세트 동시 전환; 원본 관리 Popup/서비스의 New/Copy/Custom/Rename/Delete/Reorder·canonical lineage; brace raw-name 관리·생존 구성 선택·관계 변화, 원본 PassiveSpecList 드래그의 tree scope 이동/활성 보존·검토/자동 기록·계산·undo/redo | 모든 특수 공유/버전·이름 모호성 조합, 원본 GUI 동등성 |
 
@@ -118,6 +120,8 @@ node tests/pob-tree-code-smoke.cjs
 node tests/tree-code-desktop-smoke.cjs
 node tests/pob-catalog-versions-smoke.cjs
 node tests/catalog-versions-desktop-smoke.cjs
+node tests/pob-notes-parity-smoke.cjs
+node tests/notes-desktop-smoke.cjs
 npm run verify:pob
 ```
 

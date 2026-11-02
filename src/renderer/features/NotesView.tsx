@@ -1,19 +1,42 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import type {BuildEdit,ParsedBuild} from '../../shared/contracts';
+import {NOTE_PRESETS,colorNoteSelection,editVisibleNote,noteSelection,noteVisibleOffset,projectNote,type NoteInputSelection} from '../../shared/pob-notes';
+interface Frame {text:string;start:number;end:number}
 export function NotesView({parsed,edit}:{parsed:ParsedBuild;edit:(edit:BuildEdit,label:string)=>void}){
-  const [draft,setDraft]=useState(parsed.notes),[color,setColor]=useState('#ffffff'),[size,setSize]=useState(15);
-  const input=useRef<HTMLTextAreaElement>(null);
-  useEffect(()=>setDraft(parsed.notes),[parsed.notes]);
-  function insert(){
-    const field=input.current;if(!field)return;
-    const start=field.selectionStart,end=field.selectionEnd,selection=draft.slice(start,end);
-    const text='^x'+color.slice(1).toUpperCase()+selection+(selection?'^7':'');
-    setDraft(draft.slice(0,start)+text+draft.slice(end));
-    requestAnimationFrame(()=>{field.focus();field.setSelectionRange(start+text.length,start+text.length);});
+  const [draft,setDraft]=useState(parsed.notes),[color,setColor]=useState('#ffffff'),[size,setSize]=useState(16),[showCodes,setShowCodes]=useState(false),[historyVersion,setHistoryVersion]=useState(0),[error,setError]=useState('');
+  const input=useRef<HTMLTextAreaElement>(null),paint=useRef<HTMLPreElement>(null),raw=useRef(draft),rawMode=useRef(showCodes),past=useRef<Frame[]>([]),future=useRef<Frame[]>([]),pendingSelection=useRef<{start:number;end:number}|undefined>(undefined),before=useRef<{raw:string;selection:NoteInputSelection;all:boolean}|undefined>(undefined),composing=useRef(false),selectAll=useRef(false);
+  const projection=useMemo(()=>projectNote(draft,showCodes),[draft,showCodes]);raw.current=draft;rawMode.current=showCodes;
+  function selection(){const field=input.current,view=projectNote(raw.current,rawMode.current);if(selectAll.current)return{start:0,end:raw.current.length};return noteSelection(raw.current,view,field?.selectionStart||0,field?.selectionEnd||0);}
+  function frame():Frame{return{text:raw.current,...selection()};}
+  function trimHistory(){let length=past.current.reduce((sum,row)=>sum+row.text.length,0);while(past.current.length>1&&(past.current.length>100||length>2*1024*1024)){length-=past.current.shift()!.text.length;}}
+  function syncPaint(){const field=input.current;if(field&&paint.current){paint.current.style.width=field.clientWidth+'px';paint.current.style.transform=`translate(${-field.scrollLeft}px,${-field.scrollTop}px)`;}}
+  function syncCaret(){const target=pendingSelection.current,field=input.current;if(!target||!field||composing.current)return;const view=projectNote(raw.current,rawMode.current);field.setSelectionRange(noteVisibleOffset(view,target.start),noteVisibleOffset(view,target.end));pendingSelection.current=undefined;syncPaint();}
+  function commit(text:string,start:number,end=start,record=true){
+    if(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(text)){setError('노트에는 일반 텍스트·탭·줄바꿈만 사용할 수 있습니다. 원문 초안은 유지했습니다.');if(input.current)input.current.value=projectNote(raw.current,rawMode.current).text;return;}
+    if(text!==raw.current&&record){past.current.push(frame());trimHistory();future.current=[];setHistoryVersion(version=>version+1);}
+    raw.current=text;setDraft(text);setError('');selectAll.current=false;pendingSelection.current={start,end};requestAnimationFrame(syncCaret);
   }
-  return <section className="feature notes-view fill"><div className="page-heading"><h1>노트</h1><span className="muted">원본 PoB 색상 코드와 텍스트를 보존합니다.</span></div>
-    <div className="actions"><label>삽입 색상<input type="color" aria-label="노트 색상" value={color} onChange={e=>setColor(e.target.value)}/></label><button onClick={insert}>색상 코드 삽입</button><label>글자 크기<input type="number" aria-label="노트 글자 크기" min={10} max={36} value={size} onChange={e=>setSize(Math.max(10,Math.min(36,Number(e.target.value))))}/></label></div>
-    <label className="notes-editor">PoB 노트<textarea ref={input} aria-label="PoB 노트" spellCheck={false} style={{fontSize:size}} value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();edit({type:'notes',text:draft},'빌드 노트 편집');}}}/></label>
-    <div className="actions"><button disabled={draft===parsed.notes} onClick={()=>setDraft(parsed.notes)}>변경 취소</button><button className="primary" disabled={draft===parsed.notes} onClick={()=>edit({type:'notes',text:draft},'빌드 노트 편집')}>노트 적용</button><span className="muted">Ctrl+Enter · 적용 후 되돌릴 수 있습니다.</span></div>
+  useEffect(()=>{if(parsed.notes===raw.current)return;raw.current=parsed.notes;setDraft(parsed.notes);past.current=[];future.current=[];before.current=undefined;pendingSelection.current={start:0,end:0};selectAll.current=false;setError('');setHistoryVersion(version=>version+1);},[parsed.notes]);
+  useLayoutEffect(()=>{syncCaret();syncPaint();},[draft,showCodes,size]);
+  useEffect(()=>{const field=input.current;if(!field)return;const record=(event:InputEvent)=>{before.current={raw:raw.current,selection:{start:field.selectionStart,end:field.selectionEnd,inputType:event.inputType},all:selectAll.current};};const wheel=(event:WheelEvent)=>{if(!event.ctrlKey&&!event.metaKey)return;event.preventDefault();zoom(event.deltaY<0?'+':'-');};field.addEventListener('beforeinput',record);field.addEventListener('wheel',wheel,{passive:false});const resize=new ResizeObserver(syncPaint);resize.observe(field);return()=>{field.removeEventListener('beforeinput',record);field.removeEventListener('wheel',wheel);resize.disconnect();};},[]);
+  function history(redo:boolean){const source=redo?future:past,destination=redo?past:future,row=source.current.pop();if(!row)return;destination.current.push(frame());raw.current=row.text;setDraft(row.text);pendingSelection.current={start:row.start,end:row.end};selectAll.current=false;setError('');setHistoryVersion(version=>version+1);input.current?.focus();requestAnimationFrame(syncCaret);}
+  function applyColor(code='^x'+color.slice(1).toUpperCase()){const range=selection(),result=colorNoteSelection(raw.current,range.start,range.end,code);commit(result.text,result.caret);input.current?.focus();}
+  function toggle(){const range=selection();pendingSelection.current=range;rawMode.current=!rawMode.current;setShowCodes(rawMode.current);before.current=undefined;selectAll.current=false;requestAnimationFrame(()=>{input.current?.focus();syncCaret();});}
+  function apply(){if(raw.current!==parsed.notes)edit({type:'notes',text:raw.current},'빌드 노트 편집');}
+  function zoom(key:string){setSize(current=>key==='0'?16:Math.max(10,Math.min(100,current+(key==='+'?1:-1))));}
+  return <section className="feature notes-view fill" data-note-history={historyVersion}><div className="page-heading"><h1>노트</h1><span className="muted">원문과 색상 코드를 보존하며 적용 전에는 빌드가 바뀌지 않습니다.</span></div>
+    <div className="actions notes-tools"><button type="button" aria-pressed={showCodes} onClick={toggle}>{showCodes?'색상으로 보기':'색상 코드 보기'}</button><label>삽입 색상<input type="color" aria-label="노트 색상" value={color} onChange={event=>setColor(event.target.value)}/></label><button type="button" onMouseDown={event=>event.preventDefault()} onClick={()=>applyColor()}>색상 코드 삽입</button><label>글자 크기<input type="number" aria-label="노트 글자 크기" min={10} max={100} value={size} onChange={event=>setSize(Math.max(10,Math.min(100,Number(event.target.value)||16)))}/></label><button type="button" aria-label="노트 초안 되돌리기" disabled={!past.current.length} onClick={()=>history(false)}>초안 undo</button><button type="button" aria-label="노트 초안 다시 실행" disabled={!future.current.length} onClick={()=>history(true)}>초안 redo</button></div>
+    <div className="actions notes-presets" role="group" aria-label="노트 기본 색상 팔레트">{NOTE_PRESETS.map(([label,code])=><button key={label} type="button" style={{color:code==='^7'?'#ffffff':'#'+code.slice(2)}} onMouseDown={event=>event.preventDefault()} onClick={()=>applyColor(code)}>{label}</button>)}</div>
+    <label className="notes-editor">PoB 노트<div className={'notes-surface'+(showCodes?' notes-show-codes':'')} style={{fontSize:size}}>
+      {!showCodes&&<div className="notes-color-layer" aria-hidden="true"><pre ref={paint} className="notes-paint">{projection.runs.map((run,index)=><span key={index} style={{color:run.color}}>{run.text}</span>)}<span>{'\u200b'}</span></pre></div>}
+      <textarea ref={input} aria-label="PoB 노트" spellCheck={false} wrap="soft" value={projection.text} onScroll={syncPaint}
+        onMouseDown={()=>{selectAll.current=false;}} onCompositionStart={()=>{composing.current=true;}} onCompositionEnd={()=>{composing.current=false;requestAnimationFrame(syncCaret);}}
+        onChange={event=>{const snapshot=before.current;before.current=undefined;const value=event.target.value;if(snapshot?.raw===raw.current&&snapshot.all)commit(value,value.length);else{const result=editVisibleNote(raw.current,value,snapshot?.raw===raw.current?snapshot.selection:undefined,showCodes);commit(result.text,result.caret);}}}
+        onCopy={event=>{const range=selection();if(range.start===range.end)return;event.preventDefault();event.clipboardData.setData('text/plain',raw.current.slice(range.start,range.end));}}
+        onCut={event=>{const range=selection();if(range.start===range.end)return;event.preventDefault();event.clipboardData.setData('text/plain',raw.current.slice(range.start,range.end));commit(raw.current.slice(0,range.start)+raw.current.slice(range.end),range.start);}}
+        onPaste={event=>{event.preventDefault();const range=selection(),text=event.clipboardData.getData('text/plain');commit(raw.current.slice(0,range.start)+text+raw.current.slice(range.end),range.start+text.length);}}
+        onKeyDown={event=>{const control=event.ctrlKey||event.metaKey;if(control&&event.key.toLowerCase()==='a'){event.preventDefault();event.currentTarget.select();selectAll.current=true;return;}if(control&&(event.key.toLowerCase()==='z'||event.key.toLowerCase()==='y')){event.preventDefault();event.stopPropagation();history(event.key.toLowerCase()==='y'||event.shiftKey);return;}if(control&&event.key==='Enter'){event.preventDefault();apply();return;}if(control&&['+','=','-','0'].includes(event.key)){event.preventDefault();zoom(event.key==='='?'+':event.key);return;}if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(event.key))selectAll.current=false;}} />
+    </div></label>
+    <div className="actions"><button disabled={draft===parsed.notes} onClick={()=>{past.current=[];future.current=[];commit(parsed.notes,0,0,false);setHistoryVersion(version=>version+1);}}>변경 취소</button><button className="primary" disabled={draft===parsed.notes} onClick={apply}>노트 적용</button><span className="muted">Ctrl+Enter 적용 · Ctrl+Z/Y 초안 undo/redo · Ctrl +/-/0 줌 · 적용 후 빌드 undo 가능</span></div>{error&&<p className="warning" role="alert">{error}</p>}
   </section>;
 }
