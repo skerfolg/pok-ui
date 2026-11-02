@@ -220,6 +220,7 @@ function registerIpc():void{
     if(request.runtimeId!==undefined)text(request.runtimeId,128,'PoB 런타임');if(request.requestId!==undefined)text(request.requestId,128,'PoB 요청 ID');if(request.name!==undefined)text(request.name,4096,'원본 통합 구성 이름');
     if(request.manage!==undefined){record(request.manage);const operation=request.manage;
       if(!['new','copy','rename','delete','custom','reorder'].includes(String(operation.action)))throw new Error('통합 구성 관리 연산이 올바르지 않습니다.');
+      if(operation.scope!==undefined&&!['tree','loadout'].includes(String(operation.scope)))throw new Error('원본 순서 변경 범위가 올바르지 않습니다.');
       for(const key of ['index','position'])if(operation[key]!==undefined&&(!Number.isSafeInteger(operation[key])||Number(operation[key])<1))throw new Error('원본 관리 목록 위치가 올바르지 않습니다.');
       if(operation.title!==undefined)text(operation.title,4096,'원본 구성 이름');
       for(const key of ['sourceName','nextName'])if(operation[key]!==undefined)text(operation[key],4096,'원본 구성 이름');

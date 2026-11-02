@@ -41,23 +41,29 @@ end
 function api.inspect()
   local list,entries=new('BuildSetListControl',nil,{0,0,380,200},build),array()
   local listed={};local choices=api.choices()
+  local treeList,positions=new('PassiveSpecListControl',nil,{0,0,350,200},build.treeTab),array()
+  for index,spec in ipairs(treeList.list)do positions[#positions+1]={position=index,label=StripEscapes(treeList:GetRowValue(1,index,spec))}end
+  local associations={};for _,choice in ipairs(choices)do local id=choice.selection.tree;associations[id]=associations[id] or array();associations[id][#associations[id]+1]={name=choice.name,label=choice.label}end
+  local function reorder(entry)
+    if #positions>1 then entry.actions[#entry.actions+1]='reorder';entry.reorderScope='tree'end
+  end
   for index,spec in ipairs(list.list)do
     local id;for i,value in ipairs(build.treeTab.specList)do if value==spec then id=i end end;listed[spec]=true
-    local actions={'rename','copy'};if #list.list>1 then actions[#actions+1]='delete';actions[#actions+1]='reorder'end
+    local actions={'rename','copy'};if #list.list>1 then actions[#actions+1]='delete'end
     local entry={index=index,tree=tostring(id),name=spec.title or 'Default',label=StripEscapes(spec.title or 'Default'),actions=actions}
     if #list.list<=1 then for _,choice in ipairs(choices)do if choice.selection.tree==tostring(id)then
       local successors=array();for _,candidate in ipairs(choices)do if candidate.selection.tree~=choice.selection.tree then successors[#successors+1]={name=candidate.name,label=candidate.label}end end
       if #successors>0 then entry.sourceName=choice.name;entry.namedActions={'delete'};entry.successors=successors;actions[#actions+1]='delete'end;break
     end end end
-    entries[#entries+1]=entry
+    reorder(entry);entries[#entries+1]=entry
   end
   for _,choice in ipairs(choices)do if not listed[build.treeTab.specList[tonumber(choice.selection.tree)]]then
     local successors=array();for _,candidate in ipairs(choices)do if candidate.selection.tree~=choice.selection.tree then successors[#successors+1]={name=candidate.name,label=candidate.label}end end
     local actions={'rename','copy'};if #successors>0 then actions[#actions+1]='delete'end
-    entries[#entries+1]={sourceName=choice.name,tree=choice.selection.tree,name=choice.name,label=choice.label,actions=actions,successors=successors}
+    local entry={sourceName=choice.name,tree=choice.selection.tree,name=choice.name,label=choice.label,actions=actions,successors=successors};reorder(entry);entries[#entries+1]=entry
   end end
   local controls=capture(function()list:NewLoadout()end)
-  return{entries=entries,nameLimit=controls.edit.limit}
+  return{entries=entries,nameLimit=controls.edit.limit,treePositions=positions,treeAssociations=associations}
 end
 function api.apply(request)
   local before,source,copies,wrappers=objects(),{},{},{}
@@ -67,11 +73,12 @@ function api.apply(request)
     local kind,tab,method,field=unpack(definition);local original=tab[method];wrappers[#wrappers+1]={tab,method,original}
     tab[method]=function(self,id,name)local origin=source[kind][self[field][id]];assert(origin,'Original copy source has no XML lineage');local value=original(self,id,name);copies[value]={kind=kind,id=origin.id};return value end
   end
-  local ok,plan,confirmation,delta=pcall(function()
+  local ok,plan,confirmation,delta,movement=pcall(function()
     local list=new('BuildSetListControl',nil,{0,0,380,200},build)
     local action=request.action;local spec=request.index and list.list[request.index];local named=request.sourceName and beforeChoices[request.sourceName]
-    if request.sourceName then assert(not request.index and named,'Original named management source is unavailable');assert(action=='rename' or action=='copy' or action=='delete','Original list reorder is unavailable for this named source')end
+    if request.sourceName then assert(not request.index and named,'Original named management source is unavailable');assert(action=='rename' or action=='copy' or action=='delete' or action=='reorder' and request.scope=='tree','Original list reorder is unavailable for this named source')end
     if action~='new' and action~='custom'then assert(spec or named,'Original management entry is unavailable')end
+    local movement
     local _,confirmation=capture(function(getControls)
       if action=='new'then list:NewLoadout()
       elseif action=='copy'then list:CopyLoadout(request.sourceName or spec.title or 'Default')
@@ -90,8 +97,19 @@ function api.apply(request)
           for i=1,4 do assert(active[i]==survivor.members[i],'Original deletion changed the requested surviving configuration')end
         else assert(#list.list>1,'Original last Loadout cannot be deleted');list:DeleteLoadout(request.index,spec)end
       elseif action=='reorder'then
-        assert(request.position and list.list[request.position],'Original destination is unavailable')
-        local moved=table.remove(list.list,request.index);table.insert(list.list,request.position,moved);list:OnOrderChange(request.index,request.position)
+        if request.scope=='tree'then
+          local control,target=new('PassiveSpecListControl',nil,{0,0,350,200},build.treeTab),spec or named.members[1];local origin=isValueInArray(control.list,target)
+          assert(origin and request.position and control.list[request.position],'Original tree destination is unavailable');assert(origin~=request.position,'Original tree is already at this position')
+          local active,mainGroup,weapon={build.spec,build.itemsTab.activeItemSet,build.skillsTab.skillSets[build.skillsTab.activeSkillSetId],build.configTab.configSets[build.configTab.activeConfigSetId]},build.mainSocketGroup,build.itemsTab.activeItemSet.useSecondWeaponSet
+          movement={scope='tree',sourceTree=tostring(origin),destinationTree=tostring(request.position),affectedNames=array()};for _,value in pairs(beforeChoices)do if value.members[1]==target then movement.affectedNames[#movement.affectedNames+1]={name=value.choice.name,label=value.choice.label}end end
+          control.selIndex=origin;control.selValue=target;control.selDragging=true;control.selDragActive=true;control.selDragIndex=request.position>origin and request.position+1 or request.position;control:OnKeyUp('LEFTBUTTON')
+          assert(control.list[request.position]==target,'Original tree drag did not reach the requested position')
+          local after={build.spec,build.itemsTab.activeItemSet,build.skillsTab.skillSets[build.skillsTab.activeSkillSetId],build.configTab.configSets[build.configTab.activeConfigSetId]};for i=1,4 do assert(after[i]==active[i],'Original tree drag changed the active configuration')end;assert(mainGroup==build.mainSocketGroup and weapon==build.itemsTab.activeItemSet.useSecondWeaponSet,'Original tree drag changed the active skill or weapon state')
+          movement.activePreserved=true
+        else
+          assert(request.position and list.list[request.position],'Original destination is unavailable')
+          local moved=table.remove(list.list,request.index);table.insert(list.list,request.position,moved);list:OnOrderChange(request.index,request.position)
+        end
       else error('Unknown original Loadout management action')end
       if action=='new' or action=='copy' or action=='rename' or action=='custom'then
         local controls=assert(getControls(),'Original name controls were not opened')
@@ -127,9 +145,9 @@ function api.apply(request)
     local afterChoices=choiceState();local delta={added=array(),removed=array(),changed=array()}
     for name,old in pairs(beforeChoices)do local now=afterChoices[name];if not now then delta.removed[#delta.removed+1]={name=name,label=old.choice.label}else for i=1,4 do if old.members[i]~=now.members[i]then delta.changed[#delta.changed+1]={name=name,label=now.choice.label};break end end end end
     for name,now in pairs(afterChoices)do if not beforeChoices[name]then delta.added[#delta.added+1]={name=name,label=now.choice.label}end end
-    return result,confirmation,delta
+    return result,confirmation,delta,movement
   end)
   for _,entry in ipairs(wrappers)do entry[1][entry[2]]=entry[3]end
-  assert(ok,plan);return plan,confirmation,delta
+  assert(ok,plan);return plan,confirmation,delta,movement
 end
 return api

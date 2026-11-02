@@ -1,5 +1,19 @@
 # 현재 작업
 
+## 원본 트리 드래그를 통한 연결 구성 순서 — 2026-11-03 (18차 진행)
+
+최종: native5/source `.local/linked-reorder-native-1793642912224/result.json` 및 Windows packaged `.local/linked-reorder-native-1793643190539/result.json` **각5개 그룹 통과**. 기존 named 관리 native6도 재통과했다. 양방향 이동·공유 별칭·중복 title의 실제 활성 객체/전체 수치 보존, 취소·문서 격리, 정확한 undo/redo·revision4 계산과 이동 근거의 재시작을 확인했다. 1920/1024 PNG 직접 시각 확인. check160/build/pack:win 통과. 아래 진행 중 표기는 이 결과로 대체한다.
+
+manifest SHA256: runtime `ba8131e1f1f3d207708668dbdd6ec78e3a157198e40078b5e19e3320f0a0dac1`, editor `a7145d697ad5fd1c7beb30ca3b4a593ba7971157686690504b882a77990142ca`. PoB/KB 비사용 유지, 원본·공유 엔진 소스/문서/ref 수정 없음. 원본 GUI/portable/실제 모델·전수 기능 동등성 및 #188은 이번 결과로 완료 처리하지 않는다.
+
+source `.local/linked-reorder-native-1793642912224/result.json` **5개 그룹 통과**: pending 취소/preview 문서 격리/no-op 방지, inactive spec 아래/위 이동과 모든 수치 보존, 정확한 undo/redo·revision4 재계산, shared aliases의 동시 이동/활성 유지와 movement receipt, PoK 없는 재시작. 1920/1024 PNG 직접 확인. 최초 source `.local/linked-reorder-native-1793642654270`는 이동 전 baseline 비교에서 JSON fixture의 0과 IPC의 -0 차이로 중단됐다. signed zero만 비교 시 0으로 정규화했으며 키·비영 수치는 그대로 엄격 대조한다. 제품 계산은 수정하지 않았다. Windows packaged 검사는 진행 중이고 check160/build/pack:win 통과.
+
+원본 PassiveSpecListControl/ListControl.OnKeyUp 드래그를 재생해 이름 기반 구성의 순서를 이동한다. 기존 BuildSetList 목록에 없는 brace 항목도 지원하며, 일반 항목 역시 UI에서는 명시적 tree scope로 같은 원본 트리 관리 컨트롤을 사용한다. 원본이 위치·클래스/포인트 설명·함께 이동하는 별칭을 제공한다. renderer는 brace 문법이나 활성 트리의 이름 매칭을 하지 않는다. 이동 후 원본 네 세트 객체/주력 그룹/무기 상태가 그대로인지 검증하고, canonical lineage 패치와 movement receipt를 기록한다. legacy loadout index scope API는 유지했다.
+
+native `tests/pob-linked-reorder-smoke.cjs` **5개 그룹 통과** (`.local/standalone-pob/linked-reorder-result.json`): 비활성 linked spec을 unmatched spec 너머 아래/위로 이동, 공유 spec 별칭 동시 이동, 중복 title에서도 명시 활성 spec 객체 유지/원본 이름 해석 변경 알림, no-op/잘못된 위치/scoped 취소와 다음 입력 격리. 이동 전후 모든 유한 numeric stat을 정확히 비교해 같음을 확인했다(예: 활성 Life170, 공유 입력 Life334). 숫자 spec 위치 이동을 관계 소멸/활성 구성 전환으로 오표시하지 않는다.
+
+check160/build 통과. source/Windows packaged 동선 및 두 해상도 확인은 실행 중이다. runtime `pob-5ec8df28dba66882da39f0c6b704f243ee3b1d177808888958f3bc17374db671`, editor `pob-editor-9dbdc28948d5c3d2bd8e210bd28b1ba713971e1f1b1fee9b850116e6e84c8dda`, PoB/KB 비사용 유지. 중간 metadata variant a9d9bc72 백업만 경로·내용·reparse·manifest ID 확인 후 제거해 공간을 확보했으며 검증된 이전 버전/사용자 workspace는 보존했다. 엔진/원본 소스 수정 없음. 전체 목표는 active이며 GUI/portable/실제 모델과 전수 동등성은 미완료다.
+
 ## 최신 체크포인트 — 2026-11-03, 17차
 
 UI 구현 **`633214593764f0cfece5aaf29472f8bdd102ea9e`**, 브랜치 `skerfolg/coho`. 원본 이름으로 연결 구성을 관리하고 생존 구성 선택/관계 변화/입력 근거를 보존한다. named native6/일반 native6/source5/Windows packaged5/check160/build/pack:win 통과, 1920/1024 직접 확인. 아래 16차의 미노출 raw-name 관리는 이번 단계에서 rename/copy/delete까지 연결했다.

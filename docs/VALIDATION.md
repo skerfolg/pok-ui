@@ -1,5 +1,16 @@
 # 로컬 검증
 
+## 원본 passive-spec 순서 이동 — 2026-11-03 (18차 진행)
+
+- 최종 Windows packaged `.local/linked-reorder-native-1793643190539/result.json` **5개 그룹 통과**, source `.local/linked-reorder-native-1793642912224/result.json`도 동일5개 그룹 통과. 양방향/공유 이동의 원래 네 세트와 모든 수치 보존, 변경 없는 위치 차단·취소/문서 격리, undo/redo/revision4 재계산, 이동 범위/동반 별칭/활성 유지/receipt·restart를 확인했다. 1920/1024 PNG 직접 시각 확인. native5와 기존 named 관리 native6, check160/build/pack:win도 통과했다. 아래 진행 중은 이 최종 결과로 대체한다. GUI/portable/실제 모델 미수행.
+
+- source `.local/linked-reorder-native-1793642912224/result.json` **5개 그룹 통과**, 취소/문서 격리·아래/위 이동·전 수치/원문/활성 객체 보존·undo/redo/revision4 재계산·shared aliases/movement receipt·재시작을 확인했다. 1920/1024 PNG 직접 시각 확인. Windows packaged 검사 진행 중이며 pack:win 통과.
+- 최초 source `.local/linked-reorder-native-1793642654270`는 이동 실행 전 baseline의 VaalArcticArmourMitigation -0과 fixture JSON 0을 Object.is 기반 deepEqual이 구분해 중단했다. JSON roundtrip이 -0을 0으로 저장하는 표현 차이여서 desktop 비교 helper에서 signed zero만 정규화했다. 키를 지우거나 값 누락을 0으로 대체하지 않고 모든 비영 수치는 정확 비교한다. native 이동 전후 raw 결과의 deepEqual도 별도로 통과했다. 제품 출력/게임 규칙을 바꾸거나 수치 오차를 허용한 것이 아니다.
+
+- native `tests/pob-linked-reorder-smoke.cjs` **5개 그룹 통과**: 비활성 연결 spec의 아래/위 이동 및 unmatched 보존, shared aliases 이동/구성 유지, duplicate title의 명시 활성 객체 유지와 원본 이름 해석 변화, 잘못된 위치/no-op/cancel 후 입력 불변. `.local/standalone-pob/linked-reorder-result.json`. 모든 유한 numeric stat을 이동 전후 deepEqual로 비교했고 활성 네 객체·주력 그룹·무기 state를 원본 응답에서도 검증했다. 활성 Life170/공유 Life334는 구성 보존 사례이며 추천 개선 판정이 아니다.
+- original PassiveSpecListControl.OnOrderChange가 actual build.spec 객체를 따라 activeSpec을 재지정하고 secondary dropdown/Loadouts를 갱신함을 코드와 실제 OnKeyUp 재생으로 확인했다. UI 자체 title 선택/순서 게임 규칙을 구현하지 않았다. 첫 quick probe의 현재 네 세트 유지도 실제 응답으로 확인 후 activePreserved metadata를 추가했다.
+- check160/build 통과. source/Windows packaged·두 해상도 검사 진행 중. 개인 입력은 사용하지 않았고 엔진/원본 PoB 소스는 수정하지 않았다. 중간 adapter a9d9bc72 backup만 workspace 내부 경로/내용/manifest/reparse 검증 후 정리했다. source code/사용자 데이터/검증된 이전 runtime은 삭제하지 않았다.
+
 ## 원본 이름 기반 연결 구성 관리 — 2026-11-03 (17차 진행)
 
 - 최종 Windows packaged `.local/linked-management-native-1793640658461/result.json` **5개 그룹 통과**, source `.local/linked-management-native-1793640282299/result.json`도 동일5개 그룹 통과. native6/기존 일반 native6/check160/build/pack:win 통과. capability별 제어·한국어 복사·미지원 reorder 표시, 혼합 index/name 관리·생존 구성 명시 삭제·정확한 undo/redo/revision4 계산, 공유 alias collateral 변화/실제 저장 세트 보존, 입력 revision/hash/runtime·관계 receipt와 XML의 재시작을 검사했다. 1920/1024 PNG 직접 시각 확인했다. 아래 진행 중은 이 최종 결과로 대체한다. 원본 GUI·portable·실제 모델은 미수행이다.

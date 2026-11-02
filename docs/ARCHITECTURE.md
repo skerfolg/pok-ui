@@ -1,5 +1,7 @@
 # 구조와 배포 경계
 
+18차(2026-11-03): tree scope reorder는 원본 PassiveSpecListControl/ListControl의 드래그 입력과 OnOrderChange를 호출한다. 현재 actor를 title로 다시 찾지 않으며 네 활성 세트/주력/무기를 보존했는지 검사한다. metadata의 treePositions/treeAssociations를 한 번만 전달해 위치/공유 관계를 renderer가 추론하지 않게 한다. movement는 source/destination spec 위치·영향받는 원본 이름·activePreserved를 기록한다. canonical DOM lineage를 재배치하고 revision에 속한 새 계산으로 확인하며, 단순 위치 remap을 활성 구성 전환으로 표시하지 않는다.
+
 17차(2026-11-03): native 관리 metadata는 원본 목록 index 또는 원본이 제공한 sourceName 및 동작별 capability를 반환한다. named delete는 사용자 지정 nextName을 원본 API로 재조회/선택하고 실제 생존 객체의 동일성을 검증한다. 원본 구성의 객체 관계 전후 차이는 native에서 계산하며 UI는 결과를 표시한다. 적용 계산의 workspace_operation은 입력 revision/hash·검토 runtime·요청/선택·연결 변화만 자동 저장하며 개인 XML을 중복 저장하지 않는다. renderer는 brace/게임 규칙을 구현하지 않는다.
 
 16차(2026-11-03): loadout-management.lua는 원본 관리 컨트롤을 replay하고 Copy API의 객체 출처를 기록한다. native 관리 목록의 실제 순서를 보존하기 위해 Loadout은 명확한 active set 검증 후 canonical raw XML을 로드한다. `loadout-native-sets` 패치는 기존 노드를 유지/복제하고 새 노드만 원본 Save JSON으로 생성한다. 부모 섹션·공유 item library·unknown 필드는 재생성하지 않는다. 모든 변경/제거는 검토와 revision 검사를 거쳐 적용되며 취소/오류는 격리 요청 안에 머무른다.

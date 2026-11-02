@@ -2,7 +2,7 @@ import type {BuildDocument,BuildEdit} from './contracts';
 import type {PobInspectionRequest} from './pob-inspection';
 import {editBuild,parseBuild} from './pob-document';
 export interface PobLoadoutSelection {tree:string;items:string;skills:string;config:string}
-export interface PobLoadoutOperation {action:'new'|'copy'|'rename'|'delete'|'custom'|'reorder';index?:number;sourceName?:string;nextName?:string;title?:string;position?:number;sources?:PobLoadoutSelection}
+export interface PobLoadoutOperation {action:'new'|'copy'|'rename'|'delete'|'custom'|'reorder';scope?:'tree'|'loadout';index?:number;sourceName?:string;nextName?:string;title?:string;position?:number;sources?:PobLoadoutSelection}
 export interface PobSetNode {tag:string;attributes:Record<string,string>;children:(PobSetNode|string)[]}
 export interface PobSetEntry {id:string;sourceId?:string;copyFrom?:string;title?:string;node?:PobSetNode}
 export type PobLoadoutSets=Record<keyof PobLoadoutSelection,PobSetEntry[]>;
@@ -11,8 +11,9 @@ export interface PobLoadouts {
   buildId:string;revision:number;xmlSha256:string;runtimeId:string;pobCommit:string;
   choices:{name:string;label:string;selection:PobLoadoutSelection}[];selection:PobLoadoutSelection;activeName?:string;requestedName?:string;
   identity:{className:string;ascendClassName:string};equipment:{useSecondWeaponSet:boolean;mainSocketGroup:number};diagnostics:{code:string;message:string;name?:string}[];
-  management?:{entries:{index?:number;sourceName?:string;tree:string;name:string;label:string;actions?:PobLoadoutOperation['action'][];namedActions?:PobLoadoutOperation['action'][];successors?:{name:string;label:string}[]}[];nameLimit:number};sets?:PobLoadoutSets;operation?:PobLoadoutOperation;confirmation?:string;
+  management?:{entries:{index?:number;sourceName?:string;tree:string;name:string;label:string;actions?:PobLoadoutOperation['action'][];namedActions?:PobLoadoutOperation['action'][];successors?:{name:string;label:string}[];reorderScope?:'tree'}[];nameLimit:number;treePositions?:{position:number;label:string}[];treeAssociations?:Record<string,{name:string;label:string}[]>};sets?:PobLoadoutSets;operation?:PobLoadoutOperation;confirmation?:string;
   loadoutChanges?:Record<'added'|'removed'|'changed',{name:string;label:string}[]>;
+  movement?:{scope:'tree';sourceTree:string;destinationTree:string;activePreserved?:boolean;affectedNames:{name:string;label:string}[]};
 }
 export function loadoutEdit(snapshot:Pick<BuildDocument,'xml'>,result:PobLoadouts):BuildEdit{
   if(result.operation&&!result.sets)throw new Error('원본 관리 연산의 XML 출처 정보가 없습니다.');
