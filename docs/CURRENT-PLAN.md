@@ -2,6 +2,8 @@
 
 ## TreeView 원본 관리·미변경 XML 섹션 보존 — 2026-11-03 (19차)
 
+UI 구현 **`e21b30be39266f1845064d4fa6a1968354e97d2a`**, 브랜치 `skerfolg/coho`. 다른 PC에서는 이 구현 이후의 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다. 다음은 트리 없는 문서의 원본 초기화/생성 및 버전 선택·변환 API 조사/연결, 원본 control/명령 전수 목록의 세분화, 고급 장비·스킬/미니언·특수 트리·옵션/네트워크/단축키/노트·GUI 왕복·portable·선택 PoK/AI 잔여 결합이다. 전체 목표는 active다.
+
 최종 source `.local/tree-management-native-1793647818011/result.json` / Windows packaged `.local/tree-management-native-1793647650631/result.json` **각6개 그룹 통과**. native 관리5·원본 tree export2·기존 세트 source4·check162/build/pack:win 통과. 구버전 지도는 3149노드·26/26이미지·실패0이고 혼합 버전 생성/재시작까지 확인했다. 1920/1024 packaged 검토 화면 직접 시각 확인. 아래 ‘실행 중’은 이 최종 결과로 대체한다. portable·원본 PoB GUI·실제 모델·전체 원본 기능 동등성은 미완료다.
 
 PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB 비사용. runtime manifest SHA256 `eba6f022acb5fe78293725d6c87e0229dce4cf6fac356501f9f72a136d43e7ee`, editor manifest SHA256 `f1134055dfd9beae62afd9d8a8ac1df642c066e16d1f97febe6cc71e78868e47`. 공유 엔진/원본 PoB 소스·문서/ref는 수정하지 않았다. #188 해결·재평가 준비 완료를 선언하지 않는다.
