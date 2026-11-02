@@ -1,5 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { effectivePokSettings } from '../src/main/pok';
+
+test('packaged startup always selects the bundled engine despite saved checkout settings',()=>{
+  const saved={mode:'checkout' as const,root:'old-checkout',python:'custom-python',luajit:'custom-lua'};
+  assert.deepEqual(effectivePokSettings(saved,true),{mode:'bundled',root:'',python:'',luajit:''});
+  assert.equal(saved.mode,'checkout');
+});
+test('development startup preserves the selected engine settings',()=>{
+  const saved={mode:'checkout' as const,root:'dev-checkout',python:'dev-python',luajit:'dev-lua'};
+  assert.deepEqual(effectivePokSettings(saved,false),saved);
+  assert.notEqual(effectivePokSettings(saved,false),saved);
+});
 import { unwrapMcp, PokToolError } from '../src/main/pok';
 test('MCP unwrap handles object results, array envelopes and text-only servers',()=>{
   assert.deepEqual(unwrapMcp({structuredContent:{stats:{Life:100}}}),{stats:{Life:100}});
@@ -10,8 +22,59 @@ test('MCP unwrap handles object results, array envelopes and text-only servers',
 });
 
 import { PokConnection } from '../src/main/pok';
+import { assertDesktopContract } from '../src/main/pok';
 import { createBuildDocument } from '../src/shared/state';
 import { createBlankXml } from '../src/shared/pob-document';
+
+test('current parameterless server_info receives no historical bundle-only arguments',async()=>{
+  const connection=new PokConnection();let args:unknown;
+  connection.tools=[{name:'server_info',inputSchema:{type:'object',properties:{}}}];
+  (connection as any).client={callTool:async(request:any)=>{args=request.arguments;return{structuredContent:{stale:false}};}};
+  await connection.call('server_info',{});assert.deepEqual(args,{});
+});
+
+test('desktop contract refusal identifies missing runtime support without bypassing identity',()=>{
+  assert.throws(()=>assertDesktopContract({loaded_commit:'current'},[]),/runtime identity, compute_pob_xml, render_pob_item/);
+  assert.doesNotThrow(()=>assertDesktopContract({identity:{}},['compute_pob_xml','render_pob_item'].map(name=>({name,inputSchema:{}}))));
+});
+
+test('live catalog refresh reads all pages and replaces obsolete schemas atomically',async()=>{
+  const connection=new PokConnection();connection.tools=[{name:'obsolete',inputSchema:{}}];
+  const calls:unknown[]=[];
+  (connection as any).client={listTools:async(params:any)=>{
+    calls.push(params);return params?{tools:[{name:'compute_pob',inputSchema:{properties:{new_input:{}}}}]}:{tools:[{name:'server_info',inputSchema:{}}],nextCursor:'next'};
+  }};
+  await connection.refreshTools();assert.deepEqual(calls,[undefined,{cursor:'next'}]);
+  assert.deepEqual(connection.tools.map(t=>t.name),['server_info','compute_pob']);
+  assert.ok((connection.tools[1].inputSchema.properties as any).new_input);
+});
+
+test('tool catalogs arriving from a previous connection cannot replace current schemas',async()=>{
+  const connection=new PokConnection();let resolve!:(v:any)=>void;
+  (connection as any).client={listTools:()=>new Promise(r=>{resolve=r;})};
+  const pending=connection.refreshTools();
+  (connection as any).generation++;connection.tools=[{name:'new',inputSchema:{}}];
+  resolve({tools:[{name:'old',inputSchema:{}}]});
+  await assert.rejects(pending,/연결이 변경/);assert.equal(connection.tools[0].name,'new');
+});
+
+test('structured error retains legality, upkeep and readiness evidence',()=>{
+  const details={ok:false,blocking:['socket source'],item_editor:{unresolved:['line']},config_upkeep:{cost:2},readiness:'not_ready'};
+  assert.throws(()=>unwrapMcp({isError:true,structuredContent:details}),error=>error instanceof PokToolError&&error.details===details);
+});
+
+test('restoration decisions block computation without mutating the input or assuming a mode',async()=>{
+  const connection=new PokConnection(),build=createBuildDocument('synthetic',createBlankXml());
+  const before=JSON.stringify(build);const calls:string[]=[];
+  (connection as any).call=async(name:string,args:any)=>{
+    calls.push(name);if(name==='server_info')return{};
+    assert.equal(args.assume_first_stat_set,false);
+    return{build_spec:{},needs_decision:['choose stages'],dropped_item_granted:[{skill:'source',lost_supports:2}]};
+  };
+  const output=await connection.compute(build);assert.equal(output.result.stage,'restore');
+  assert.deepEqual((output.result.restoration as any).dropped_item_granted,[{skill:'source',lost_supports:2}]);
+  assert.deepEqual(calls,['server_info','restore_pob_spec']);assert.equal(JSON.stringify(build),before);
+});
 test('calculation rejects stale engines before restoring or calculating a build',async()=>{
   const connection=new PokConnection();const calls:string[]=[];
   (connection as any).call=async(name:string)=>{calls.push(name);return {stale:true};};
@@ -34,7 +97,7 @@ test('domain calculation refusal preserves restoration notes, decisions and bloc
   const connection=new PokConnection();const build=createBuildDocument('test',createBlankXml());build.revision=7;
   (connection as any).call=async(name:string)=>{
     if(name==='server_info')return {stale:false,loaded_commit:'example'};
-    if(name==='restore_pob_spec')return {build_spec:{},notes:['weapon set folded'],needs_decision:['select stages'],faithful:false,damage_comparable:false};
+    if(name==='restore_pob_spec')return {build_spec:{},notes:['weapon set folded'],needs_decision:[],faithful:false,damage_comparable:false};
     return {ok:false,reason:'missing stages',blocking:['required source is unavailable']};
   };
   const calculation=await connection.compute(build);
@@ -44,8 +107,7 @@ test('domain calculation refusal preserves restoration notes, decisions and bloc
   assert.deepEqual(calculation.result.blocking,['required source is unavailable']);
   assert.deepEqual(calculation.result.pok_runtime,{stale:false,loaded_commit:'example'});
   assert.ok(calculation.restoreNotes.includes('weapon set folded'));
-  assert.ok(calculation.restoreNotes.includes('select stages'));
-  assert.equal(calculation.restoreNotes.length,4);
+  assert.equal(calculation.restoreNotes.length,3);
 });
 test('missing restored build spec returns a diagnostic without attempting computation',async()=>{
   const connection=new PokConnection();const calls:string[]=[];
@@ -73,7 +135,7 @@ test('FastMCP engine validation errors retain restoration diagnostics while tran
   const connection=new PokConnection();
   (connection as any).call=async(name:string)=>{
     if(name==='server_info')return {stale:false,loaded_commit:'runtime'};
-    if(name==='restore_pob_spec')return {build_spec:{},notes:['weapon set folded'],needs_decision:['Arctic Armour stages missing'],faithful:false};
+    if(name==='restore_pob_spec')return {build_spec:{},notes:['weapon set folded'],needs_decision:[],faithful:false};
     return unwrapMcp({isError:true,content:[{type:'text',text:"Error calling tool 'compute_pob': Arctic Armour stages; Galvanic Field, Cast on Block, RaiseShield source unavailable"}]});
   };
   const calculation=await connection.compute(createBuildDocument('test',createBlankXml()));
@@ -82,7 +144,7 @@ test('FastMCP engine validation errors retain restoration diagnostics while tran
   assert.match(String(calculation.result.reason),/Arctic Armour stages/);
   assert.match(String(calculation.result.reason),/RaiseShield/);
   assert.ok(calculation.restoreNotes.includes('weapon set folded'));
-  assert.ok(calculation.restoreNotes.includes('Arctic Armour stages missing'));
+  assert.ok(calculation.result.diagnostics);
   assert.deepEqual(calculation.result.pok_runtime,{stale:false,loaded_commit:'runtime'});
 });
 
@@ -120,7 +182,8 @@ function wireConnection(handler: (name: string, args: Record<string, unknown>, o
 
 test('automatic calculation resolves paged restore and calculation results without losing Unicode or diagnostics', async () => {
   const buildSpec = { character: { level: 100 }, config: { synthetic: true } };
-  const restore = storedWire({ build_spec: buildSpec, notes: ['원문 보존🙂'.repeat(900)], needs_decision: ['choose stages'], faithful: false });
+  const restoreData = { build_spec: buildSpec, notes: ['원문 보존🙂'.repeat(900)], needs_decision: [], faithful: false };
+  const restore = storedWire(restoreData);
   const computed = { ok: false, reason: 'measured domain refusal', blocking: ['미지원🙂'.repeat(900)], stats: { Life: 1187 } };
   const result = storedWire(computed);
   const pages = new Map([restore, result].map(wire => [wire.notice.payload_sha256, wire]));
@@ -139,8 +202,8 @@ test('automatic calculation resolves paged restore and calculation results witho
   const build = createBuildDocument('synthetic', createBlankXml()); build.revision = 9;
   const calculation = await connection.compute(build);
   assert.equal(calculation.revision, 9);
-  assert.deepEqual(calculation.result, { ...computed, pok_runtime: { stale: false } });
-  assert.deepEqual(calculation.restoreNotes, ['원문 보존🙂'.repeat(900), 'choose stages', '원본 전체를 완전히 복원하지 못한 계산입니다.']);
+  assert.deepEqual(calculation.result, { ...computed, restoration:restoreData, pok_runtime: { stale: false } });
+  assert.deepEqual(calculation.restoreNotes, ['원문 보존🙂'.repeat(900), '원본 전체를 완전히 복원하지 못한 계산입니다.']);
   assert.ok(calls.filter(name => name === 'get_tool_result').length > 2);
 });
 
@@ -191,7 +254,7 @@ test('automatic calculation reads actual Python PoK pages with float spelling an
     assert.ok(page); return page;
   });
   const calculation = await connection.compute(createBuildDocument('synthetic', createBlankXml()));
-  assert.deepEqual(calculation.result, { ...fixture.expected, pok_runtime: { stale: false } });
+  assert.deepEqual(calculation.result, { ...fixture.expected, restoration:{build_spec:{},notes:[]}, pok_runtime: { stale: false } });
 });
 
 test('stored pages must advance and retain their payload identity before a spec can be used', async () => {
@@ -288,4 +351,102 @@ test('a result arriving after the shared recovery deadline is not used for calcu
   });
   await assert.rejects(connection.compute(createBuildDocument('test', createBlankXml())), /시간이 초과/);
   assert.equal(computed, false);
+});
+
+const identity = {
+  apiVersion: 1 as const, pok: { version: 'test', sourceCommit: 'a'.repeat(40), sourceDigest: 'b'.repeat(64) },
+  pob: { commit: 'c'.repeat(40), sourceDigest: 'd'.repeat(64) }, kb: { manifestSha256: 'e'.repeat(64), contentSha256: 'f'.repeat(64), patch: 'test' },
+  capabilities: { computeXml: true, renderItem: true, catalogExport: true },
+};
+test('connection checks skip cold KB diagnostics and use short bounded deadlines',async()=>{
+  const connection=new PokConnection();const requests:any[]=[];
+  connection.tools=[{name:'server_info',inputSchema:{properties:{include_kb_diagnostics:{type:'boolean'}}}},{name:'render_pob_item',inputSchema:{}}];
+  (connection as any).client={callTool:async(request:any,_schema:any,options:any)=>{
+    requests.push({request,options});return {structuredContent:{}};
+  }};
+  await connection.call('server_info',{});
+  await connection.call('render_pob_item',{request:{kind:'base',id:'Iron Ring'}});
+  assert.equal(requests[0].request.arguments.include_kb_diagnostics,false);
+  assert.equal(requests[0].options.maxTotalTimeout,15_000);
+  assert.equal(requests[1].options.maxTotalTimeout,45_000);
+  assert.equal(requests[1].options.resetTimeoutOnProgress,false);
+});
+test('item requests require a completed verified connection',()=>{
+  const connection=new PokConnection();
+  assert.throws(()=>connection.requireReady(),/연결/);
+  (connection as any).client={};connection.bindIdentity(identity);
+  (connection as any).connectPromise=new Promise(()=>{});
+  assert.throws(()=>connection.requireReady(),/진행 중/);
+  (connection as any).connectPromise=undefined;
+  assert.doesNotThrow(()=>connection.requireReady());
+});
+test('an item timeout returns a reconnect instruction rather than an indefinite busy state',async()=>{
+  const connection=new PokConnection();connection.tools=[{name:'render_pob_item',inputSchema:{}}];
+  let closed=false,disconnected='';connection.onDisconnected=message=>{disconnected=message;};
+  (connection as any).client={close:async()=>{closed=true;},callTool:async()=>{throw Object.assign(new Error('Request timed out'),{code:-32001});}};
+  await assert.rejects(connection.call('render_pob_item',{request:{kind:'base',id:'Iron Ring'}}),/아이템 생성 응답이 45초/);
+  assert.equal(closed,true);assert.match(disconnected,/45초/);assert.equal(connection.connected,false);
+});
+test('a closed managed transport clears the connected state and live tool inventory',()=>{
+  const connection=new PokConnection();const client={};let error='';
+  (connection as any).client=client;connection.bindIdentity(identity);connection.tools=[{name:'server_info',inputSchema:{}}];
+  connection.onDisconnected=message=>{error=message;};
+  (connection as any).connectionLost(client,'closed');
+  assert.equal(connection.connected,false);assert.deepEqual(connection.tools,[]);assert.equal(error,'closed');
+});
+test('concurrent identity checks coalesce without caching later source checks',async()=>{
+  const connection=new PokConnection();let calls=0;
+  connection.tools=[{name:'server_info',inputSchema:{}}];
+  (connection as any).client={callTool:async()=>{calls++;await new Promise(resolve=>setTimeout(resolve,5));return{structuredContent:{identity}};}};
+  await Promise.all([connection.call('server_info',{}),connection.call('server_info',{})]);assert.equal(calls,1);
+  await connection.call('server_info',{});assert.equal(calls,2);
+});
+test('verified bundle calculations pass active XML directly and retain input provenance', async () => {
+  const connection = new PokConnection();
+  const build = createBuildDocument('synthetic', createBlankXml());
+  const calls: {name:string;args:Record<string,unknown>}[] = [];
+  (connection as any).call = async (name:string,args:Record<string,unknown>) => {
+    calls.push({name,args});
+    return name === 'server_info' ? {identity,stale:false} : {ok:true,stats:{Life:50},diagnostics:['checked']};
+  };
+  const result = await connection.compute(build,{bundleId:'bundle',identity});
+  assert.deepEqual(calls.map(c=>c.name),['server_info','compute_pob_xml','server_info']);
+  assert.match(String(calls[1].args.xml),/PathOfBuilding2/);
+  assert.equal(result.provenance?.buildId,build.id);
+  assert.equal(result.provenance?.bundleId,'bundle');
+  assert.equal(result.provenance?.mode,'xml');
+  assert.deepEqual(result.result.stats,{Life:50});
+});
+test('a changed KB or PoB identity rejects calculations before and after the engine call', async () => {
+  const connection = new PokConnection(); const build=createBuildDocument('synthetic',createBlankXml());
+  let calls=0;
+  (connection as any).call=async()=>{calls++;return {identity:{...identity,pob:{...identity.pob,commit:'other'}}};};
+  await assert.rejects(connection.compute(build,{bundleId:'bundle',identity}),/버전/);
+  assert.equal(calls,1);
+  let infoCount=0;
+  (connection as any).call=async(name:string)=>{
+    if(name!=='server_info')return {ok:true,stats:{Life:50}};
+    return {identity:++infoCount===1?identity:{...identity,kb:{...identity.kb,contentSha256:'changed'}}};
+  };
+  await assert.rejects(connection.compute(build,{bundleId:'bundle',identity}),/버전/);
+});
+test('verified direct XML domain failure preserves diagnostics without restored fallback', async () => {
+  const connection = new PokConnection(); const build=createBuildDocument('synthetic',createBlankXml());
+  const calls:string[]=[];
+  (connection as any).call=async(name:string)=>{
+    calls.push(name);if(name==='server_info')return {identity};
+    throw new PokToolError('Unsupported source');
+  };
+  const result=await connection.compute(build,{bundleId:'bundle',identity});
+  assert.equal(result.result.ok,false);
+  assert.match(String(result.result.reason),/Unsupported source/);
+  assert.equal(calls.includes('restore_pob_spec'),false);
+});
+
+test('UI and AI calls cannot interleave the shared PoB request stream',async()=>{
+  const connection=new PokConnection();let active=0,maximum=0;
+  connection.tools=[{name:'render_pob_item',inputSchema:{}}];
+  (connection as any).client={callTool:async({arguments:args}:any)=>{active++;maximum=Math.max(maximum,active);await new Promise(resolve=>setTimeout(resolve,10));active--;return {structuredContent:{id:args.id}};}};
+  const results=await Promise.all([connection.call('render_pob_item',{id:'a'}),connection.call('render_pob_item',{id:'b'})]);
+  assert.equal(maximum,1);assert.deepEqual(results,[{id:'a'},{id:'b'}]);
 });
