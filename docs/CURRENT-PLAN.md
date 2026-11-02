@@ -402,3 +402,21 @@ PoK 의존 계산 경로는 아직 교체하지 않았다. R6·배포 완료와 
 분기하고 실제 Node 경로와 POSIX 실행 비트를 사용하도록 수정했다. Windows에서 번들
 관련7검사와 타입 검사를 재통과했으며 POSIX 결과는 후속 원격 CI에서 확인한다.
 이 CI fixture 결함은 독립 번들의 UI EBADF 읽기 오류와 구분한다.
+
+
+## R6 카탈로그 consumer·시작 기한 — 2026-11-02
+
+현재 번들에서 실제 PoB가 생성한 카탈로그13945항목·직업8개를 새로운 schemaVersion2
+consumer가 검증했다. source identity·PoB pin·유형별 ID 중복과 처리되지 않은 진단을
+검사한다. 이전 개발 identity 표본은 거절했고 현재 producer를 새로 실행해 확인했다.
+exportCatalog/renderItem 클라이언트 경로를 추가했으며 KB 필드를 요구하거나 채우지 않는다.
+이 결과는 active worker 연결이나 Electron 전체 동선 성공을 뜻하지 않는다.
+
+실제 번들 시작 측정은 hello40.875초·initialize50.000초였다. 기존30초 hello 제한을
+넘었으므로 전체 시작에180초의 단일 절대 기한을 적용하고 initialize는 남은 시간과
+120초 중 작은 값을 사용한다. 기한 공유·카탈로그/렌더 전송을 포함한8검사와 전체
+npm check173검사·앱 build가 통과했다. Native 전체 검사가 병행 중인 호스트 측정이며
+격리된 성능 기준값은 아니다. 원격0fcaffa의 Linux CI 두 실행도 성공했다.
+
+다음 실제 제품 연결은 main의 독립 수동 backend와 데이터 번들 v2 소비·선택 PoK 분리다.
+기존 txt 파일 접근 EBADF는 여전히 미해결이며 검증 목록 제거로 우회하지 않았다.

@@ -1,6 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import type { PobWorkerIdentity, WorkerCalculation, WorkerProvenance } from '../shared/pob-worker';
+import type { ItemRenderRequest, ItemRenderResult } from '../shared/game-data';
+import type { PobWorkerIdentity, WorkerCalculation, WorkerProvenance, WorkerCatalog } from '../shared/pob-worker';
 
 export interface WorkerLaunchDescriptor {
   root: string;
@@ -34,6 +35,32 @@ export function assertWorkerIdentity(value: unknown): asserts value is PobWorker
   if (createHash('sha256').update(stable(body)).digest('hex') !== sha256) throw new Error('PoB worker identity 해시가 일치하지 않습니다.');
 }
 
+export function assertWorkerCatalog(value: unknown, identity: PobWorkerIdentity): asserts value is WorkerCatalog {
+  if (!record(value) || value.schemaVersion !== 2 || value.extractorVersion !== '2' || !record(value.source)) throw new Error('지원하지 않는 독립 PoB 카탈로그입니다.');
+  const source = value.source;
+  assertWorkerIdentity(source.identity);
+  if (source.format !== 'pok.pob-catalog-source.v2' || source.exporterVersion !== '2' || source.identitySha256 !== identity.sha256 || source.identity.sha256 !== identity.sha256 || source.pobCommit !== identity.pob_commit) throw new Error('카탈로그와 계산 worker의 실제 출처가 다릅니다.');
+  const version = /^\d{1,3}_\d{1,3}(?:_\d{1,3})?$/;
+  if (typeof value.defaultTreeVersion !== 'string' || !version.test(value.defaultTreeVersion) || !Array.isArray(value.supportedTreeVersions) || value.supportedTreeVersions.some(item => typeof item !== 'string' || !version.test(item)) || !value.supportedTreeVersions.includes(value.defaultTreeVersion)) throw new Error('카탈로그 트리 버전이 올바르지 않습니다.');
+  if (!Array.isArray(value.classes) || !Array.isArray(value.entries) || !Array.isArray(value.diagnostics)) throw new Error('카탈로그 항목 배열이 없습니다.');
+  for (const row of value.classes) {
+    if (!record(row) || typeof row.id !== 'string' || typeof row.name !== 'string' || !Number.isSafeInteger(row.internalId) || !Number.isSafeInteger(row.legacyId) || !Array.isArray(row.ascendancies) || row.ascendancies.some(asc => !record(asc) || typeof asc.id !== 'string' || typeof asc.name !== 'string' || !Number.isSafeInteger(asc.legacyId))) throw new Error('카탈로그 직업 항목이 올바르지 않습니다.');
+  }
+  const seen = new Set<string>();
+  for (const row of value.entries) {
+    if (!record(row) || !['base', 'unique', 'mod', 'gem', 'skill'].includes(String(row.type)) || typeof row.id !== 'string' || !row.id || /[\0-\x1f\x7f]/.test(row.id) || typeof row.name !== 'string' || !record(row.raw)) throw new Error('카탈로그 원시 항목이 올바르지 않습니다.');
+    const key = JSON.stringify([row.type,row.id]);
+    if (seen.has(key)) throw new Error('카탈로그에 같은 유형과 ID가 중복됐습니다.');
+    seen.add(key);
+  }
+  for (const row of value.diagnostics) {
+    if (!record(row)) throw new Error('카탈로그 진단 형식이 올바르지 않습니다.');
+    const delegated = row.kind === 'unsupported-lua-function' && row.handling === 'delegated-to-pob' && row.severity === 'info' && typeof row.path === 'string' && (row.source === 'mods' && /^\$\.data\.AffixData\.[^.]+\.apply$/.test(row.path) || row.source === 'skills' && /^\$\.data\.[^.]+\.preDamageFunc$/.test(row.path));
+    const lossless = row.kind === 'typed-map-conversion' && row.handling === 'lossless' && row.lossless === true;
+    if (!delegated && !lossless) throw new Error('카탈로그에 처리되지 않은 데이터 손실 진단이 있습니다.');
+  }
+}
+
 export class PobWorkerConnection {
   onDisconnected?: (message: string) => void;
   private child?: ChildProcessWithoutNullStreams;
@@ -49,6 +76,9 @@ export class PobWorkerConnection {
   private fault?: string;
   private cleanupConfirmed = true;
   private exited?: Promise<void>;
+  constructor(private readonly startupTimeoutMs = 180_000) {
+    if (!Number.isSafeInteger(startupTimeoutMs) || startupTimeoutMs <= 0 || startupTimeoutMs > 180_000) throw new RangeError('PoB worker 시작 기한이 올바르지 않습니다.');
+  }
   get connected(): boolean { return !!this.child && !!this.identity && !this.closing; }
 
   connect(launch: WorkerLaunchDescriptor): Promise<{identity: PobWorkerIdentity; provenance: WorkerProvenance}> {
@@ -59,6 +89,7 @@ export class PobWorkerConnection {
 
   private async connectOwned(launch: WorkerLaunchDescriptor): Promise<{identity: PobWorkerIdentity; provenance: WorkerProvenance}> {
     await this.close();
+    const deadline = performance.now() + this.startupTimeoutMs;
     assertWorkerIdentity(launch.identity);
     this.closing = false; this.instance = undefined; this.bytes = Buffer.alloc(0); this.errors = ''; this.fault = undefined; this.cleanupConfirmed = true;
     const generation = ++this.generation;
@@ -68,7 +99,7 @@ export class PobWorkerConnection {
     this.child = child;
     this.exited = new Promise(resolve => child.once('close', () => resolve()));
     const hello = new Promise<RecordValue>((resolve, reject) => { this.hello = {resolve, reject}; });
-    const helloTimer = setTimeout(() => this.hello?.reject(new Error('PoB worker 초기 통신 시간이 초과됐습니다.')), 30_000);
+    const helloTimer = setTimeout(() => this.hello?.reject(new Error('PoB worker 초기 통신 시간이 초과됐습니다.')), this.startupTimeoutMs);
     child.stdout.on('data', (chunk: Buffer) => { if (this.child === child && generation === this.generation) this.read(chunk); });
     child.stderr.on('data', (chunk: Buffer) => { if (this.child === child) this.errors = (this.errors + chunk.toString('utf8')).slice(-16_384); });
     child.on('error', error => this.lost(child, error.message));
@@ -82,7 +113,9 @@ export class PobWorkerConnection {
       if (greeting.protocol !== 'pok.pob-worker.v1' || typeof greeting.worker_instance !== 'string') throw new Error('PoB worker 통신 계약이 일치하지 않습니다.');
       this.instance = greeting.worker_instance;
       this.cleanupConfirmed = false;
-      const initialized = await this.request('initialize', {}, 120_000);
+      const remaining = Math.floor(deadline - performance.now());
+      if (remaining <= 0) throw new Error('PoB worker 시작 시간이 초과됐습니다.');
+      const initialized = await this.request('initialize', {}, Math.min(120_000, remaining));
       if (!record(initialized.result) || !record(initialized.result.provenance)) throw new Error('PoB worker 초기화 결과가 없습니다.');
       const actual = initialized.result.identity;
       assertWorkerIdentity(actual);
@@ -157,6 +190,26 @@ export class PobWorkerConnection {
     assertWorkerIdentity(result.identity);
     if (result.identity.sha256 !== this.identity?.sha256) throw new Error('계산 중 런타임 출처가 변경됐습니다.');
     return result as unknown as WorkerCalculation;
+  }
+
+  async exportCatalog(): Promise<WorkerCatalog> {
+    if (!this.connected || !this.identity) throw new Error('PoB 계산 런타임을 먼저 준비해 주세요.');
+    const response = await this.request('export_catalog');
+    if (!record(response.result)) throw new Error('PoB 카탈로그 결과가 없습니다.');
+    assertWorkerIdentity(response.result.identity);
+    if (response.result.identity.sha256 !== this.identity.sha256) throw new Error('카탈로그 생성 중 런타임 출처가 변경됐습니다.');
+    assertWorkerCatalog(response.result.catalog, this.identity);
+    return response.result.catalog;
+  }
+
+  async renderItem(request: ItemRenderRequest): Promise<ItemRenderResult> {
+    if (!this.connected || !this.identity) throw new Error('PoB 계산 런타임을 먼저 준비해 주세요.');
+    const response = await this.request('render_item', {...request});
+    const result = response.result;
+    if (!record(result) || result.ok !== true || typeof result.text !== 'string' || !result.text) throw new Error('PoB 아이템 원문 결과가 없습니다.');
+    assertWorkerIdentity(result.identity);
+    if (result.identity.sha256 !== this.identity.sha256) throw new Error('아이템 생성 중 런타임 출처가 변경됐습니다.');
+    return {ok:true,text:result.text};
   }
 
   private lost(child: ChildProcessWithoutNullStreams, message: string): void {

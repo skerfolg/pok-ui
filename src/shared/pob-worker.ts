@@ -1,3 +1,5 @@
+import type { CatalogExport } from './game-data';
+
 /** Standalone PoB producer identity. It is deliberately not the legacy PoK/KB identity. */
 export interface PobWorkerIdentity {
   format: 'pok.pob-worker-identity.v1';
@@ -35,3 +37,15 @@ export interface WorkerCalculation {
   identity: PobWorkerIdentity;
   claim: 'native_calculation_not_game_validation';
 }
+
+export type WorkerCatalog = Omit<CatalogExport, 'schemaVersion' | 'extractorVersion' | 'source'> & {
+  schemaVersion: 2;
+  extractorVersion: '2';
+  source: {
+    format: 'pok.pob-catalog-source.v2';
+    identity: PobWorkerIdentity;
+    identitySha256: string;
+    pobCommit: string;
+    exporterVersion: '2';
+  };
+};
