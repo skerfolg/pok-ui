@@ -18,6 +18,8 @@ import { AgentManager } from './agent';
 import { TreeResourceError } from './passive-tree';
 import { ChatImageStore, MAX_CHAT_IMAGES, MAX_CHAT_IMAGE_BYTES } from './chat-images';
 import { applyWindowChrome, windowChromeOptions } from './window-chrome';
+import { PobRuntime } from './pob-runtime';
+import { PobEditorData } from './pob-editor-data';
 
 protocol.registerSchemesAsPrivileged(['pok-tree','pok-image'].map(scheme=>({scheme,privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true}})));
 
@@ -29,6 +31,8 @@ let connectionInfo:ConnectionInfo={connected:false,managed:app.isPackaged};
 let connectionTask:Promise<ConnectionInfo>|undefined;
 let agent:AgentManager;
 let gameData:GameDataStore;
+let pobRuntime:PobRuntime;
+let editorData:PobEditorData;
 let chatImages:ChatImageStore;
 let bundleInfo:DataBundleInfo = {status:'missing'};
 const proposals=new BuildProposals();
@@ -72,10 +76,17 @@ function settings(value:unknown):asserts value is Settings['pok']{
   record(value);
   if(!['checkout','bundled'].includes(String(value.mode)))throw new Error('POK 연결 방식이 올바르지 않습니다.');
   for(const key of ['root','python','luajit'])text(value[key],32_768,key);
+  if(value.autoConnect!==undefined&&typeof value.autoConnect!=='boolean')throw new Error('PoK 자동 연결 설정이 올바르지 않습니다.');
 }
 function applyTheme():void{nativeTheme.themeSource=state.settings.theme;if(window&&!window.isDestroyed())applyWindowChrome(window,nativeTheme.shouldUseDarkColors);}
 function bundledRuntimeRoot():string{return app.isPackaged?join(process.resourcesPath,'pok-runtime'):join(app.getAppPath(),'resources','pok-runtime');}
-function dataRoot():string{return app.isPackaged?process.resourcesPath:join(app.getAppPath(),'resources');}
+function dataRoot():string{
+  if(!app.isPackaged&&process.env.POK_UI_RESOURCE_DIR){
+    if(!isAbsolute(process.env.POK_UI_RESOURCE_DIR))throw new Error('개발 리소스 폴더는 절대 경로여야 합니다.');
+    return process.env.POK_UI_RESOURCE_DIR;
+  }
+  return app.isPackaged?process.resourcesPath:join(app.getAppPath(),'resources');
+}
 async function verifiedContext() {
   bundleInfo = await gameData.getInfo();
   if (bundleInfo.status !== 'ready' || !bundleInfo.identity || !bundleInfo.bundleId) throw new Error(bundleInfo.error || '검증된 게임 데이터 묶음이 필요합니다.');
@@ -107,6 +118,8 @@ function connectEngine(requested:Settings['pok']):Promise<ConnectionInfo> {
       if(!result.connected)return publishConnection({...result,connecting:false,compatibility:result.compatibility??'engine-unavailable'});
       assertDesktopContract(result.info,pok.tools);
       assertRuntimeIdentity((result.info as Record<string,unknown>)?.identity,context.identity);
+      const editor=await pobRuntime.getInfo();
+      if(editor.status==='ready'&&editor.commit!==context.identity.pob.commit)throw new Error('선택 PoK와 독립 편집기의 PoB 버전이 다릅니다. 수동 PoB 작업은 계속 사용할 수 있습니다.');
       pok.bindIdentity(context.identity);
       return publishConnection({...result,...context,connecting:false,compatibility:'ready'});
     } catch(error) {
@@ -119,7 +132,7 @@ function connectEngine(requested:Settings['pok']):Promise<ConnectionInfo> {
 pok.onDisconnected=error=>{if(!quitting)publishConnection({connected:false,connecting:false,compatibility:'engine-unavailable',error});};
 function registerIpc():void{
   handle('pok:load-state',()=>state);
-  handle('pok:load-passive-tree',(version:unknown)=>{text(version,30,'트리 버전');return gameData.loadTree(version);});
+  handle('pok:load-passive-tree',(version:unknown)=>{text(version,30,'트리 버전');return editorData.loadTree(version);});
   handle('pok:save-state',async(value:unknown)=>{
     validateState(value);
     value.settings.pok=effectivePokSettings(value.settings.pok,app.isPackaged);
@@ -157,7 +170,78 @@ function registerIpc():void{
     if(Buffer.byteLength(JSON.stringify(args))>32*1024*1024)throw new Error('도구 인자가 너무 큽니다.');
     return pok.call(name,args);
   });
-  handle('pok:data-bundle-info',()=>gameData.getInfo());
+  handle('pok:data-bundle-info',()=>editorData.getInfo());
+  handle('pok:pob-runtime-info',()=>pobRuntime.getInfo());
+  handle('pok:cancel-pob-request',(id:unknown)=>{text(id,128,'PoB 요청 ID');return pobRuntime.cancel(id);});
+  handle('pok:equipment',(request:unknown)=>{
+    record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');
+    if(!Number.isSafeInteger(request.revision)||Number(request.revision)<0)throw new Error('장비 리비전이 올바르지 않습니다.');
+    if(request.runtimeId!==undefined)text(request.runtimeId,128,'장비 런타임');if(request.requestId!==undefined)text(request.requestId,128,'PoB 요청 ID');
+    if(request.action!==undefined&&!['equip','weapon'].includes(String(request.action)))throw new Error('장비 작업이 올바르지 않습니다.');
+    if(request.weaponSet!==undefined&&![1,2].includes(request.weaponSet as number))throw new Error('활성 무기 세트가 올바르지 않습니다.');
+    if(request.slot!==undefined)text(request.slot,128,'장비 슬롯');if(request.itemId!==undefined)text(request.itemId,128,'장비 아이템');
+    return pobRuntime.equipment(request as unknown as import('../shared/pob-equipment').PobEquipmentRequest);
+  });
+  handle('pok:item-controls',async(request:unknown)=>{
+    record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');text(request.itemId,128,'아이템 ID');
+    if(!Number.isSafeInteger(request.revision)||Number(request.revision)<0)throw new Error('아이템 편집 리비전이 올바르지 않습니다.');
+    if(request.runtimeId!==undefined)text(request.runtimeId,128,'아이템 런타임');
+    if(request.draftText!==undefined)text(request.draftText,1024*1024,'검토 아이템 원문');
+    if(request.field!==undefined)text(request.field,100,'원본 아이템 컨트롤');
+    if(request.slot!==undefined)text(request.slot,128,'장착 슬롯');
+    if(request.requestId!==undefined)text(request.requestId,128,'PoB 요청 ID');
+    if(request.popup!==undefined){
+      record(request.popup);if(!['anoint','corrupt'].includes(String(request.popup.kind)))throw new Error('아이템 팝업 종류가 올바르지 않습니다.');
+      if(request.popup.slot!==undefined&&(!Number.isSafeInteger(request.popup.slot)||Number(request.popup.slot)<1||Number(request.popup.slot)>4))throw new Error('성유 위치가 올바르지 않습니다.');
+      if(request.popup.nodeId!==undefined&&(!Number.isSafeInteger(request.popup.nodeId)||Number(request.popup.nodeId)<0))throw new Error('성유 노드가 올바르지 않습니다.');
+      if(request.popup.query!==undefined)text(request.popup.query,512,'성유 검색');
+      if(request.popup.mode!==undefined&&!['enchants','rolls'].includes(String(request.popup.mode)))throw new Error('오염 모드가 올바르지 않습니다.');
+      if(request.popup.commit!==undefined&&typeof request.popup.commit!=='boolean')throw new Error('팝업 적용 값이 올바르지 않습니다.');
+      if(request.popup.selections!==undefined){record(request.popup.selections);if(Object.keys(request.popup.selections).length>128)throw new Error('팝업 선택이 너무 많습니다.');for(const [key,value] of Object.entries(request.popup.selections)){if(key.length>100||typeof value!=='boolean'&&!(typeof value==='string'&&value.length<=1024)&&!(typeof value==='number'&&Number.isFinite(value)))throw new Error('팝업 선택 값이 올바르지 않습니다.');}}
+    }
+    // Native affix series keys contain every tier ID and can exceed a text field's limit.
+    // The original control applies its own text/option constraints after this transport bound.
+    if(request.value!==undefined&&(typeof request.value!=='string'||request.value.length>16384)&&(typeof request.value!=='number'||!Number.isFinite(request.value)))throw new Error('아이템 컨트롤 값이 올바르지 않습니다.');
+    return pobRuntime.itemControls({...request as unknown as import('../shared/pob-item-controls').PobItemControlsRequest,buildId:request.buildId,revision:Number(request.revision),xml:request.xml,itemId:request.itemId});
+  });
+  handle('pok:edit-tree',async(request:unknown)=>{
+    record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');
+    if(!Number.isSafeInteger(request.revision)||Number(request.revision)<0)throw new Error('트리 리비전이 올바르지 않습니다.');
+    for(const key of ['nodeId','attributeIndex','jewelItemId','classId','ascendancyId'] as const)if(request[key]!==undefined&&(!Number.isSafeInteger(request[key])||Number(request[key])<0))throw new Error('트리 선택이 올바르지 않습니다.');
+    if(request.allocMode!==undefined&&![0,1,2].includes(Number(request.allocMode)))throw new Error('트리 무기 모드가 올바르지 않습니다.');
+    if(request.action!==undefined&&!['allocate','deallocate','attribute','jewel','character'].includes(String(request.action)))throw new Error('트리 연산이 올바르지 않습니다.');
+    if(request.classChoice!==undefined&&!['reset','connect'].includes(String(request.classChoice)))throw new Error('직업 변경 선택이 올바르지 않습니다.');
+    if(request.runtimeId!==undefined)text(request.runtimeId,128,'트리 런타임');
+    return pobRuntime.tree({...request as unknown as import('../shared/pob-tree').PobTreeRequest,buildId:request.buildId,revision:Number(request.revision),xml:request.xml});
+  });
+  handle('pok:read-loadouts',async(request:unknown)=>{
+    record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');
+    if(!Number.isSafeInteger(request.revision)||Number(request.revision)<0)throw new Error('통합 구성 리비전이 올바르지 않습니다.');
+    if(request.runtimeId!==undefined)text(request.runtimeId,128,'PoB 런타임');if(request.requestId!==undefined)text(request.requestId,128,'PoB 요청 ID');if(request.name!==undefined)text(request.name,4096,'원본 통합 구성 이름');
+    return pobRuntime.loadouts(request as unknown as import('../shared/pob-loadouts').PobLoadoutsRequest);
+  });
+  handle('pok:read-party',async(request:unknown)=>{
+    record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');
+    if(!Number.isSafeInteger(request.revision)||Number(request.revision)<0)throw new Error('파티 리비전이 올바르지 않습니다.');
+    if(request.action!==undefined&&!['read','import','clear'].includes(String(request.action)))throw new Error('파티 작업이 올바르지 않습니다.');
+    if(request.supportXml!==undefined)text(request.supportXml,12*1024*1024,'지원 XML');
+    if(request.destination!==undefined)text(request.destination,80,'파티 대상');
+    if(request.runtimeId!==undefined)text(request.runtimeId,128,'파티 런타임');
+    if(request.append!==undefined&&typeof request.append!=='boolean')throw new Error('파티 추가 모드가 올바르지 않습니다.');
+    return pobRuntime.party({buildId:request.buildId,revision:Number(request.revision),xml:request.xml,action:request.action as 'read'|'import'|'clear'|undefined,supportXml:request.supportXml as string|undefined,destination:request.destination as string|undefined,runtimeId:request.runtimeId as string|undefined,append:request.append as boolean|undefined});
+  });
+  handle('pok:read-calcs',async(request:unknown)=>{
+    record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');
+    if(!Number.isSafeInteger(request.revision)||Number(request.revision)<0)throw new Error('계산 상세 리비전이 올바르지 않습니다.');
+    if(request.cellId!==undefined){text(request.cellId,80,'계산 셀');if(!/^\d+:\d+:\d+:\d+$/.test(String(request.cellId)))throw new Error('계산 셀 식별자가 올바르지 않습니다.');}
+    if(request.runtimeId!==undefined)text(request.runtimeId,128,'계산 런타임');
+    return pobRuntime.calcs({buildId:request.buildId,revision:Number(request.revision),xml:request.xml,cellId:request.cellId as string|undefined,runtimeId:request.runtimeId as string|undefined});
+  });
+  handle('pok:inspect-build',async(request:unknown)=>{
+    record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');
+    if(!Number.isSafeInteger(request.revision)||Number(request.revision)<0)throw new Error('조회 리비전이 올바르지 않습니다.');
+    return pobRuntime.inspect({buildId:request.buildId,revision:Number(request.revision),xml:request.xml});
+  });
   handle('pok:query-pob-catalog',async(query:unknown)=>{
     record(query);
     if(query.query!==undefined)text(query.query,512,'검색어');
@@ -165,24 +249,20 @@ function registerIpc():void{
     if(query.type!==undefined)text(query.type,32,'카탈로그 유형');
     for(const key of ['offset','limit'] as const)
       if(query[key]!==undefined&&(!Number.isSafeInteger(query[key])||Number(query[key])<0))throw new Error(`${key} 값이 올바르지 않습니다.`);
-    return gameData.query(query);
+    return editorData.query(query);
   });
-  handle('pok:get-pob-catalog-entry',async(type:unknown,id:unknown)=>{text(type,32,'카탈로그 유형');text(id,512,'카탈로그 ID');return gameData.getEntry(type as never,id);});
+  handle('pok:get-pob-catalog-entry',async(type:unknown,id:unknown)=>{text(type,32,'카탈로그 유형');text(id,512,'카탈로그 ID');return editorData.getEntry(type as never,id);});
   handle('pok:render-pob-item',async(request:unknown)=>{
-    pok.requireReady();
     record(request);text(request.kind,20,'아이템 종류');text(request.id,1000,'아이템 ID');
     if(!['base','unique','rare'].includes(String(request.kind)))throw new Error('지원하지 않는 아이템 종류입니다.');
-    if(Buffer.byteLength(JSON.stringify(request))>1000000)throw new Error('아이템 요청이 너무 큽니다.');
-    const context=await verifiedContext();
-    const before=await pok.call('server_info',{}) as Record<string,unknown>;
-    assertRuntimeIdentity(before.identity,context.identity);
-    const result=await pok.call('render_pob_item',{request}) as ItemRenderResult;
-    const after=await pok.call('server_info',{}) as Record<string,unknown>;
-    assertRuntimeIdentity(after.identity,context.identity);
+    if(Buffer.byteLength(JSON.stringify(request))>24*1024*1024)throw new Error('아이템 요청이 너무 큽니다.');
+    const context=await editorData.getInfo();if(context.status!=='ready'||!context.runtimeId)throw new Error(context.error||'독립 PoB 편집 데이터가 필요합니다.');
+    await editorData.getEntry(request.kind==='unique'?'unique':'base',request.id);
+    const result=await pobRuntime.renderItem(request as unknown as ItemRenderRequest,context.runtimeId);
     if(result.ok&&typeof result.text!=='string')throw new Error('아이템 원문이 누락되었습니다.');
     return result;
   });
-  handle('pok:compute',async(value:unknown)=>{validateBuild(value);const context=await verifiedContext();assertBuildVersion(value);return pok.compute(value,context);});
+  handle('pok:compute',async(value:unknown)=>{validateBuild(value);return pobRuntime.compute(value);});
   handle('pok:apply-build-proposal',async(id:unknown)=>{
     text(id,128,'제안 ID');
     const context=await verifiedContext();
@@ -287,12 +367,14 @@ void app.whenReady().then(async()=>{
   });
   app.setAppUserModelId('dev.pok.desktop');
   gameData=new GameDataStore(dataRoot(),{allowCheckout:!app.isPackaged});
+  pobRuntime=new PobRuntime(join(dataRoot(),'pob-runtime'));
+  editorData=new PobEditorData(join(dataRoot(),'pob-editor'),pobRuntime);
   // Show the workspace while the immutable bundle is checked; editing gates await getInfo().
   void gameData.getInfo().then(info=>{bundleInfo=info;});
   protocol.handle('pok-tree',async request=>{
     if(request.method!=='GET')return new Response(null,{status:405,headers:{Allow:'GET'}});
     try{
-      const asset=await gameData.asset(request.url);
+      const asset=await editorData.asset(request.url);
       return new Response(asset.body,{headers:{'Content-Type':asset.mime,'Cache-Control':'private, max-age=3600','Access-Control-Allow-Origin':'*','X-Content-Type-Options':'nosniff'}});
     }catch(error){
       return new Response((error instanceof TreeResourceError||error instanceof GameDataError)?error.message:'패시브 트리 이미지를 읽지 못했습니다.',{status:(error instanceof TreeResourceError||error instanceof GameDataError)?error.status:404});
@@ -329,7 +411,7 @@ void app.whenReady().then(async()=>{
     if(window&&!window.isDestroyed())window.webContents.send('pok:agent-event',event);
   },join(dataDirectory,'agent-workspace'),gameData,{dataHome:join(app.getPath('userData'),'engine'),cacheHome:join(app.getPath('userData'),'cache','pok')});
   applyTheme();registerIpc();createWindow();
-  void connectEngine(state.settings.pok);
+  if(state.settings.pok.autoConnect===true)void connectEngine(state.settings.pok);
   if(store.recoveryMessage)await dialog.showMessageBox(window!,{type:'warning',title:'저장 파일 복구',message:store.recoveryMessage});
 }).catch(error=>{dialog.showErrorBox('POK 시작 오류',String(error));app.quit();});
 app.on('activate',()=>{if(!window&&state)createWindow();});
@@ -340,6 +422,6 @@ app.on('before-quit',event=>{
   event.preventDefault();quitting=true;
   void(async()=>{
     try{await Promise.allSettled([...writes]);await store?.flush();}
-    finally{agent?.close();await pok.close();app.quit();}
+    finally{pobRuntime?.close();agent?.close();await pok.close();app.quit();}
   })();
 });

@@ -1,7 +1,7 @@
 import type { AppState, BuildDocument, Chat } from './contracts';
 export function createDefaultState(): AppState {
   return { schemaVersion: 1, chats: [], builds: [], settings: {
-    theme: 'system', density: 'compact', pok: { mode: 'bundled', root: '', python: '', luajit: '' },
+    theme: 'system', density: 'compact', pok: { mode: 'bundled', root: '', python: '', luajit: '', autoConnect:false },
     agent: { provider: 'codex', executable: 'codex', model: '' }, trade: { league: '' },
   } };
 }

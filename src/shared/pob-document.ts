@@ -1,6 +1,7 @@
 import { DOMParser, XMLSerializer, type Document, type Element, type Node } from '@xmldom/xmldom';
 import type { Attributes, BuildEdit, Gem, ParsedBuild, SkillGroup } from './contracts';
 import type { CatalogClass } from './game-data';
+import {partyNames,type PartyName} from './pob-party';
 
 /** Also enforced on edited output; documents remain small enough to parse in the renderer. */
 export const MAX_XML_BYTES = 10 * 1024 * 1024;
@@ -137,6 +138,24 @@ function getSet(root: Element, kind: SetKind, id: string): Element {
   if (!result) throw new Error(`존재하지 않는 ${kind} 세트: ${id}`);
   return result;
 }
+function explicitSets(root:Element,kind:SetKind):Element {
+  const [section,tag,key]=setKinds[kind];let parent=child(root,section);
+  if(!parent){parent=root.ownerDocument!.createElement(section);root.appendChild(parent);return parent;}
+  if(kind==='tree'||children(parent,tag).length)return parent;
+  const first=root.ownerDocument!.createElement(tag);
+  const id=attr(parent,'id','1');if(!/^\d+$/.test(id))throw new Error('기존 세트 ID를 확인해 주세요.');
+  putAttributes(first,{id,title:attr(parent,'title','기본')});
+  if(kind==='items')first.setAttribute('useSecondWeaponSet',attr(parent,'useSecondWeaponSet','false'));
+  const owned=kind==='items'?['Slot']:kind==='skills'?['Skill']:['Input','Placeholder'];
+  for(const node of children(parent))if(owned.includes(node.tagName))first.appendChild(node);
+  parent.appendChild(first);parent.setAttribute(key,id);return parent;
+}
+function selectElement(root:Element,kind:SetKind,selected:Element):void {
+  const [section,,key]=setKinds[kind],parent=child(root,section)!;
+  parent.setAttribute(key,kind==='tree'?String(sets(root,kind).indexOf(selected)+1):attr(selected,'id','1'));
+  if(kind==='items')parent.setAttribute('useSecondWeaponSet',attr(selected,'useSecondWeaponSet','false'));
+  if(kind==='skills')clampMain(root);
+}
 function skillGroup(node: Element, index: number): SkillGroup {
   return {
     id: String(index + 1), label: attr(node, 'label'), slot: attr(node, 'slot'), enabled: bool(node, 'enabled'),
@@ -166,6 +185,7 @@ export function parseBuild(xml: string): ParsedBuild {
     }),
     itemSets: sets(root, 'items').map((set, index) => ({
       id: setId(set, index, 'items'), title: attr(set, 'title', '기본'), active: setId(set, index, 'items') === activeId(root, 'items'),
+      useSecondWeaponSet:attr(set,'useSecondWeaponSet','false')==='true',
       slots: Object.fromEntries(children(set, 'Slot').map(slot => [attr(slot, 'name'), attr(slot, 'itemId', '0')])),
     })),
     skillSets: sets(root, 'skills').map((set, index) => ({
@@ -175,6 +195,7 @@ export function parseBuild(xml: string): ParsedBuild {
     trees: sets(root, 'tree').map((set, index) => ({
       id: String(index + 1), title: attr(set, 'title', `트리 ${index + 1}`), version: attr(set, 'treeVersion', attr(build, 'targetVersion')),
       active: String(index + 1) === activeId(root, 'tree'), attributes: attributes(set),
+      weaponSets:Object.fromEntries(children(set).filter(n=>/^WeaponSet[12]$/.test(n.tagName)).map(n=>[n.tagName,attr(n,'nodes').split(',').filter(Boolean).map(Number).filter(Number.isSafeInteger)])),
       nodes: attr(set, 'nodes').split(',').filter(value => value.trim() !== '').map(Number).filter(Number.isFinite),
       sockets: children(child(set, 'Sockets'), 'Socket').map(socket => ({ nodeId: attr(socket, 'nodeId'), itemId: attr(socket, 'itemId') })),
     })),
@@ -186,6 +207,8 @@ export function parseBuild(xml: string): ParsedBuild {
       placeholders: children(set, 'Placeholder').map(attributes),
     })),
     stats: Object.fromEntries(children(build, 'PlayerStat').map(stat => [attr(stat, 'stat'), attr(stat, 'value')])),
+    notes:child(root,'Notes')?directText(child(root,'Notes')!):'',
+    party:{buffers:Object.fromEntries(children(child(root,'Party'),'ImportedBuffs').filter(node=>partyNames.includes(attr(node,'name') as PartyName)).map(node=>[attr(node,'name'),directText(node)])),exportEnabled:attr(child(root,'Import'),'exportParty')==='true'},
   };
 }
 
@@ -241,6 +264,122 @@ export function editBuild(xml: string, edit: BuildEdit): string {
   const root = document.documentElement!;
   const build = child(root, 'Build')!;
   switch (edit.type) {
+    case 'item-native': {
+      const item=children(child(root,'Items'),'Item').find(node=>attr(node,'id')===edit.id);if(!item)throw new Error('원본 아이템을 찾지 못했습니다.');
+      const variantKeys=['variant','variantAlt','variantAlt2','variantAlt3','variantAlt4','variantAlt5'];
+      for(const key of Object.keys(edit.metadata.variants))if(!variantKeys.includes(key))throw new Error('원본 아이템 variant metadata가 올바르지 않습니다.');
+      for(const key of variantKeys){const value=edit.metadata.variants[key];if(value===undefined)item.removeAttribute(key);else{if(!/^\d+$/.test(value))throw new Error('원본 variant 값이 올바르지 않습니다.');item.setAttribute(key,value);}}
+      const ranges=edit.metadata.modRanges;
+      for(const node of children(item,'ModRange'))if(ranges[attr(node,'id')]===undefined){
+        if(children(node).length||Object.keys(attributes(node)).some(key=>!['id','range'].includes(key)))throw new Error('삭제될 legacy range에 알 수 없는 metadata가 있습니다. 원문을 보존하며 적용을 중지했습니다.');item.removeChild(node);
+      }
+      for(const [id,range]of Object.entries(ranges)){if(!/^\d+$/.test(id)||!Number.isFinite(Number(range)))throw new Error('원본 mod range metadata가 올바르지 않습니다.');let node=children(item,'ModRange').find(node=>attr(node,'id')===id);if(!node){node=document.createElement('ModRange');node.setAttribute('id',id);item.appendChild(node);}node.setAttribute('range',range);}
+      replaceDirectText(item,edit.text);break;
+    }
+    case 'equipment-native-patch': {
+      const set=getSet(root,'items',edit.setId);
+      for(const [name,id] of Object.entries(edit.patch.slots)){
+        if(!name||name.length>200||!/^\d+$/.test(id))throw new Error('원본 장비 슬롯 패치가 올바르지 않습니다.');
+        let slot=children(set,'Slot').find(s=>attr(s,'name')===name);if(!slot){slot=document.createElement('Slot');slot.setAttribute('name',name);set.appendChild(slot);}slot.setAttribute('itemId',id);
+      }
+      if(edit.patch.useSecondWeaponSet!==undefined){if(typeof edit.patch.useSecondWeaponSet!=='boolean')throw new Error('원본 무기 세트 패치가 올바르지 않습니다.');set.setAttribute('useSecondWeaponSet',String(edit.patch.useSecondWeaponSet));if(activeId(root,'items')===edit.setId)child(root,'Items')!.setAttribute('useSecondWeaponSet',String(edit.patch.useSecondWeaponSet));}
+      if(edit.patch.mainSocketGroup!==undefined){requireInteger(edit.patch.mainSocketGroup,'원본 주력 스킬 그룹',1);build.setAttribute('mainSocketGroup',String(edit.patch.mainSocketGroup));}
+      break;
+    }
+    case 'tree-native-patch': {
+      const spec=getSet(root,'tree',edit.specId),patch=edit.patch;
+      for(const [key,value]of Object.entries(patch.buildAttributes||{})){
+        if(!['className','ascendClassName'].includes(key)||typeof value!=='string')throw new Error('원본 캐릭터 속성 패치가 올바르지 않습니다.');
+        build.setAttribute(key,value);
+      }
+      for(const [key,value] of Object.entries(patch.attributes)){
+        if(!['nodes','masteryEffects','classId','ascendClassId','classInternalId','ascendancyInternalId','secondaryAscendClassId','treeVersion','title'].includes(key)||typeof value!=='string')throw new Error('원본 트리 속성 패치가 올바르지 않습니다.');
+        spec.setAttribute(key,value);
+      }
+      for(const [tag,nodes] of Object.entries(patch.weaponSets||{})){
+        if(!/^WeaponSet[12]$/.test(tag)||typeof nodes!=='string')throw new Error('원본 무기 세트 패치가 올바르지 않습니다.');
+        let node=child(spec,tag);if(!node){node=document.createElement(tag);spec.appendChild(node);}node.setAttribute('nodes',nodes);
+      }
+      if(Object.keys(patch.attributeOverrides||{}).length){
+        let overrides=child(spec,'Overrides');if(!overrides){overrides=document.createElement('Overrides');spec.appendChild(overrides);}
+        let node=child(overrides,'AttributeOverride');if(!node){if(['strNodes','dexNodes','intNodes'].some(key=>typeof patch.attributeOverrides?.[key]!=='string'))throw new Error('새 원본 능력치 override에는 모든 기본 필드가 필요합니다.');node=document.createElement('AttributeOverride');overrides.appendChild(node);}
+        for(const [key,value] of Object.entries(patch.attributeOverrides!)){if(!['strNodes','dexNodes','intNodes'].includes(key)||typeof value!=='string')throw new Error('원본 능력치 노드 패치가 올바르지 않습니다.');node.setAttribute(key,value);}
+      }
+      if(patch.url!==undefined){let node=child(spec,'URL');if(!node){node=document.createElement('URL');spec.appendChild(node);}replaceDirectText(node,patch.url);}
+      if(Object.keys(patch.sockets||{}).length){
+        let sockets=child(spec,'Sockets');if(!sockets){sockets=document.createElement('Sockets');spec.appendChild(sockets);}
+        for(const [nodeId,itemId] of Object.entries(patch.sockets!)){
+          if(!/^\d+$/.test(nodeId)||typeof itemId!=='string'||itemId!==''&&!/^\d+$/.test(itemId))throw new Error('원본 주얼 소켓 패치가 올바르지 않습니다.');
+          let node=children(sockets,'Socket').find(n=>attr(n,'nodeId')===nodeId);if(!node){node=document.createElement('Socket');node.setAttribute('nodeId',nodeId);sockets.appendChild(node);}node.setAttribute('itemId',itemId||'0');
+        }
+      }
+      break;
+    }
+    case 'party-buffer': {
+      if(!partyNames.includes(edit.name))throw new Error('지원하지 않는 파티 버퍼입니다.');
+      let party=child(root,'Party');if(!party){party=document.createElement('Party');root.appendChild(party);}
+      const matches=children(party,edit.exported?'ExportedBuffs':'ImportedBuffs').filter(node=>attr(node,'name')===edit.name);
+      // PoB reads node[1] as buffer text; keep it textual before unknown child nodes.
+      for(const node of matches)replaceDirectText(node,children(node).length?'\n':'');
+      let node=matches.at(-1);if(!node){node=document.createElement(edit.exported?'ExportedBuffs':'ImportedBuffs');node.setAttribute('name',edit.name);party.appendChild(node);}
+      replaceDirectText(node,edit.text|| (children(node).length?'\n':''));break;
+    }
+    case 'party-export-enabled': {
+      let section=child(root,'Import');if(!section){section=document.createElement('Import');root.appendChild(section);}section.setAttribute('exportParty',String(edit.enabled));break;
+    }
+    case 'calcs-input': {
+      if(!['skill_number','misc_buffMode','showMinion'].includes(edit.key))throw new Error('지원하지 않는 계산 선택입니다.');
+      if(edit.value!==undefined){
+        if(edit.key==='skill_number')requireInteger(edit.value as number,'계산 스킬 그룹',1);
+        if(edit.key==='showMinion'&&typeof edit.value!=='boolean')throw new Error('계산 대상 선택이 올바르지 않습니다.');
+        if(edit.key==='misc_buffMode'&&(typeof edit.value!=='string'||!edit.value||edit.value.length>40))throw new Error('계산 모드가 올바르지 않습니다.');
+      }
+      let calcs=child(root,'Calcs');if(!calcs){calcs=document.createElement('Calcs');root.appendChild(calcs);}
+      const matches=children(calcs,'Input').filter(node=>attr(node,'name')===edit.key);
+      if(edit.value===undefined){for(const node of matches)calcs.removeChild(node);break;}
+      let input=matches.at(-1);if(!input){input=document.createElement('Input');input.setAttribute('name',edit.key);calcs.appendChild(input);}
+      for(const type of ['boolean','number','string'])input.removeAttribute(type);
+      input.setAttribute(typeof edit.value,String(edit.value));break;
+    }
+    case 'notes': {
+      let notes=child(root,'Notes');if(!notes){notes=document.createElement('Notes');root.appendChild(notes);}replaceDirectText(notes,edit.text);break;
+    }
+    case 'set-add': {
+      const title=edit.title.trim();if(!title||title.length>200)throw new Error('세트 이름은 1~200자로 입력해 주세요.');
+      const parent=explicitSets(root,edit.kind),all=sets(root,edit.kind).filter(node=>node!==parent);
+      const source=edit.copyFrom?getSet(root,edit.kind,edit.copyFrom):undefined;
+      if(source&&!all.includes(source))throw new Error('복사할 기존 세트를 찾지 못했습니다.');
+      let next:Element;
+      if(source)next=source.cloneNode(true) as Element;
+      else{
+        next=document.createElement(setKinds[edit.kind][1]);
+        if(edit.kind==='items')next.setAttribute('useSecondWeaponSet','false');
+        if(edit.kind==='tree'){
+          const template=all.length?getSet(root,'tree',activeId(root,'tree')):undefined;
+          if(!template)throw new Error('트리 기준이 없습니다. 직업·버전이 지정된 빌드를 먼저 준비해 주세요.');
+          for(const key of ['treeVersion','classId','classInternalId','ascendClassId','ascendancyInternalId','secondaryAscendClassId','startNodeId'])
+            if(template.hasAttribute(key))next.setAttribute(key,attr(template,key));
+          next.setAttribute('nodes','');next.appendChild(document.createElement('Sockets'));
+        }
+      }
+      next.setAttribute('title',title);
+      if(edit.kind!=='tree'){
+        const ids=all.map(node=>Number(attr(node,'id')));if(ids.some(id=>!Number.isSafeInteger(id)||id<0))throw new Error('기존 세트 ID가 올바르지 않습니다.');
+        const id=ids.reduce((maximum,id)=>Math.max(maximum,id),0)+1;requireInteger(id,'새 세트 ID',1);next.setAttribute('id',String(id));
+      }
+      parent.appendChild(next);selectElement(root,edit.kind,next);break;
+    }
+    case 'set-rename': {
+      const title=edit.title.trim();if(!title||title.length>200)throw new Error('세트 이름은 1~200자로 입력해 주세요.');
+      getSet(root,edit.kind,edit.id).setAttribute('title',title);break;
+    }
+    case 'set-remove': {
+      const parent=explicitSets(root,edit.kind),all=sets(root,edit.kind);
+      if(all.length<=1)throw new Error('마지막 세트는 삭제할 수 없습니다.');
+      const selected=getSet(root,edit.kind,activeId(root,edit.kind)),removed=getSet(root,edit.kind,edit.id),index=all.indexOf(removed);
+      parent.removeChild(removed);const remaining=sets(root,edit.kind);
+      selectElement(root,edit.kind,removed===selected?remaining[Math.min(index,remaining.length-1)]:selected);break;
+    }
     case 'item': {
       if (!/^\d+$/.test(edit.id)) throw new Error('아이템 ID는 음수가 아닌 정수여야 합니다.');
       requireInteger(Number(edit.id), '아이템 ID');
@@ -273,6 +412,22 @@ export function editBuild(xml: string, edit: BuildEdit): string {
       putAttributes(group, { label: edit.group.label, slot: edit.group.slot, enabled: String(edit.group.enabled), includeInFullDPS: String(edit.group.includeInFullDPS) });
       editGems(group, edit.group.gems);
       break;
+    }
+    case 'skill-active': {
+      requireInteger(edit.index,'스킬 효과',1);getGroup(getSet(root,'skills',edit.setId),edit.groupId).setAttribute(edit.calcs?'mainActiveSkillCalcs':'mainActiveSkill',String(edit.index));break;
+    }
+    case 'gem-stat-set': {
+      requireInteger(edit.index,'스킬 모드',1);if(!edit.grantedEffectId)throw new Error('원본 스킬 효과 ID가 필요합니다.');
+      const group=getGroup(getSet(root,'skills',edit.setId),edit.groupId),gems=children(group,'Gem');requireInteger(edit.gemIndex,'젬',1,gems.length);
+      const gem=gems[edit.gemIndex-1],tag=edit.calcs?'StatSetCalcsIndex':'StatSetIndex';
+      let setting=children(gem,tag).filter(node=>attr(node,'grantedEffect')===edit.grantedEffectId).at(-1);
+      if(!setting){setting=document.createElement(tag);gem.appendChild(setting);}
+      putAttributes(setting,{grantedEffect:edit.grantedEffectId,index:String(edit.index)});break;
+    }
+    case 'gem-option': {
+      const group=getGroup(getSet(root,'skills',edit.setId),edit.groupId),gems=children(group,'Gem');requireInteger(edit.gemIndex,'젬',1,gems.length);
+      if(edit.value===undefined)gems[edit.gemIndex-1].removeAttribute(edit.key);
+      else{requireInteger(edit.value,'스킬 선택값',edit.key.startsWith('skillPart')?1:0);gems[edit.gemIndex-1].setAttribute(edit.key,String(edit.value));}break;
     }
     case 'skill-add': {
       const set = getSet(root, 'skills', edit.setId);
@@ -308,11 +463,14 @@ export function editBuild(xml: string, edit: BuildEdit): string {
       if (!edit.key) throw new Error('설정 이름이 필요합니다.');
       if (typeof edit.value === 'number' && !Number.isFinite(edit.value)) throw new Error('설정 수치가 올바르지 않습니다.');
       const set = getSet(root, 'config', edit.setId);
-      let input = children(set, 'Input').find(node => attr(node, 'name') === edit.key);
+      let input = children(set, 'Input').filter(node => attr(node, 'name') === edit.key).at(-1);
       if (!input) { input = document.createElement('Input'); input.setAttribute('name', edit.key); set.appendChild(input); }
       for (const type of ['boolean', 'number', 'string']) input.removeAttribute(type);
       input.setAttribute(typeof edit.value, String(edit.value));
       break;
+    }
+    case 'config-remove': {
+      const set=getSet(root,'config',edit.setId);for(const input of children(set,'Input'))if(attr(input,'name')===edit.key)set.removeChild(input);break;
     }
     case 'character': {
       requireInteger(edit.level, '캐릭터 레벨', 1, 100);

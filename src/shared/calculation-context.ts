@@ -6,8 +6,9 @@ export interface CalculationProvenance {
   xmlSha256: string;
   bundleId: string;
   pobCommit: string;
-  kbDigest: string;
-  pokSourceDigest: string;
+  kbDigest?: string;
+  pokSourceDigest?: string;
+  runtime?: 'pob' | 'pok';
   mode: 'xml' | 'restored-spec';
 }
 

@@ -1,5 +1,45 @@
 # 구조와 배포 경계
 
+15차(2026-11-03): loadouts.lua는 원본 Build의 목록/이름·식별자 해석/동시 전환을 호출한다. main은 projectActiveXml의 spec 위치를 canonical 위치로 역매핑하고 입력/출처를 응답에 붙인다. `loadoutEdit`는 원본이 반환한 네 세트·직업·무기/주력 그룹만 원자 패치한다. renderer는 변경을 검토하고 explicit apply 후 새 계산하며, 요청별 취소·revision/XML/runtime/name 검사로 늦은 결과를 차단한다. Loadout 관리 CRUD/Custom/Reorder는 아직 별도 미구현이다. 새로운 매칭·게임 규칙을 renderer에 만들지 않는다.
+
+14차(2026-11-03): `resolveTreeSetEdit`는 prospective XML을 기존 원본 tree 조회에 보내 직업/전직을 확인하고, 세트 변경+Build identity를 하나의 XML revision으로 반환한다. renderer는 게임 ID→직업 매핑을 추정하지 않는다. `useTreeSetEdits`는 응답 소유·문서 세대·runtime을 검증하고 취소/문서 전환의 늦은 결과를 버린다. 비교의 optional treeIdentity는 원본 조회값만 보관하며 `projectComparisonSide`가 측정 XML을 재구성한다. 적용 직전 원본 재조회/측정 hash/현재 revision이 일치해야 한다. 과거 비교 형식은 보존하며 직업 정보가 달라진 기록은 재비교가 필요하다.
+
+13차(2026-11-03): tree 어댑터는 원본 Build classDrop/ascendDrop 콜백을 호출한다. 원본 확인창의 reset/connect 선택을 요청/미리보기 계약으로 전달하며, 원본 PassiveSpec의 연결/재설정 결과와 Build.Save의 className/ascendClassName만 패치한다. renderer는 원본 선택지·diff를 표시하고 revision/runtime 확인 후 명시 적용·재계산한다. 문서 전환/취소의 미리보기는 canonical XML에 영향을 주지 않는다.
+
+12차(2026-11-03): item-controls 어댑터는 원본 제작 affix 선택·tier slider와 일반 modifier range 선택/slider를 호출한다. 원본 ItemsTab.Save가 만든 variant/ModRange를 `item-native` XML 부분 패치로 전달한다. unknown metadata는 유지하며 제거가 필요한 unknown range는 적용을 차단한다. 접사 키는 여러 원본 tier ID를 포함하므로 host는 16KiB 전송 한도만 두고 원본이 선택/입력 유효성을 검사한다. tier 수식·접사 배타 규칙은 renderer에 구현하지 않는다.
+
+## 독립 실행 구현 진행 — 2026-11-02
+
+11차: equipment.lua는 원본 orderedSlots/Populate/ReceiveDrag/weaponSwap callback을 실행한다. native 전/후 active ItemSet/Build 상태 차이만 equipment-native-patch로 반영해 관련 슬롯 정리와 주력 스킬 변경을 놓치지 않는다. useEquipmentState는 exact XML/revision/runtime에 속한 동적 슬롯만 현재 데이터로 사용하며, 현재 XML과 원본 복원 슬롯의 차이는 별도 진단한다. 장착/전환 후 새 계산도 제출 snapshot에만 귀속된다.
+
+10차: item-popups는 잠시 OpenPopup을 래핑해 원본 컨트롤을 확보하고 원래 OpenPopup/ClosePopup 및 callback을 실행한다. NotableDB/ListBuilder와 원본 corruption 그룹/slider 계산을 재사용하며, 새 요청마다 상태를 재생한다. 결과는 detached draft로만 돌아온다. requestId 취소는 runtime queue/active child의 해당 작업만 취소하며 global generation 종료와 구분한다. renderer가 닫힌 뒤 취소/오래된 응답을 적용하지 않는다.
+
+9차: item-controls는 복원된 Item.BuildRaw로 분리한 Item에 원본 SetDisplayItem/컨트롤 callback을 실행하고 fields/선택지/파싱 진단을 반환한다. 원본 sanitiseText 대응만으로 비ASCII 원문을 보존하며, 복원이 불확실한 결과는 적용을 막는다. renderer는 original/draft/입력 revision/runtime/item/slot을 확인하고 applyExpected 후 새 계산한다. receipt에는 native editor 진단을 붙인다. 저장 목록 장착도 원본 슬롯 검증 receipt가 있어야 진행한다. renderer에 소켓/룬/장착/번역 규칙을 구현하지 않는다.
+
+8차: tree action attribute/jewel은 원본 SwitchAttributeNode/ItemSlotControl과 slot.Populate의 결과를 사용한다. 주얼 patch는 native Save 전/후 sockets 차이를 대상으로 하고, 새로운 AttributeOverride는 native Save의 완전한 필드 그룹을 전달한다. XML 무기 목록은 렌더링 metadata로만 읽으며 경로/장착 판단은 원본에 남긴다. editor.load는 원본 ShowErrMsg를 수집해 로드 실패가 빈 기본 빌드의 성공 계산으로 넘어가지 않도록 한다.
+
+7차: `tree.lua`는 원본 PassiveSpec의 전/후 Save 결과 차이로 native 패치를 만든다. main의 `tree` 요청은 입력·runtime을 확인하고 같은 요청을 병합, 더 최신 선택으로 대체된 응답을 거부한다. `useTreeOperation`은 선택·revision·XML·모드가 일치하는 결과만 적용 가능하게 하며 canvas는 원본이 반환한 변경 ID만 강조한다. `tree-native-patch`는 변경된 알려진 필드만 XML DOM에 반영한다. 경로·종속성·무기 모드·능력치 override 계산은 원본에 남는다.
+
+6차: `party.lua`는 원본 PartyTab의 출력 생성·Import/Clear callback·버퍼 요약을 읽는다. 지원 빌드와 대상 XML은 작업 프로세스에만 로드하며 원본 파일을 쓰지 않는다. `PobRuntime.party`는 두 XML의 hash/대상 revision/runtime을 돌려준다. `PartyView`는 native 결과를 미리보고 대상 id/revision/XML을 확인해 지정 버퍼 편집으로 적용한 뒤 재계산한다. 원본 파티 병합/해석 규칙은 JS로 옮기지 않는다. 일시적 disable/rebuild의 독립 요청 간 상태 계약은 별도로 남겨 둔다.
+
+5차: `runtime/pob/calcs.lua`는 원본 계산 섹션의 가용성을 CheckFlag로 평가하고 원본 formatCalcStr/CalcBreakdownControl로 표시값과 분해를 만든다. `PobRuntime.calcs`는 id/revision/XML hash/runtime/시각을 부여하고 같은 입력을 병합·낡은 대기를 거부한다. `CalcsView`는 현재 입력과 일치할 때만 조작·분해 조회를 허용하고 모달을 닫거나 입력을 바꾼 뒤 늦게 온 응답을 표시하지 않는다. 원본 Calcs 입력/스킬 전용 필드는 XML 대상 편집으로 보존하며 MAIN 계산과 XML 저장 PlayerStat는 별도로 표시한다.
+
+4차: `build-history`는 XML 편집/undo/redo를 모두 증가하는 revision으로 기록하고 새 분기 편집 시 redo를 폐기한다. `build-management`의 폴더와 보관함은 작업 공간 metadata이며 원본 파일 작업을 하지 않는다. `build-comparison`은 제출 XML snapshot/세트 선택/계산 receipt를 저장하며, `build-changes`를 AI 제안과 일반 수동 비교에서 공유한다. 적용은 최신 문서와 id/revision/XML을 동기 확인하고, 측정 receipt의 입력 hash/runtime을 확인한 다음 새 계산한다. 늦은 응답은 변경된 현재 문서에 붙이지 않는다. StateStore는 보관함·폴더·비교 기록과 참조 XML/세트의 유효성을 검사한다.
+
+3차 구현: `PobRuntime.inspect`가 실제 XML을 원본 PoB에 로드한 뒤 조건의 분류/가용성/기본값/리스트/설명과 스킬 선택 컨트롤을 읽는다. renderer는 게임 조건 판정을 복제하지 않는다. 응답은 buildId/revision/XML hash/runtimeId에 귀속되고 같은 입력 요청은 병합, 대기 중 낡은 조회는 대체한다. UI는 이전 구조를 표시하더라도 현재 입력 검증 전에는 해당 선택을 잠근다. 클래스 표시도 현재 원본 조회를 사용한다.
+
+4종 세트 CRUD와 노트는 XML DOM의 대상 요소만 편집하며 비활성 세트/알 수 없는 필드를 보존한다. legacy 평면 형식은 알려진 세트 소유 요소만 wrapper로 이동하고, 트리는 위치 기반 activeSpec을 재계산한다. 모든 편집 화면의 임시 입력은 문서별 컴포넌트 수명에 격리한다.
+
+2차 구현에서 `PobEditorData`를 추가해 catalog/tree/image/new-build/item-render IPC를 PoK에서 분리했다. `resources/pob-editor`는 원본 metadata/직업/접사/젬·스킬/유니크와 파생 트리를 가지며, 모든 파일 해시와 원본 commit/runtimeId를 검증한다. 실제 생성은 원본 PoB Item/Craft 객체에 위임한다. UI에서 접사 수치·게임 규칙을 계산하지 않는다. `pob:prepare-data`의 Python은 이미지 변환 빌드 도구이고 앱의 실행 의존성이 아니다.
+
+배포 기본 리소스는 `pob-runtime`+`pob-editor`이고 `verify:pob`가 두 출처/트리를 검증한다. PoK bundle은 필수 배포 입력에서 제외했다. 실제 패키지 검증과 선택 PoK/AI의 context 분리는 아직 진행 중이다.
+
+수동 계산 IPC는 이제 `PobRuntime`으로 원본 PoB를 직접 실행하며 PoK/KB/Python identity를 요구하지 않는다. `runtime/pob/worker.lua`는 원본 HeadlessWrapper API만 호출하고 게임 계산을 복제하지 않는다. 원본 PoB·LuaJIT·어댑터를 source commit/파일 해시 manifest로 별도 준비하며, 요청마다 독립 프로세스와 XML을 로드한다. 새 계산 provenance는 `runtime:'pob'`와 독립 runtimeId를 갖고 PoK source/KB digest를 꾸며 넣지 않는다.
+
+PoK 자동 연결은 명시적인 `settings.pok.autoConnect:true`일 때만 수행한다. 미설정/기본값은 연결하지 않음이다. 선택 연결의 버전 실패가 독립 계산 결과를 무효화하지 않는다. 수동 계산과 선택 연결의 출처는 별도다.
+
+이것은 전체 독립 편집기 완료가 아니다. 원본의 모든 편집·비교·관리 기능과 실제 portable 검증을 계속 수행해야 한다. 다음 작업과 전체 기능 대응표는 [POB-STANDALONE-PLAN.md](POB-STANDALONE-PLAN.md)를 따른다. 아래 10월 구조 설명 중 PoK 계산 경로/자동 연결은 당시 구현의 기록으로 읽는다.
+
 ## 확정된 제품 요구와 현재 구조의 차이 — 2026-10-30
 
 - pok-ui와 PoK는 **각각 독립 실행**해야 한다. pok-ui의 PoB 수동 편집·계산·저장/복원에 PoK 설치·연결·KB·AI를 필수로 두지 않는 것이 목표다. PoK의 기존 독립 사용도 유지한다.

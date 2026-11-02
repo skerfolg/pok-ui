@@ -1,5 +1,120 @@
 # 로컬 검증
 
+## 원본 Loadout 선택·동시 전환 — 2026-11-03 (15차 진행)
+
+- 최종 source `.local/loadouts-native-1793635727983/result.json` 및 Windows packaged `.local/loadouts-native-1793636011892/result.json` **각4개 그룹 통과**. 원본 이름/brace 연결, scoped 취소/문서 격리·원문/unknown 보존, 네 세트·직업·활성 무기 동시 적용/실계산, undo/PoK 없는 재시작과 두 해상도를 확인했다. PNG 직접 시각 확인. `pack:win` 통과(고정 원본 출처/실계산/build 포함). 아래 진행 중 표기는 이 결과로 대체한다. native4/check158도 통과. 전체 Loadout 관리/PoB GUI/portable/실제 모델 완료로 처리하지 않는다.
+
+- 최종 native `tests/pob-loadouts-smoke.cjs` **4개 그룹 통과**, `.local/standalone-pob/loadouts-result.json`: 원본 이름 매칭에 의한 네 세트/직업/무기 전환·실계산(Life229/Dex37→Life170/Dex25), 왕복 XML 완전 복원 및 projected spec ID 역매핑, brace/색상 이름과 원본의 불완전 그룹 제외, 잘못된 이름/scoped 취소 후 독립성. 수치 변화는 전체 구성 차이이며 개선/성립/추천 판정이 아니다.
+- 최초 source `.local/loadouts-native-1793635283531/result.json` **4개 그룹 통과**: 취소·동일 XML 문서 간 초안 격리, 네 세트 검토/1회 적용·실계산·unknown 원문·undo, brace 연결의 같은 reference 수치, PoK 없는 재시작. 1920/1024 PNG 직접 시각 확인. 후속으로 무기 I→II 변경 표시와 reserved 메뉴/색상 이름 구분을 보강했다. 최종 source/Windows packaged 검증 진행 중이다.
+- check **158 passed**, boundary/type 통과. build 통과. 기존 Vite native-config 경고와 500kB chunk 경고 존재. portable·원본 GUI·실제 모델 미수행. 원본 Loadout 관리 CRUD/Custom/Reorder는 미구현이다.
+- data prepare ENOSPC 실패를 성공으로 세지 않는다. workspace 내부·생성물 whitelist·reparse 없음 확인 후 이번 작업의 초기 runtime/editor backup12개만 정리해 약3.7GB 확보, 최신/사용자 workspace 보존. 0바이트 검사 파일을 재작성했고 src/runtime/tests에 의도치 않은 0바이트 파일 없음 확인. 전체 data prepare와 native를 재실행해 통과했다. 개인 입력은 사용하지 않았다.
+
+## 활성 트리 직업 동기화·비교 근거 — 2026-11-03 (14차 진행)
+
+- 최종 Windows packaged `.local/tree-sets-native-1793634280885/result.json` **4개 그룹 통과**, `pack:win` 통과(고정 원본 출처·실계산·build 포함). 서로 다른 직업 세트의 switch/copy/delete·취소/문서 전환·undo, 양쪽 원본 identity/정확한 hash·비교 변경 표시, 같은 XML 최종 적용/새 계산, PoK 없는 재시작을 확인했다. 1920/1024 결과 캡처와 1024 취소/loading 화면을 직접 시각 확인했다. 기존 management-compare source `.local/management-compare-native-1793634196014/result.json` **4개 그룹 통과**. loading 수정 포함 최종 check156 통과. 아래 초기 ‘진행 중’은 이 최종 결과로 대체한다. portable·원본 GUI·실제 모델 미수행.
+
+- native `tests/pob-tree-sets-smoke.cjs` **3개 그룹 통과** (`.local/standalone-pob/tree-sets-result.json`). 기존 단순 세트 변경의 stale Build.className을 재현했고 원본 native 조회로 Ranger identity·실제 Str7(원안 Warrior85)을 확인했다. cross-class 복사/활성 삭제·새 세트, inactive/unknown 보존·원본 불변, 비교의 정확한 XML/hash를 검사했다. private info를 잘못 호출한 최초 검사 코드는 getInfo로 수정했다.
+- check **156 passed**, boundary/type 통과. 초기 unit 보존 assertion은 트리 DTO의 active 플래그까지 불변으로 비교해 실패했으며, 실제 세트 전환에 맞게 기대값만 수정했다. build 통과. 런타임은 13차와 동일하며 엔진/원본 PoB를 수정하지 않았다.
+- 최초 Electron `.local/tree-sets-native-1793633729656`는 startup runtime 확인 전 제어가 활성화된 문제로 중단, 원본/revision 불변. 준비 gate를 추가했다. 재실행의 1024 캡처에서 기존 트리 리소스 로딩이 실패로 보이는 문제를 발견해 loading과 missing/error를 구분했다. source/packaged 최종 동선 검증은 진행 중이다. 개인 입력은 사용하지 않았다.
+- source `.local/tree-sets-native-1793633936310/result.json` **4개 그룹 통과**: 취소/문서 전환의 결과 격리, switch의 Ranger identity·실제 Str7, 복사/활성 삭제의 identity/undo, 비교의 Warrior/Ranger identity·정확한 XML/hash·직업 변경 표시·동일 XML 최종 적용/새 계산·재시작. 취소 및 1920/1024 PNG 직접 시각 확인. 1024 비교 캡처는 상단 선택 UI였으므로 후속 검사에서 변경 결과로 스크롤해 캡처하도록 보강했다. loading 수정 포함 check156 통과. Windows packaged 및 기존 management-compare 회귀 진행 중.
+
+## 원본 직업·전직 전환 — 2026-11-03 (13차 진행)
+
+- 최종: `pack:win` 통과. Windows packaged `.local/character-native-1793632964017/result.json` **4개 그룹 통과**, 원본과 동일한 reset/connect·계산·취소/문서 격리·undo·재시작 및 1920/1024를 확인했고 PNG를 직접 시각 확인했다. 기존 native tree 회귀 **5개 그룹 통과** (`.local/standalone-pob/tree-result.json`, 새 runtimeId 포함). 아래 초기 ‘진행 중’은 이 결과로 대체한다. portable·원본 PoB GUI·실제 모델은 이번에 미수행이다.
+
+- native `tests/pob-character-smoke.cjs` **4개 그룹 통과**, `.local/standalone-pob/character-result.json`. 원본 확인창 선택 전 diff 없음, reset 일반4→0, connect 기존 가지를 유지한 일반27과 Titan·실계산, 전직 시작점 교체/잘못된 class 격리, inactive/unknown XML 보존과 재열기를 확인했다. Life65→229/Dex15→37/Str7→85는 합성 구성의 측정값이며 포인트 예산 충족/추천 성공이라는 의미가 아니다.
+- 최초 테스트는 빈 Lua table이 JSON `[]`였는데 `{}`로 단정한 assertion에서 중단됐다. 빈 key 검사로 수정한 뒤 전 동선을 수행했다. 제품 오류나 우회로 처리하지 않는다.
+- check **153 passed**, boundary/type 통과. build 통과. source/packaged Electron 검사는 진행 중이다. portable·원본 GUI·실제 모델은 미수행. 사용자 개인 데이터는 사용하지 않았다.
+- 최초 Electron `.local/character-native-1793632431541`는 classId/ascendancyId/classChoice가 main IPC의 명시 DTO에서 빠져 확인 선택이 나오지 않는 실패였다. main 전달 경로를 수정하고 renderer도 결정 대기가 아닌 응답의 직업/전직이 요청과 다르면 거부하도록 보강했다. 이 실패 실행은 source 성공으로 세지 않는다.
+- 수정 source `.local/character-native-1793632697896/result.json` **4개 그룹 통과**: 확인 선택/취소와 문서 전환의 늦은 초안 격리, 원본 reset 적용·계산·정확한 undo, 원본 connect·전직과 native reference 수치 일치, PoK 없는 재시작의 XML/직업/전직/계산 revision 복원. 1920/1024 PNG 직접 시각 확인. 최종 IPC/선택 검증 수정 후 check153도 재통과했다.
+
+## 기존 아이템 접사·modifier 범위 — 2026-11-03 (12차 진행)
+
+- native `tests/pob-item-affixes-smoke.cjs` 3개 그룹 통과: 일반 range0→1/legacy ModRange 동기화·Dex20→30·재열기, 제작 접사 Life90→205·원본 tier 설명, 잘못된 선택 후 격리. `.local/standalone-pob/item-affixes-result.json`. 기존 native item-controls도 6개 그룹 재통과했다.
+- 최초 Electron `.local/item-affixes-native-1793631187736`는 일반 범위/undo 이후 접사 선택 실패. 원본 series 키 길이가 host 100자 제한을 넘었다. 전송 한도를 16KiB로 수정하고 원본 컨트롤 검사는 유지했다.
+- 수정 source `.local/item-affixes-native-1793631432357/result.json` 4개 그룹 통과. 원본 불변·unknown 보존/undo, 접사·최소/최대 tier 적용과 실제 계산, 저장/PoK 없는 재시작, 1920/1024를 확인했다. PNG 직접 시각 확인. 작은 화면의 slider 위치도 보장하도록 후속 검사에 scroll/bounds assertion 추가.
+- 최종 check **152 passed**, boundary/type 통과. `pack:win` 통과(독립 출처·계산·build 포함). 실제 Windows packaged `.local/item-affixes-native-1793631690562/result.json` **4개 그룹 통과**, slider 화면 내 위치 검사·1920/1024 PNG 직접 시각 확인까지 완료했다. 원본 popup source 회귀 `.local/item-popups-native-1793631485982/result.json`도 **5개 그룹 통과**해 성유/오염/고유 roll의 검토·적용·실계산·재시작을 확인했다. portable·원본 GUI·실제 모델 미수행. 개인 입력은 사용하지 않았다.
+
+## 활성 무기 세트·장비 내부 주얼 — 2026-11-02 (11차)
+
+- 필수 check **151 passed**, boundary/type 통과. build 통과. 활성 무기 flag/주력 group patch의 unknown 슬롯/비활성 세트 보존을 unit에서 검증했다.
+- native `tests/pob-equipment-smoke.cjs` **4개 그룹 통과** (`.local/standalone-pob/equipment-result.json`): Rusted Cuirass의 원본 내부 주얼 목록/장착 Dex15→25, 링 거부·해제15, 무기 II와 원본 연동 스킬 group2의 실제 DPS3.92/I의4.4583333333333, inactive set 불변, 부모 제거 후 가용하지 않은 내부 slot의 거부. 모든 후보/표시/연산은 원본 control을 사용했다.
+- source `.local/equipment-native-1793629247916/result.json` 및 최초 packaged `.local/equipment-native-1793629520480/result.json` 각 5개 그룹 통과. 기존 item-controls source `.local/item-controls-native-1793629243651/result.json` 6개 그룹도 통과했다. 슬롯 준비 완료까지 기다려 캡처하도록 보강한 source `.local/equipment-native-1793629639489/result.json`도 동일 5개 그룹 통과, 1920/1024의 활성 버튼/주얼 제어를 직접 시각 확인했다. 최종 Windows packaged `.local/equipment-native-1793629675602/result.json`도 동일 **5개 그룹 통과**했고 `pack:win` 통과. 준비된 내부 주얼 제어/무기 버튼과 연동 계산, 부모 제거, 원본/비활성 세트 보존, 재시작을 확인했다. portable·실제 모델·원본 PoB GUI는 이번에 미수행이다. source 복원 ID 불일치를 진단하고, 실제 상태 차이만 canonical DOM에 반영한다. 이 검사는 모든 특수 장비/주얼/부수 변경·원본 GUI 동등성을 증명하지 않는다. 개인 입력은 사용하지 않았다.
+
+## 원본 성유·오염 팝업·요청 취소 — 2026-11-02 (10차)
+
+- 필수 check **150 passed**, boundary/type 통과, build 통과. native `tests/pob-item-popups-smoke.cjs` **6개 그룹 통과** (`.local/standalone-pob/item-popups-result.json`). 실제 NotableDB 875개, 원본 recipe/검색/재료 제한, Lasting Incantations의 원본 비교·추가/제거로 Fireball4.4583333333333→5.35→기준값, 성유를 유지하는 원본 오염 save, 실제 Astramentis(Current variant)의 slider Dex96→113, queued/live 요청 취소와 이후 원본 독립성을 포함한다.
+- popup 후보·필터·source/group 제외·roll 수식은 원본 callback으로 처리한다. 원본 비교는 현재 입력의 what-if이며 최종 적용 revision의 새 계산과 구분한다. popup save가 canonical 문서를 직접 바꾸지 않는다. source `.local/item-popups-native-1793627806158/result.json` 및 실제 Windows packaged `.local/item-popups-native-1793628014476/result.json`에서 **각 5개 그룹 통과**. 대기 팝업 취소/재조회, 원본 검색·선택·초안 save/명시 적용/새 계산, 성유 유지 오염, 실제 고유 slider와 native reference 수치 일치, 저장/재시작·1920/1024를 검증했다. 두 크기의 성유/roll UI를 직접 시각 확인했고 `pack:win`도 통과했다. portable·실제 모델·원본 PoB GUI는 이번에 미수행이다.
+- 기존 native item-controls 6개 그룹(품질/룬·문자열 보존·legacy range·슬롯 거부)을 재실행해 통과했다. source recipe와 고유 데이터는 고정 PoB에서 얻었으며 개인 XML/대화를 사용하지 않았다.
+- 원본 CorruptDisplayItem 자체의 PoE1 legacy/TODO 및 모든 현재 게임 결과의 적법성/획득 검증은 미해결이다. 모든 특수 유형/stacked anoint/stat 정렬 성능과 원본 GUI parity를 이 대표 검사로 증명하지 않는다. 현재 progress는 요청 단계/취소 상태이며 원본 정렬 비율의 이벤트 전달은 아직 없다.
+
+## 원본 아이템 옵션·원문 보존 — 2026-11-02 (9차)
+
+- 필수 check **150 passed**, boundary/type 통과. build 통과. native 아이템 컨트롤의 원본 filter/limit/선택지와 callback을 사용한다.
+- `tests/pob-item-controls-smoke.cjs` **6개 그룹 통과** (`.local/standalone-pob/item-controls-result.json`): 품질 Armour45→54, Lesser Adept Rune Dex15→21, 한국어 미지원 줄과 XML 자식 보존, 실패 입력/숨겨진 컨트롤 거부 후 원본 상태, 원문 손실의 지속 차단, legacy ModRange range0/Dex20 유지, 원본 슬롯의 Body Armour→Helmet 거부. 그룹 수는 기능 전체 완료 수가 아니다.
+- 발견/수정: Item 생성자의 sanitiseText가 합성 한국어 줄을 `?`로 바꿨다. 원본 함수를 이용한 문자열 대응으로 원문을 보존하고 미해석/정규화 진단을 보였다. 정확한 대응이 없으면 적용을 차단하고 canonical 원문을 보존한다. 연속 편집이 차단 사유를 지우지 못하도록 canonical source와 draft를 모두 참조한다. 초기 룬 테스트가 변신 조건부 Armour를 선택해 수치가 늘지 않았던 것은 올바른 원본 동작이었다. 무조건 효과를 가정하지 않고 조건 없는 실제 Dex 선택지로 검증했다. 원본 룬 이름을 다시 찾으며 프로세스 간 index에만 의존하지 않는다.
+- 원본이 복원한 legacy ModRange/variant 상태에서 detached Item을 시작한다. 저장 목록 장착도 별도 원본 슬롯 검사를 거치므로 이 경로가 render-item의 검사를 우회하지 않는다. 원문 직접 편집 전체/전수 legality 검증을 완료했다는 뜻은 아니다.
+- 최초 source `.local/item-controls-native-1793622820267/result.json` 4개 그룹 통과 이후 슬롯/legacy 회귀를 추가했다. 최종 source `.local/item-controls-native-1793624679489/result.json` 및 실제 Windows packaged `.local/item-controls-native-1793625077148/result.json`에서 **각 6개 그룹 통과**. 저장 목록의 부적합 슬롯 거부, 미적용 초안의 문서 격리, 품질/소켓/룬 1회 적용·새 계산·진단 receipt, legacy range와 실제 Dex 유지, undo/재시작, 손실 시 편집·적용 차단을 검증했다. `pack:win` 통과. 1920/1024 화면을 직접 시각 확인했다. portable·실제 모델·원본 PoB GUI는 미수행이다. synthetic mixed-language 입력이며 실제 개인 XML·실물 한국어 아이템 전체 변환은 미검증이다.
+
+## 트리 능력치 재선택·주얼·무기 표시 — 2026-11-02 (8차)
+
+- 필수 check **150 passed**, boundary/type 통과. build 통과. 새 AttributeOverride 필수 3필드, 주얼 장착/해제의 소켓 unknown 보존, XML 무기 목록 표시 회귀를 포함한다.
+- native `tests/pob-tree-advanced-smoke.cjs` **4개 그룹 통과**, `.local/standalone-pob/tree-advanced-result.json`: 잘못된 override의 계산을 실패로 거부; 실제 Dex95→90/Int7→12; 원본 슬롯 목록의 Emerald 허용/Ring 거부; 주얼 장착 Dex105·해제95; 메타데이터 보존·실패 격리. fixture는 이 검사에서 생성한 합성 XML이며 `.local`에만 저장한다.
+- 발견/수정: 기존 부분 패치가 새 AttributeOverride에 dexNodes만 만들면 원본 loader의 strNodes:gmatch가 실패했다. stock Save의 완전한 필드 그룹을 반환하고 새 부분 컨테이너를 거부하도록 수정했다. 이전 7차의 선택 검사는 patch만 확인했고 재열기까지 증명하지 못했음을 이번 실제 검사로 보완했다. 원본 로드 오류를 ShowErrMsg에서 받아 실패로 반환해 빈 기본 빌드 fallback을 성공으로 표시하지 않는다.
+- 공통 loader 변경 후 native runtime(5그룹), inspection(4), calcs(7), party(6)를 실제로 재실행해 통과했다. 최종 source `.local/tree-advanced-native-1793620081993/result.json` 및 Windows packaged `.local/tree-advanced-native-1793620084995/result.json`에서 **각 5개 그룹 통과**: 실제 능력치 변경/계산, 원본 주얼 목록과 장착/계산, 해제/계산·undo, 재시작/두 크기, malformed XML의 원본/revision 보존과 로드 오류/성공 receipt 부재. undo 입력은 revision 4로 복원되며 이전 revision 3 계산은 현재 입력으로 표시되지 않는다. 기존 path source `.local/tree-operations-native-1793619791726/result.json` 5개 그룹도 통과. `pack:win` 통과, 1920/1024와 무기별 색상/주얼 화면을 직접 시각 확인했다. portable·실제 모델·원본 GUI는 미수행이다. 지원 0_1~0_5는 원본 inventory에서 각각 동일 버전으로 열렸으며 mastery 노드는 모두 0개였다 (`.local/standalone-pob/mastery-inventory.json`). 데이터 비해당과 UI 구현 완료를 구분하고 pin 변경 시 재감사한다. 원본 GUI parity·모든 특수 주얼/버전 조합을 이 검사로 증명하지 않는다.
+
+## 원본 트리 경로 연산 — 2026-11-02 (7차)
+
+- 필수 check **147 passed**, boundary/type 통과, build 통과. native 필드 패치가 unknown spec/URL/Override metadata, 소켓 및 비활성 트리를 보존하는 회귀를 포함한다. 중복 조회 병합의 자기 참조 Promise 타입 오류는 명시적 타입을 추가한 뒤 재검사해 해소했다.
+- `tests/pob-tree-smoke.cjs`: 원본 경로 4313→6789→35234→56651의 4개 할당과 XML 재열기, 56651 해제 시 종속 4개 제거, 무기 세트 1/2 count 저장/복원, 원본 Attribute 선택과 dexNodes override, 오류 후 새 요청 격리 **5개 그룹 통과**. `.local/standalone-pob/tree-result.json`. Fireball TotalDPS는 같은 원본 입력에서 4.4583333333333→6.01875로 증가함을 실제 계산으로 확인했다. 최초 Electron `.local/tree-operations-native-1793618175289`는 경로/능력치 미리보기/종속 해제/undo 3개 그룹까지 통과 후 잘못된 테스트 라벨 `트리 세트`에서 timeout이 났다. 실제 이름 `패시브 세트`로 고쳐 재실행한 source `.local/tree-operations-native-1793618365332/result.json`는 **5개 그룹 통과**. 경로 4개 강조/1회 적용·능력치 선택 요구와 미적용 보존·종속 해제/undo·활성 spec 무기2 저장/계산·재시작·1920/1024를 검증했다. 두 크기 PNG를 직접 시각 확인했다. 실제 Windows packaged `.local/tree-operations-native-1793618465601/result.json`도 동일 **5개 그룹 통과**, `npm run pack:win` 통과. native runtime/카탈로그 무결성 및 실제 계산 gate를 포함한다. portable·실제 모델·원본 GUI는 이번에 미수행이다.
+- native는 시작 노드·선택되지 않은 능력치·미연결 경로·아직 연결하지 않은 mastery 선택을 구조화 진단으로 반환한다. renderer는 그래프 탐색/게임 적법성 판정을 구현하지 않는다.
+- 모든 트리 버전/특수 노드·주얼·할당 모드/원본 GUI 동등성을 이 대표 검사로 증명하지 않는다. 개인 XML은 사용하지 않는다.
+
+## 원본 파티 편집·지원 가져오기 — 2026-11-02 (6차)
+
+- `npm run check`: **146 passed**, boundary/type 통과. build 통과. ImportedBuffs 중복/unknown 자식·ExportedBuffs·미지원 이름 보존과 exportParty 설정 회귀를 추가했다. native가 node[1]을 텍스트로 읽을 수 있도록 빈 버퍼의 unknown 자식 앞에는 빈 줄을 보존한다.
+- `node tests/pob-party-smoke.cjs`: 실제 고정 원본 런타임에서 지원 출력, canonical Aura의 실제 Life 170(기본 65), 실패한 형식 줄 보존/진단, 대상별 원본 가져오기, 비우기/실패 후 독립성을 확인했다. `.local/standalone-pob/party-result.json`. native 추가 모드를 포함해 최종 **6개 그룹 통과**. source `.local/party-native-1793616670538/result.json`의 **4개 그룹**도 통과했으나, 캡처에서 undo 이후 이전 revision의 완료 안내가 남는 문제를 발견해 안내를 revision에 귀속시켰다. 수정된 최종 source `.local/party-native-1793616956108/result.json` 및 Windows packaged `.local/party-native-1793617167259/result.json`에서 revision 안내 확인을 포함한 **각 4개 그룹 통과**. 미리보기/취소의 두 원본 불변→대상별 가져오기/새 계산→비우기로 Life 65→undo/실패 줄 진단→복구 후 Life 170 및 revision 5 재계산→저장/재시작을 검증했다. `npm run pack:win` 통과. 1920/1024 캡처를 직접 시각 확인했다. portable·실제 모델·원본 PoB GUI는 미수행이다.
+- 실패 시도: 합성 오라에서 필수 GlobalEffect 분류 태그가 빠져 Life가 65였고, 태그를 원본 형식으로 고쳐 170을 확인했다. 지원 출력 ComposeXML에 루트 대신 리스트를 전달해 거부됐던 어댑터 오류도 원본 호출 계약으로 수정했다. 이를 엔진 결함이나 성공으로 축약하지 않는다.
+- 모든 파티 유형·링크·전투 상호작용 전수 검증, 일시적 disable/rebuild 상태, URL 직접 가져오기와 원본 GUI parity는 아직 완료가 아니다. 사용자 개인 빌드·대화는 사용하지 않았다.
+
+## 원본 계산 상세·분해 — 2026-11-02 (5차)
+
+- 필수 `npm run check`: **145 passed**, boundary/type 통과. `npm run build` 통과. 원본 Calcs XML의 unknown/Section/중복 입력과 typed 값·reset 보존 회귀를 포함한다.
+- `node tests/pob-calcs-smoke.cjs`: 실제 원본 runtime에서 **7개 그룹 통과**. 22분류·진단 0, Life Total 65와 원본 TEXT 분해, UNBUFFED XML 변경, invalid cell 실패 후 다음 XML 결과 동일, Ice Nova Calcs stat set 2/일반 stat set 1 분리, Total Increased의 원본 TABLE 선언 열/Quest 출처, 없는 미니언 진단, 오래된 대기 조회 거부. `.local/standalone-pob/calcs.json`, `calcs-result.json`. `tests/pob-calcs-parity.lua`는 테스트 전용으로 원본 첫 프레임을 직접 읽으며 Life 분해가 어댑터 결과와 정확히 일치한다. 원본의 반복 분해 행을 UI에서 임의로 합치지 않는다. 첫 임시 parity 시도의 Lua init 모듈 경로 누락은 정식 테스트에 전체 경로를 적용해 해소했다.
+- 이 조회는 별도 CALCS actor/모드의 결과이며 사이드바 MAIN 계산 receipt나 XML PlayerStat를 새 결과로 대체하지 않는다. 원본이 반환한 분해를 그대로 표시한다. 테스트 초기 `Total Life` 검색 실패는 원본의 실제 분류/행 이름 `Life`/`Total`로 바로잡았다.
+- 실제 source `.local/calcs-native-1793615422929/result.json` 및 Windows packaged `.local/calcs-native-1793615700907/result.json` **각 4개 그룹 통과**: 원본 Life 분해 조회/XML 불변, 버프 모드와 Calcs 스킬 모드의 분리, 그룹 선택·modifier 표, 조회 중 닫은 모달의 늦은 재등장 차단, 저장/재시작, 두 해상도. 원본 originalXml 불변과 사이드바 계산 receipt 미생성을 확인했다. `npm run pack:win` 통과. 1920/1024 화면과 모달 PNG를 직접 시각 확인했다. portable·실제 모델·원본 GUI는 이번에 미수행이다. 반경 시각화는 수치만 표시하고 미구현임을 UI에서 밝힌다. 미니언 종류/전용 스킬 편집·원본 GUI parity·모든 지원 빌드 전수 검증은 이번 smoke로 입증하지 않는다.
+
+## 빌드 관리·redo·수동 비교 — 2026-11-02 (4차)
+
+- 필수 `npm run check`: **144 passed**, boundary/type 통과. `npm run build` 통과. 최근 기록의 선택적 상태 타입 오류를 수정한 후 최종 실행했다. 기존 Vite native config loader 예고 경고는 남는다.
+- 단위 검사는 redo/branch 편집과 오래된 XML/revision 거부, 복사 독립성, 보관함의 파일 저장/로드와 대화 재연결 보존, 중첩 폴더 정리, 부분 측정/0/미측정, 같은 XML 내 활성 조건 세트의 차이 설명을 포함한다.
+- 실제 Electron `.local/management-compare-native-1793614227591/result.json`: 복사·폴더·삭제/복원, redo의 정확한 XML과 새 revision, 두 독립 원본 계산(Life 65/683), 장비 세트 적용 후 revision 4 재계산, 원본 originalXml 불변·오래된 비교 재적용 차단, 재시작 기록 복원·1920/1024 **4개 그룹 통과**. 합성 데이터만 사용했다. 초기 실패 `.local/management-compare-native-1793614044510`는 테스트 초기 활성 세트 기대값 오류로 구분한다.
+- 최종 source `.local/management-compare-native-1793614452117/result.json`, 실제 Windows packaged `.local/management-compare-native-1793614603293/result.json`도 동일 **4개 그룹 통과**. 최근 비교 자동 선택·저장 XML/세트 유효성·늦은 결과 안내를 포함한다. `npm run pack:win`은 출처/파일/실제 계산 검증부터 패키징까지 통과했다. 패키지 resources는 app.asar/pob-runtime/pob-editor이며 PoK/KB/legacy bundle을 포함하지 않는다. 1920/1024 PNG를 직접 시각 확인했다. 이 검사는 전체 PoB 비교 기능·부분 선택 병합·모든 고급 연산 동등성을 증명하지 않는다. portable·실제 모델·원본 PoB GUI는 이번 검사에 포함하지 않는다.
+
+## 세트·원본 조건/스킬 선택·노트 — 2026-11-02 (3차)
+
+- `npm run check`: **139 passed**, 경계/타입 통과. build 통과. 세트 복사·삭제의 XML/unknown/inactive 보존, legacy wrapper 변환, 위치 기반 트리 선택 이동, 노트/모드/Calcs 필드 보존 회귀 추가.
+- 실제 `inspectBuild`: 7분류/651 조건 정의를 원본 컨트롤에서 읽고 `IsShown`/Show-All·default·typed list·tooltip을 평가했다. explicit false를 누락시키지 않고 0과 미설정을 구분한다. Ice Nova의 `Ice Nova`/`Cold-Infused` 원본 목록과 mode 2가 XML child 변경 후 실제 선택됨을 확인. 합성 조회 진단 0. `.local/standalone-pob/inspection-result.json`.
+- native `.local/sets-config-native-1793611403943/result.json`: 카탈로그 젬/원본 모드→조건 0/false/미설정→skill set copy/rename/delete→item/tree/config copy/delete→노트 한글/색상 코드/특수 문자·undo→저장·재시작→두 크기 및 노트 문서 전환 7개 그룹 통과. cfg 준비 완료된 1024 화면도 시각 확인.
+- 최종 확대 native `.local/sets-config-native-1793612173827/result.json`: 위 동선 및 item/group/character/tree/note 임시 입력의 문서 격리를 포함한 **8개 그룹 통과**. 동일 XML 문서 두 개를 전환해도 미적용 값이 넘어가지 않음을 확인했다. 초기 직업 locator의 exact-label timeout은 명시적 접근성 이름을 추가한 뒤 재실행해 해소했다. 실패 기록은 `.local/sets-config-native-1793611813253`에 구분해 남겼다.
+- 부분 조회·미지원 부여 효과는 진단으로 표시하고 완성 기능으로 취급하지 않는다. 단계형·미니언·Calcs 전용 UI 전체 동등성과 원본 GUI 왕복은 미검증이다.
+- 최신 슬롯 문맥을 포함한 packaged 앱 기본 편집/계산/트리/재시작은 `.local/editor-native-1793607174373/result.json`에서 8개 그룹 통과했다. 3차 새 화면 전체를 그 이전 packaged 검사로 갈음하지 않는다.
+
+이하 1차/10월 기록은 당시 범위의 증거이며 현재 전 기능 완료를 뜻하지 않는다. 전체 목표는 active다.
+
+## 독립 PoB 계산 — 2026-11-02
+
+기준 원본: PoB `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`, manifest `0.23.1`. `pob:prepare`가 원본 release inventory와 HeadlessWrapper/LuaJIT/라이선스/어댑터 1,699파일을 복사·검증했다. runtimeId는 `pob-ed6e05555b1b7435d4a5ca409d9c115054adb1c52982425812935c7304cc8862`. 생성물은 Git 제외다. PoK 소스·Python·KB·MCP를 실행하지 않는다.
+
+- `npm run check`: **131 passed**, 경계·타입 통과. `npm run build` 통과(기존 Vite 차기 config loader 경고 유지).
+- 실제 LuaJIT/원본 HeadlessWrapper: 합성 Ranger Life **65→683**(레벨 1→50), Fireball `TotalDPS=4.4583333333333`. 저장 PlayerStat 없는 XML에서 신규 계산했다. 원본/revision/hash/runtime 귀속, 잘못된 요청 후 시험용 젬·조건의 비잔류, 대기 중 취소 결과 비게시 검사 통과. `.local/standalone-pob/runtime-result.json` (2026-11-02 07:17 UTC).
+- 실제 Electron 44.5.1: 별도 리소스 폴더에 독립 PoB 런타임만 노출하고 **PoK·Python·KB·기존 catalog/tree bundle은 설치하지 않은 설정**으로 실행했다. 자동 PoK 연결 없음→레벨 편집→실제 계산 Life 683→저장→프로세스 재시작→동일 originalXml/revision/계산 복원 성공.
+- 선택 PoK 연결은 해당 격리 환경에서 실패했으나 독립 계산 provenance/freshness가 유지됐다. 정상 PoK 연결/서로 다른 실제 PoB 버전의 통합 검증은 미수행이다.
+- 1920×1080/1024×768의 장비·설정·pok 설정을 캡처하고 가로 문서 넘침 없음을 검사했다. 1024 설정 화면에서 독립 runtime 버전/연결 선택 표시를 직접 시각 확인했다. 최종 native 증거 `.local/standalone-native-1793603867310/result.json`과 6개 PNG.
+- 준비 첫 시도에서 `src/Export/Bases/Rares.txt` 복사본의 Node read가 EBADF였다. 실행 파일을 고르는 기준을 원본 release manifest로 명확히 하고 개발용 export template을 제외했다. 포함 파일 해시는 생략하지 않았다. 제품에 DRM 우회·가짜 UTF-8 모듈·별도 게임 계산 규칙을 넣지 않았다.
+
+**전체 목표 미완료:** 독립 catalog/tree/새 빌드/아이템 생성, 원본 모든 탭의 UI/연산 동등성, 원본 PoB GUI 재편집, full portable는 아직 구현·검증해야 한다. 위 합성 계산과 일부 native 동선으로 전체 빌드·플랫폼·PoB 기능 동등성을 주장하지 않는다. 다음 단계는 `POB-STANDALONE-PLAN.md`의 기능 대응표/결합 지점 목록을 따른다.
+
 ## pok-ui 정상화 — 2026-10-30
 
 전체 정상화 **미완료**. 아래 결과는 이번 실행 결과이며 과거 검증을 최신 성공으로 승계하지 않는다. 엔진 요청과 계약 재현은 [NORMALIZATION-ENGINE-REQUESTS.md](NORMALIZATION-ENGINE-REQUESTS.md)에 분리했다.

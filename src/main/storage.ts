@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { AppState } from '../shared/contracts';
 import { createDefaultState } from '../shared/state';
+import {projectComparisonSide} from '../shared/build-comparison';
 
 const MAX_BYTES = 64 * 1024 * 1024;
 export function validateState(value: unknown): asserts value is AppState {
@@ -20,12 +21,40 @@ export function validateState(value: unknown): asserts value is AppState {
     if (typeof value !== 'string') throw new Error('설정 값은 문자열이어야 합니다.');
   }
   if(s.settings.agent.reasoningEffort!==undefined&&typeof s.settings.agent.reasoningEffort!=='string')throw new Error('추론 수준 설정이 올바르지 않습니다.');
+  if(s.settings.pok.autoConnect!==undefined&&typeof s.settings.pok.autoConnect!=='boolean')throw new Error('PoK 자동 연결 설정이 올바르지 않습니다.');
   const ids = new Set<string>();
-  for (const b of s.builds) {
+  function document(b:AppState['builds'][number]){
     if (!b || typeof b.id !== 'string' || ids.has(b.id) || typeof b.name !== 'string' ||
         !Number.isSafeInteger(b.revision) || b.revision < 0 || typeof b.xml !== 'string' ||
         typeof b.originalXml !== 'string' || !Array.isArray(b.undo)) throw new Error('빌드 문서 형식이 올바르지 않습니다.');
     ids.add(b.id);
+    if(b.folder!==undefined&&typeof b.folder!=='string')throw new Error('빌드 폴더가 올바르지 않습니다.');
+    for(const history of [b.undo,b.redo])if(history!==undefined&&(!Array.isArray(history)||history.some(h=>!h||typeof h.xml!=='string'||typeof h.label!=='string')))throw new Error('편집 기록이 올바르지 않습니다.');
+    if(b.copiedFrom!==undefined&&(!b.copiedFrom||typeof b.copiedFrom.buildId!=='string'||!Number.isSafeInteger(b.copiedFrom.revision)||b.copiedFrom.revision<0))throw new Error('빌드 복사 출처가 올바르지 않습니다.');
+  }
+  for(const b of s.builds)document(b);
+  if(s.trash!==undefined){
+    if(!Array.isArray(s.trash))throw new Error('삭제 보관함이 올바르지 않습니다.');
+    for(const record of s.trash){if(!record||!Number.isSafeInteger(record.index)||record.index<0||!Array.isArray(record.chatIds)||record.chatIds.some(id=>typeof id!=='string')||typeof record.deletedAt!=='string'||!Number.isFinite(Date.parse(record.deletedAt)))throw new Error('삭제 보관 기록이 올바르지 않습니다.');document(record.build);}
+  }
+  if(s.folders!==undefined&&(!Array.isArray(s.folders)||s.folders.some(f=>typeof f!=='string')))throw new Error('폴더 목록이 올바르지 않습니다.');
+  if(s.comparisons!==undefined){
+    if(!Array.isArray(s.comparisons))throw new Error('비교 기록이 올바르지 않습니다.');
+    const comparisonIds=new Set<string>();
+    for(const record of s.comparisons){
+      if(!record||typeof record.id!=='string'||comparisonIds.has(record.id)||typeof record.at!=='string'||!Number.isFinite(Date.parse(record.at)))throw new Error('비교 기록의 식별자가 올바르지 않습니다.');
+      comparisonIds.add(record.id);
+      for(const side of [record.left,record.right]){
+        const b=side?.snapshot;
+        if(!b||typeof b.id!=='string'||typeof b.name!=='string'||typeof b.xml!=='string'||!Number.isSafeInteger(b.revision)||b.revision<0||!side.selection||typeof side.selection!=='object'||Array.isArray(side.selection))throw new Error('비교 입력이 올바르지 않습니다.');
+        if(Object.entries(side.selection).some(([key,value])=>!['items','skills','tree','config'].includes(key)||(value!==undefined&&typeof value!=='string')))throw new Error('비교 세트 선택이 올바르지 않습니다.');
+        // Validate the retained XML and referenced sets before it can reach the renderer.
+        projectComparisonSide(side);
+        if(side.error!==undefined&&typeof side.error!=='string')throw new Error('비교 오류가 올바르지 않습니다.');
+        const c=side.calculation;
+        if(c&&(!Number.isSafeInteger(c.revision)||c.revision!==b.revision||typeof c.at!=='string'||!Number.isFinite(Date.parse(c.at))||!c.result||typeof c.result!=='object'||Array.isArray(c.result)||!Array.isArray(c.restoreNotes)))throw new Error('비교 계산 기록이 올바르지 않습니다.');
+      }
+    }
   }
   const chats = new Set<string>();
   for (const c of s.chats) {

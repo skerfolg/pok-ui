@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppState, BuildDocument, BuildEdit } from '../../shared/contracts';
 import { createDefaultState } from '../../shared/state';
-import { editBuild } from '../../shared/pob-document';
+import {applyDocumentEdit,undoDocument,redoDocument,applyExpectedEdit} from '../../shared/build-history';
 import { api } from '../services/api';
 export function useWorkspace() {
   const [state, setState] = useState<AppState>(createDefaultState);
@@ -19,14 +19,14 @@ export function useWorkspace() {
     void queue.current.catch(reason => { setError(String(reason)); setSaveStatus('저장 실패'); });
   }, []);
   const changeBuild = useCallback((id: string, fn: (build: BuildDocument) => BuildDocument) => update(s => ({ ...s, builds: s.builds.map(b => b.id === id ? fn(b) : b) })), [update]);
-  const applyEdit = useCallback((id: string, edit: BuildEdit, label: string) => changeBuild(id, build => {
-    const xml = editBuild(build.xml, edit); if (xml === build.xml) return build;
-    return { ...build, xml, revision: build.revision + 1, updatedAt: new Date().toISOString(), undo: [...build.undo, { xml: build.xml, label }].slice(-30) };
-  }), [changeBuild]);
-  const undo = useCallback((id: string) => changeBuild(id, build => {
-    const previous = build.undo.at(-1); if (!previous) return build;
-    return { ...build, xml: previous.xml, revision: build.revision + 1, updatedAt: new Date().toISOString(), undo: build.undo.slice(0, -1) };
-  }), [changeBuild]);
+  const applyEdit = useCallback((id: string, edit: BuildEdit, label: string) => changeBuild(id, build=>applyDocumentEdit(build,edit,label)),[changeBuild]);
+  const undo = useCallback((id: string) => changeBuild(id,undoDocument),[changeBuild]);
+  const redo = useCallback((id: string) => changeBuild(id,redoDocument),[changeBuild]);
+  const applyExpected=useCallback((snapshot:Pick<BuildDocument,'id'|'xml'|'revision'>,edit:BuildEdit,label:string)=>{
+    let result:BuildDocument|undefined;
+    changeBuild(snapshot.id,current=>{result=applyExpectedEdit(current,snapshot,edit,label);return result;});
+    if(!result)throw new Error('대상 빌드가 없어졌습니다.');return result;
+  },[changeBuild]);
   const flush = useCallback(() => queue.current, []);
-  return { state, loaded, update, changeBuild, applyEdit, undo, saveStatus, error, setError, flush };
+  return { state, loaded, update, changeBuild, applyEdit, undo,redo,applyExpected, saveStatus, error, setError, flush };
 }

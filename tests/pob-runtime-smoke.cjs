@@ -1,0 +1,40 @@
+// Requires npm run pob:prepare. Uses unmodified upstream PoB, no PoK process/API.
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+require('tsx/cjs');
+const {PobRuntime}=require('../src/main/pob-runtime.ts');
+const {createBlankXml,editBuild}=require('../src/shared/pob-document.ts');
+const {createBuildDocument}=require('../src/shared/state.ts');
+const runtime=new PobRuntime(path.resolve('resources/pob-runtime'),90000);
+const report={at:new Date().toISOString(),passed:[]};
+(async()=>{
+  const info=await runtime.getInfo();assert.equal(info.status,'ready',info.error);report.runtime=info;
+  const xml=createBlankXml({defaultTreeVersion:'0_5',characterClass:{id:'Ranger',name:'Ranger',internalId:2,legacyId:1,ascendancies:[]}});
+  const original=createBuildDocument('Synthetic standalone PoB',xml),before=JSON.stringify(original);
+  const first=await runtime.compute(original);
+  assert.equal(first.result.ok,true);assert(Number(first.result.stats.Life)>0);
+  assert.equal(first.provenance.runtime,'pob');assert.equal(first.provenance.pokSourceDigest,undefined);
+  report.passed.push('upstream XML calculation succeeds with no PoK or KB');report.level1Life=first.result.stats.Life;
+  const revised={...original,revision:1,xml:editBuild(xml,{type:'character',className:'Ranger',ascendancy:'',level:50})};
+  const next=await runtime.compute(revised);assert(next.result.stats.Life>first.result.stats.Life);
+  assert.equal(next.revision,1);assert.notEqual(next.provenance.xmlSha256,first.provenance.xmlSha256);
+  assert.equal(JSON.stringify(original),before);
+  report.passed.push('edited level changes actual upstream output and preserves original/revision provenance');report.level50Life=next.result.stats.Life;
+  const skillXml=editBuild(revised.xml,{type:'skill-add',setId:'1'});
+  const armed=editBuild(skillXml,{type:'skill-group',setId:'1',groupId:'1',group:{id:'1',label:'Fireball',slot:'',enabled:true,includeInFullDPS:true,attributes:{},gems:[{name:'Fireball',level:1,quality:0,enabled:true,attributes:{}}]}});
+  const result=await runtime.compute({...revised,xml:armed,revision:2});
+  assert(Number(result.result.stats.TotalDPS)>0,JSON.stringify(result.result));report.fireballDps=result.result.stats.TotalDPS;
+  report.passed.push('a real active skill produces newly calculated damage');
+  await assert.rejects(runtime.compute({...original,xml:'<bad/>'}));
+  const after=await runtime.compute(original);assert.equal(after.result.stats.Life,first.result.stats.Life);
+  assert.equal(after.result.stats.TotalDPS,first.result.stats.TotalDPS);
+  report.passed.push('failed requests and trial gems do not contaminate the next XML calculation');
+  const cancelled=runtime.compute(original);runtime.close();
+  await assert.rejects(cancelled,error=>error.code==='POB_CANCELLED');
+  report.passed.push('cancelled queued requests do not run or publish a calculated result');
+})().catch(error=>{report.error=error.stack;process.exitCode=1;}).finally(()=>{
+  runtime.close();fs.mkdirSync('.local/standalone-pob',{recursive:true});
+  fs.writeFileSync('.local/standalone-pob/runtime-result.json',JSON.stringify(report,null,2));
+  console.log(JSON.stringify(report,null,2));
+});

@@ -12,7 +12,7 @@ const directory = path.join(root, '.local', 'normalization', 'desktop-' + Date.n
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'resources/bundle-manifest.json')));
 const catalog = JSON.parse(fs.readFileSync(path.join(root, 'resources', manifest.catalog.path)));
 const state = createDefaultState();
-state.settings.pok = { mode: 'checkout', root: process.env.POK_SMOKE_ENGINE_ROOT || '', python: process.env.POK_SMOKE_PYTHON || '', luajit: '' };
+state.settings.pok = { mode: 'checkout', root: process.env.POK_SMOKE_ENGINE_ROOT || '', python: process.env.POK_SMOKE_PYTHON || '', luajit: '', autoConnect:true };
 if (!state.settings.pok.root || !state.settings.pok.python) throw new Error('Set isolated POK_SMOKE_ENGINE_ROOT and POK_SMOKE_PYTHON');
 const xml = createBlankXml({ defaultTreeVersion: catalog.defaultTreeVersion, characterClass: catalog.classes[0] })
   .replace('</PathOfBuilding2>', '<SyntheticUnknown retained="true"/></PathOfBuilding2>');

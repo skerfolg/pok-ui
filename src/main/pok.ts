@@ -12,7 +12,7 @@ import { encodePob } from './pob-files';
 export interface ComputeContext { bundleId: string; identity: RuntimeIdentity }
 
 export function effectivePokSettings(settings:Settings['pok'], packaged:boolean):Settings['pok'] {
-  return packaged ? {mode:'bundled',root:'',python:'',luajit:''} : {...settings};
+  return packaged ? {mode:'bundled',root:'',python:'',luajit:'',...(settings.autoConnect!==undefined?{autoConnect:settings.autoConnect}:{})} : {...settings};
 }
 
 export function assertRuntimeIdentity(actual: unknown, expected: RuntimeIdentity): void {

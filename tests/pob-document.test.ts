@@ -4,6 +4,58 @@ import { DOMParser, XMLSerializer, type Element } from '@xmldom/xmldom';
 import { createBlankXml, editBuild, MAX_XML_BYTES, parseBuild, projectActiveXml } from '../src/shared/pob-document';
 
 // Entirely synthetic: no account information or personal build is used as a fixture.
+test('native character patch updates matching build/spec identity and preserves level, inactive trees and unknown fields',()=>{
+  let xml=createBlankXml().replace('</Spec>','<FutureSpec keep="yes"/></Spec>');
+  xml=editBuild(xml,{type:'set-add',kind:'tree',title:'Inactive',copyFrom:'1'});xml=editBuild(xml,{type:'active-set',kind:'tree',id:'1'});
+  const before=parseBuild(xml),edited=editBuild(xml,{type:'tree-native-patch',specId:'1',patch:{attributes:{classId:'1',classInternalId:'1',ascendClassId:'2',ascendancyInternalId:'Titan',nodes:'123'},buildAttributes:{className:'Warrior',ascendClassName:'Titan'}}}),after=parseBuild(edited);
+  assert.equal(after.className,'Warrior');assert.equal(after.ascendancy,'Titan');assert.equal(after.level,before.level);assert.deepEqual(after.trees[1],before.trees[1]);assert.match(edited,/<FutureSpec keep="yes"\/>/);
+  assert.throws(()=>editBuild(xml,{type:'tree-native-patch',specId:'1',patch:{attributes:{},buildAttributes:{level:'100'}}}),/캐릭터 속성/);
+});
+test('native item edits update owned legacy range and variant fields without removing future metadata',()=>{
+  const xml=editBuild(createBlankXml(),{type:'item',id:'1',text:'Rarity: RARE\nSynthetic\nIron Ring'}).replace('</Item>','<ModRange id="1" range="0" future="keep"><FutureRange/></ModRange><FutureItem/></Item>');
+  const result=editBuild(xml,{type:'item-native',id:'1',text:'Rarity: RARE\nChanged\nIron Ring',metadata:{variants:{variant:'2'},modRanges:{1:'1'}}});assert.match(result,/variant="2"/);assert.match(result,/id="1" range="1" future="keep"><FutureRange\/>/);assert.match(result,/<FutureItem\/>/);
+  assert.throws(()=>editBuild(xml,{type:'item-native',id:'1',text:'Changed',metadata:{variants:{},modRanges:{}}}),/알 수 없는 metadata/);assert.match(xml,/range="0" future="keep"/);
+});
+test('native equipment patches sync active weapon flags and main skill while retaining inactive sets and slot metadata',()=>{
+  let xml=createBlankXml().replace('<ItemSet id="1" title="기본" useSecondWeaponSet="false"/>','<ItemSet id="1" title="기본" useSecondWeaponSet="false" future="keep"><Slot name="Body Armour Jewel Socket 1" itemId="0" future="keep"><FutureSlot/></Slot></ItemSet>');xml=editBuild(xml,{type:'set-add',kind:'items',title:'Inactive',copyFrom:'1'});xml=editBuild(xml,{type:'active-set',kind:'items',id:'1'});
+  const previous=parseBuild(xml).itemSets[1],edited=editBuild(xml,{type:'equipment-native-patch',setId:'1',patch:{slots:{'Body Armour Jewel Socket 1':'3'},useSecondWeaponSet:true,mainSocketGroup:2}}),parsed=parseBuild(edited);
+  assert.equal(parsed.itemSets[0].useSecondWeaponSet,true);assert.equal(parsed.mainSocketGroup,2);assert.equal(parsed.itemSets[0].slots['Body Armour Jewel Socket 1'],'3');assert.deepEqual(parsed.itemSets[1],previous);assert.match(edited,/itemId="3" future="keep"><FutureSlot\/>/);assert.match(edited,/<Items activeItemSet="1" useSecondWeaponSet="true"/);
+});
+test('new attribute override containers require the complete original loader schema',()=>{
+  assert.throws(()=>editBuild(createBlankXml(),{type:'tree-native-patch',specId:'1',patch:{attributes:{},attributeOverrides:{dexNodes:'722'}}}),/모든 기본 필드/);
+  const xml=editBuild(createBlankXml(),{type:'tree-native-patch',specId:'1',patch:{attributes:{nodes:'722'},attributeOverrides:{strNodes:'',dexNodes:'722',intNodes:''}}});
+  assert.match(xml,/<AttributeOverride strNodes="" dexNodes="722" intNodes=""/);
+});
+test('native jewel patches preserve socket extensions during equip and unequip',()=>{
+  const xml=createBlankXml().replace('<Sockets/>','<Sockets future="keep"><Socket nodeId="12" itemId="0" future="keep"><FutureSocket/></Socket><Socket nodeId="13" itemId="8"/></Sockets>');
+  const equipped=editBuild(xml,{type:'tree-native-patch',specId:'1',patch:{attributes:{},sockets:{12:'100'}}});assert.equal(parseBuild(equipped).trees[0].sockets[0].itemId,'100');assert.match(equipped,/future="keep"><FutureSocket\/>/);
+  const removed=editBuild(equipped,{type:'tree-native-patch',specId:'1',patch:{attributes:{},sockets:{12:''}}});assert.equal(parseBuild(removed).trees[0].sockets[0].itemId,'0');assert.equal(parseBuild(removed).trees[0].sockets[1].itemId,'8');assert.match(removed,/<FutureSocket\/>/);
+});
+test('native tree field patches keep unknown spec metadata, sockets and inactive trees intact',()=>{
+  const xml=createBlankXml().replace('<Sockets/>','<URL future="keep">old-url<FutureURL/></URL><WeaponSet1 nodes="7" future="keep"/><Sockets future="keep"><Socket nodeId="9" itemId="11"/></Sockets><Overrides future="keep"><AttributeOverride strNodes="7" dexNodes="" intNodes="" future="keep"/><FutureOverride/></Overrides><FutureSpec/>').replace('</Tree>','<Spec title="Inactive" treeVersion="0_1" nodes="99" future="inactive"><FutureInactive/></Spec></Tree>');
+  const next=editBuild(xml,{type:'tree-native-patch',specId:'1',patch:{attributes:{nodes:'1,2,3'},weaponSets:{WeaponSet1:'2,3'},attributeOverrides:{strNodes:'',dexNodes:'2'},url:'new-url'}});
+  const parsed=parseBuild(next);assert.deepEqual(parsed.trees[0].nodes,[1,2,3]);assert.equal(parsed.trees[1].attributes.future,'inactive');assert.deepEqual(parsed.trees[1].nodes,[99]);assert.equal(parsed.trees[0].sockets[0].itemId,'11');
+  assert.match(next,/<WeaponSet1 nodes="2,3" future="keep"/);assert.match(next,/<AttributeOverride strNodes="" dexNodes="2" intNodes="" future="keep"/);assert.match(next,/new-url<FutureURL\/>/);assert.match(next,/<FutureSpec\/>/);assert.match(next,/<FutureOverride\/>/);
+  assert.throws(()=>editBuild(xml,{type:'tree-native-patch',specId:'1',patch:{attributes:{unexpected:'lost'}}}),/패치/);
+});
+test('party edits preserve unknown nodes, support exports and duplicate metadata without replaying old imported text',()=>{
+  const xml=createBlankXml().replace('</PathOfBuilding2>','<Party future="keep"><ImportedBuffs name="Aura" old="keep">old<FutureBuff/></ImportedBuffs><ImportedBuffs name="Aura" last="keep">last</ImportedBuffs><ImportedBuffs name="FutureKind">future</ImportedBuffs><ExportedBuffs name="Aura">export</ExportedBuffs><FutureParty/></Party><Import future="keep" exportParty="false"/></PathOfBuilding2>');
+  const edited=editBuild(xml,{type:'party-buffer',name:'Aura',text:'new <&> 한글'});
+  assert.equal(parseBuild(edited).party?.buffers.Aura,'new <&> 한글');assert.doesNotMatch(edited,/>old</);assert.match(edited,/<FutureBuff\/>/);assert.match(edited,/old="keep"/);assert.match(edited,/last="keep"/);assert.match(edited,/<ExportedBuffs name="Aura">export/);assert.match(edited,/name="FutureKind">future/);
+  const enabled=editBuild(edited,{type:'party-export-enabled',enabled:true});assert.equal(parseBuild(enabled).party?.exportEnabled,true);assert.match(enabled,/future="keep" exportParty="true"/);
+  const cleared=editBuild(enabled,{type:'party-buffer',name:'Aura',text:''});assert.equal(parseBuild(cleared).party?.buffers.Aura,'');assert.match(cleared,/<FutureParty\/>/);
+});
+test('Calcs inputs preserve sections, unknown metadata and normal calculation inputs',()=>{
+  const xml=createBlankXml().replace('</PathOfBuilding2>','<Calcs future="keep"><Input name="showMinion" boolean="true"/><Input name="showMinion" boolean="false" future="last"/><Section id="Life" subsection="Life" collapsed="true"/><FutureCalcs/></Calcs></PathOfBuilding2>');
+  const mode=editBuild(xml,{type:'calcs-input',key:'misc_buffMode',value:'UNBUFFED'});
+  const minion=editBuild(mode,{type:'calcs-input',key:'showMinion',value:true});
+  assert.match(minion,/name="showMinion" future="last" boolean="true"/);
+  assert.match(minion,/<Section id="Life" subsection="Life" collapsed="true"\/>/);assert.match(minion,/<FutureCalcs\/>/);assert.match(minion,/future="keep"/);
+  assert.deepEqual(parseBuild(minion),parseBuild(xml));
+  const reset=editBuild(minion,{type:'calcs-input',key:'showMinion'});assert.doesNotMatch(reset,/name="showMinion"/);assert.match(reset,/name="misc_buffMode" string="UNBUFFED"/);
+  assert.throws(()=>editBuild(xml,{type:'calcs-input',key:'skill_number',value:0}),/계산 스킬 그룹/);
+  assert.throws(()=>editBuild(xml,{type:'calcs-input',key:'showMinion',value:'true'}),/대상/);
+});
 const fixture = `<?xml version="1.0"?>
 <PathOfBuilding2 future="keep"><!-- keep this -->
   <Build className="TestClass" ascendClassName="TestAscendancy" level="42" mainSocketGroup="3" unknown="build">
@@ -66,6 +118,79 @@ test('parses all sets, active IDs, one-based group/spec IDs and saved stats with
   assert.deepEqual(build.configs[1].inputs, { a: 4, b: 'hello', c: true });
   assert.deepEqual(build.configs[1].placeholders, [{ name: 'a', number: '99' }]);
   assert.deepEqual(build.stats, { Life: '123.40', DPS: '45' });
+});
+
+test('set copies retain inactive XML, unknown children, gem metadata and shared item identities',()=>{
+  let xml=editBuild(fixture,{type:'set-add',kind:'items',title:'Copied gear',copyFrom:'2'});
+  assert.equal(parseBuild(xml).itemSets.find(s=>s.active)?.id,'9');
+  assert.equal(elements(xml,'Items')[0].getAttribute('useSecondWeaponSet'),'true');
+  assert.equal(elements(xml,'Item').length,2); // Global item library is shared, not rebuilt.
+  assert.equal(serial(elements(xml,'ItemSet').find(s=>s.getAttribute('id')==='2')!),serial(elements(fixture,'ItemSet').find(s=>s.getAttribute('id')==='2')!));
+  xml=editBuild(xml,{type:'set-add',kind:'skills',title:'Copied skill modes',copyFrom:'2'});
+  const parsed=parseBuild(xml),copy=parsed.skillSets.find(s=>s.active)!;
+  assert.equal(copy.id,'9');assert.equal(copy.groups[0].attributes.mainActiveSkill,'2');
+  const group=copy.groups[0];group.gems[0].level=12;
+  xml=editBuild(xml,{type:'skill-group',setId:'9',groupId:'1',group});
+  assert.equal(parseBuild(xml).skillSets.find(s=>s.id==='2')!.groups[0].gems[0].level,10);
+  assert.equal(elements(xml,'FutureGem').length,4);assert.equal(elements(xml,'FutureGroup').length,2);
+  assert.equal(serial(elements(xml,'FutureRoot')[0]),serial(elements(fixture,'FutureRoot')[0]));
+});
+test('tree set removal keeps the same surviving active spec despite positional IDs shifting',()=>{
+  const removed=editBuild(fixture,{type:'set-remove',kind:'tree',id:'1'});
+  const active=parseBuild(removed).trees.find(t=>t.active)!;
+  assert.equal(active.id,'1');assert.equal(active.title,'Active tree');assert.deepEqual(active.nodes,[1,2,3]);
+  assert.equal(elements(removed,'WeaponSet2')[0].getAttribute('nodes'),'3');assert.equal(elements(removed,'FutureTree').length,1);
+  const deletedActive=editBuild(fixture,{type:'set-remove',kind:'tree',id:'2'});
+  assert.equal(parseBuild(deletedActive).trees.find(t=>t.active)?.title,'Inactive tree');
+  const copied=editBuild(fixture,{type:'set-add',kind:'tree',title:'Copied tree',copyFrom:'2'});
+  assert.equal(parseBuild(copied).trees.find(t=>t.active)?.id,'3');assert.equal(elements(copied,'Overrides').length,2);
+  const blank=editBuild(copied,{type:'set-add',kind:'tree',title:'Empty tree'});
+  assert.deepEqual(parseBuild(blank).trees.find(t=>t.active)?.nodes,[]);
+  assert.equal(parseBuild(blank).trees.find(t=>t.active)?.version,'test2');assert.equal(elements(blank,'Overrides').length,2);
+});
+test('legacy flat sets are converted without discarding section options or unknown fields',()=>{
+  const xml='<PathOfBuilding2><Build level="1"/><Skills future="section"><Skill label="kept"><Gem nameSpec="Synthetic" level="1" quality="0"/></Skill><UnknownSkillData/></Skills><Items><Item id="1">Rarity: NORMAL\nSynthetic\n</Item><Slot name="Ring 1" itemId="1"/><UnknownItems/></Items><Config><Input name="customMods" string="line1&#10;line2"/><Placeholder name="x" number="1"/><UnknownConfig/></Config></PathOfBuilding2>';
+  for(const kind of ['items','skills','config'] as const){
+    const output=editBuild(xml,{type:'set-add',kind,title:'Copy',copyFrom:'1'});
+    assert.equal(parseBuild(output)[kind==='items'?'itemSets':kind==='skills'?'skillSets':'configs'].length,2);
+    assert.equal(elements(output,'UnknownSkillData').length,1);assert.equal(elements(output,'UnknownItems').length,1);assert.equal(elements(output,'UnknownConfig').length,1);
+    assert.equal(elements(output,'Skills')[0].getAttribute('future'),'section');
+  }
+});
+test('set deletion/creation and config reset preserve original values and do not invent replacement settings',()=>{
+  let xml=editBuild(fixture,{type:'set-add',kind:'config',title:'Empty conditions'});
+  assert.deepEqual(parseBuild(xml).configs.find(s=>s.active)?.inputs,{});
+  xml=editBuild(xml,{type:'set-rename',kind:'config',id:'9',title:'Renamed <&>'});assert.equal(parseBuild(xml).configs.find(s=>s.active)?.title,'Renamed <&>');
+  xml=editBuild(xml,{type:'config-remove',setId:'2',key:'a'});
+  assert.equal(parseBuild(xml).configs.find(s=>s.id==='2')?.inputs.a,undefined);
+  assert.equal(elements(xml,'Placeholder').find(n=>n.getAttribute('name')==='a')?.getAttribute('number'),'99');
+  const removed=editBuild(xml,{type:'set-remove',kind:'config',id:'9'});assert.equal(parseBuild(removed).configs.length,2);
+  assert.throws(()=>editBuild(createBlankXml(),{type:'set-remove',kind:'items',id:'1'}),/마지막/);
+  assert.throws(()=>editBuild(fixture,{type:'set-add',kind:'skills',title:'  '}),/이름/);
+  const missing='<PathOfBuilding2><Build level="1"/></PathOfBuilding2>';
+  const added=editBuild(missing,{type:'set-add',kind:'skills',title:'First'});assert.equal(parseBuild(added).skillSets[0].id,'1');
+  assert.throws(()=>editBuild(missing,{type:'set-add',kind:'skills',title:'Invalid copy',copyFrom:'1'}),/복사할/);
+});
+test('notes preserve literal formatting, XML entities and future metadata across edits',()=>{
+  const xml=fixture.replace('<Notes>Preserve arbitrary notes</Notes>','<Notes future="keep"><![CDATA[^xFF0000Synthetic <&>\n\tline2]]><FutureNote/></Notes>');
+  assert.equal(parseBuild(xml).notes,'^xFF0000Synthetic <&>\n\tline2');
+  const result=editBuild(xml,{type:'notes',text:'^7한글 <노트> & text\n\tline2'});
+  assert.equal(parseBuild(result).notes,'^7한글 <노트> & text\n\tline2');assert.equal(elements(result,'FutureNote').length,1);assert.equal(elements(result,'Notes')[0].getAttribute('future'),'keep');
+  assert.equal(serial(elements(result,'Items')[0]),serial(elements(xml,'Items')[0]));
+});
+test('native skill options update only the chosen gem/effect while preserving calcs, other modes and future children',()=>{
+  let xml=fixture.replace('<FutureGem token="first"/>','<StatSetIndex grantedEffect="EffectA" index="1"/><StatSetIndex grantedEffect="EffectB" index="3"/><StatSetCalcsIndex grantedEffect="EffectA" index="4"/><FutureGem token="first"/>');
+  xml=editBuild(xml,{type:'gem-stat-set',setId:'2',groupId:'1',gemIndex:1,grantedEffectId:'EffectA',index:2});
+  const first=elements(xml,'SkillSet').find(s=>s.getAttribute('id')==='2')!.getElementsByTagName('Gem')[0];
+  assert.equal(Array.from(first.getElementsByTagName('StatSetIndex')).find(n=>n.getAttribute('grantedEffect')==='EffectA')?.getAttribute('index'),'2');
+  assert.equal(Array.from(first.getElementsByTagName('StatSetIndex')).find(n=>n.getAttribute('grantedEffect')==='EffectB')?.getAttribute('index'),'3');
+  assert.equal(first.getElementsByTagName('StatSetCalcsIndex')[0].getAttribute('index'),'4');assert.equal(first.getElementsByTagName('FutureGem')[0].getAttribute('token'),'first');
+  xml=editBuild(xml,{type:'gem-option',setId:'2',groupId:'1',gemIndex:1,key:'skillStageCount',value:0});
+  assert.equal(activeGroup(xml).gems[0].attributes.skillStageCount,'0');
+  xml=editBuild(xml,{type:'gem-option',setId:'2',groupId:'1',gemIndex:1,key:'skillStageCount',value:undefined});
+  assert.equal(activeGroup(xml).gems[0].attributes.skillStageCount,undefined);
+  xml=editBuild(xml,{type:'skill-active',setId:'2',groupId:'1',index:2});assert.equal(activeGroup(xml).attributes.mainActiveSkill,'2');assert.equal(parseBuild(xml).mainSocketGroup,3);
+  assert.throws(()=>editBuild(xml,{type:'gem-stat-set',setId:'2',groupId:'1',gemIndex:1,grantedEffectId:'EffectA',index:0}),/모드/);
 });
 
 test('item edits preserve child metadata and every unedited section', () => {

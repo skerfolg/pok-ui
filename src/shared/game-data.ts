@@ -52,6 +52,10 @@ export interface CatalogExport {
 
 export interface DataBundleInfo {
   status: 'ready' | 'missing' | 'corrupt';
+  source?:'pob'|'pok';
+  runtimeId?:string;
+  pobCommit?:string;
+  pobVersion?:string;
   bundleId?: string;
   runtimeMode?: RuntimeMode;
   identity?: RuntimeIdentity;
@@ -92,6 +96,8 @@ export interface ItemRenderRequest {
   mods?: string[];
   rolls?: Record<string, number>;
   quality?: number;
+  slot?:string;
+  buildXml?:string;
 }
 
 export interface ItemRenderResult {

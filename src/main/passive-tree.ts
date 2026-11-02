@@ -32,7 +32,7 @@ export class PassiveTreeStore {
 
   /** Accept only literal URLs emitted by load(); do not URL-normalize traversal away. */
   async asset(rawUrl:string):Promise<{body:Uint8Array<ArrayBuffer>;mime:string}>{
-    const match=/^pok-tree:\/\/assets\/(?:(pokbundle-[0-9a-f]{16,64})\/)?(\d{1,3}_\d{1,3}(?:_\d{1,3})?)\/([A-Za-z0-9][A-Za-z0-9._-]{0,180}\.(?:webp|png))$/.exec(rawUrl);
+    const match=/^pok-tree:\/\/assets\/(?:((?:pokbundle|pob-editor)-[0-9a-f]{16,64})\/)?(\d{1,3}_\d{1,3}(?:_\d{1,3})?)\/([A-Za-z0-9][A-Za-z0-9._-]{0,180}\.(?:webp|png))$/.exec(rawUrl);
     if(!match)throw new TreeResourceError('허용되지 않은 트리 이미지 경로입니다.');
     const [,bundleId,requestedVersion,file]=match;
     if(this.options.bundleId&&bundleId!==this.options.bundleId)throw new TreeResourceError('트리 이미지가 현재 데이터 묶음과 다릅니다.');
@@ -65,7 +65,7 @@ export class PassiveTreeStore {
     }
     const source=manifest.source;
     if(typeof source.project!=='string'||typeof source.commit!=='string'||typeof source.treeSha256!=='string')throw new TreeResourceError('패시브 트리 출처 정보가 올바르지 않습니다.');
-    if(this.options.expectedCommit&&source.commit!==this.options.expectedCommit)throw new TreeResourceError('패시브 트리 원본이 POK 런타임의 PoB 원본과 다릅니다.');
+    if(this.options.expectedCommit&&source.commit!==this.options.expectedCommit)throw new TreeResourceError('패시브 트리 원본이 계산에 사용하는 PoB 원본과 다릅니다.');
     const treePath=await this.safePath(requestedVersion,'tree.json');
     const treeBytes=await readFile(treePath);
     if(createHash('sha256').update(treeBytes).digest('hex')!==manifest.treeFileSha256)throw new TreeResourceError('패시브 트리 데이터 해시가 매니페스트와 다릅니다.');

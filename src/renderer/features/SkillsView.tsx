@@ -1,17 +1,20 @@
+import { SetControls } from '../components/SetControls';
 import { useEffect, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { BuildEdit, ParsedBuild, SkillGroup } from '../../shared/contracts';
 import type { CatalogEntry } from '../../shared/game-data';
 import { CatalogPicker } from './CatalogPicker';
+import type {PobInspection} from '../../shared/pob-inspection';
+import {PobSkillOptions} from './PobSkillOptions';
 
-export function SkillsView({ parsed, edit, catalogEnabled = true }: { parsed: ParsedBuild; edit: (edit: BuildEdit, label: string) => void; catalogEnabled?: boolean }) {
+export function SkillsView({ parsed, edit, catalogEnabled = true,inspection,inspectionCurrent=false,inspectionPending=false,inspectionError='' }: { parsed: ParsedBuild; edit: (edit: BuildEdit, label: string) => void; catalogEnabled?: boolean;inspection?:PobInspection;inspectionCurrent?:boolean;inspectionPending?:boolean;inspectionError?:string }) {
   const set = parsed.skillSets.find(s => s.active) ?? parsed.skillSets[0];
   const [activeId, setActiveId] = useState('');
   const group = set?.groups.find(g => g.id === activeId) ?? set?.groups[Math.max(0, parsed.mainSocketGroup - 1)] ?? set?.groups[0];
   const [draft, setDraft] = useState<SkillGroup | undefined>(group);
   const [catalogNote, setCatalogNote] = useState('');
   useEffect(() => setDraft(group ? structuredClone(group) : undefined), [group]);
-  if (!set) return <p>스킬 세트가 없습니다.</p>;
+  if (!set) return <section className="feature scroll"><div className="page-heading"><h1>스킬</h1><SetControls kind="skills" sets={parsed.skillSets} edit={edit}/></div><p>스킬 세트를 만들어 그룹을 추가하세요.</p></section>;
 
   function addCatalogGem(entry: CatalogEntry) {
     if (!draft || !catalogEnabled) {
@@ -30,10 +33,11 @@ export function SkillsView({ parsed, edit, catalogEnabled = true }: { parsed: Pa
     setCatalogNote(`${entry.name} 레벨 ${level}로 추가`);
   }
 
-  return <section className="feature fill"><div className="page-heading"><h1>스킬</h1><select aria-label="스킬 세트" value={set.id} onChange={e => edit({ type: 'active-set', kind: 'skills', id: e.target.value }, '스킬 세트 변경')}>{parsed.skillSets.map(s => <option key={s.id} value={s.id}>{s.title || `세트 ${s.id}`}</option>)}</select><span className="muted">{set.groups.length}그룹 · {set.groups.reduce((n, g) => n + g.gems.length, 0)}젬</span></div>
-    <div className="skills-layout"><div className="panel"><header className="panel-heading"><h2>스킬 그룹</h2><button aria-label="스킬 그룹 추가" onClick={() => edit({ type: 'skill-add', setId: set.id }, '스킬 그룹 추가')}><Plus size={14} /></button></header><div className="scroll">{set.groups.map((g, index) => <button key={g.id} className="group-row" aria-pressed={g.id === group?.id} onClick={() => setActiveId(g.id)}><span>{g.label || g.gems[0]?.name || '빈 그룹'}</span><small>{index + 1 === parsed.mainSocketGroup ? '주력 · ' : ''}{g.enabled ? '활성' : '비활성'} · {g.gems.length}젬 {g.slot}</small></button>)}</div></div>
+  return <section className="feature fill"><div className="page-heading"><h1>스킬</h1><SetControls kind="skills" sets={parsed.skillSets} edit={edit} /><span className="muted">{set.groups.length}그룹 · {set.groups.reduce((n, g) => n + g.gems.length, 0)}젬</span></div>
+    {inspectionError&&<p className="warning" role="status">{inspectionError}</p>}<div className="skills-layout"><div className="panel"><header className="panel-heading"><h2>스킬 그룹</h2><button aria-label="스킬 그룹 추가" onClick={() => edit({ type: 'skill-add', setId: set.id }, '스킬 그룹 추가')}><Plus size={14} /></button></header><div className="scroll">{set.groups.map((g, index) => <button key={g.id} className="group-row" aria-pressed={g.id === group?.id} onClick={() => setActiveId(g.id)}><span>{g.label || g.gems[0]?.name || '빈 그룹'}</span><small>{index + 1 === parsed.mainSocketGroup ? '주력 · ' : ''}{g.enabled ? '활성' : '비활성'} · {g.gems.length}젬 {g.slot}</small></button>)}</div></div>
     {draft && group ? <form className="panel scroll" onSubmit={e => { e.preventDefault(); edit({ type: 'skill-group', setId: set.id, groupId: group.id, group: draft }, '스킬 그룹 편집'); }}><header className="panel-heading"><h2>선택한 그룹</h2><div className="actions"><button type="button" onClick={() => edit({ type: 'main-skill', index: set.groups.indexOf(group) + 1 }, '주력 스킬 변경')}>주력으로</button><button type="button" onClick={() => edit({ type: 'skill-remove', setId: set.id, groupId: group.id }, '스킬 그룹 삭제')}>삭제</button></div></header><div className="panel-body"><div className="field-grid"><label>그룹 이름<input value={draft.label} onChange={e => setDraft({ ...draft, label: e.target.value })} /></label><label>장착 위치<input value={draft.slot} onChange={e => setDraft({ ...draft, slot: e.target.value })} placeholder="예: Weapon 1" /></label></div><div className="actions"><label className="check"><input type="checkbox" checked={draft.enabled} onChange={e => setDraft({ ...draft, enabled: e.target.checked })} />그룹 활성</label><label className="check"><input type="checkbox" checked={draft.includeInFullDPS} onChange={e => setDraft({ ...draft, includeInFullDPS: e.target.checked })} />전체 DPS 포함</label></div>
     <div className="gem-table"><div className="gem-row table-label"><span>활성</span><span>젬 이름</span><span>레벨</span><span>퀄리티</span><span /></div>{draft.gems.map((gem, index) => <div key={index} className="gem-row"><input aria-label={`젬 ${index + 1} 활성`} type="checkbox" checked={gem.enabled} onChange={e => setDraft({ ...draft, gems: draft.gems.map((g, i) => i === index ? { ...g, enabled: e.target.checked } : g) })} /><input aria-label={`젬 ${index + 1} 이름`} value={gem.name} onChange={e => setDraft({ ...draft, gems: draft.gems.map((g, i) => i === index ? { ...g, name: e.target.value } : g) })} /><input type="number" min="1" max="100" aria-label={`젬 ${index + 1} 레벨`} value={gem.level} onChange={e => setDraft({ ...draft, gems: draft.gems.map((g, i) => i === index ? { ...g, level: Number(e.target.value) } : g) })} /><input type="number" min="0" max="100" aria-label={`젬 ${index + 1} 퀄리티`} value={gem.quality} onChange={e => setDraft({ ...draft, gems: draft.gems.map((g, i) => i === index ? { ...g, quality: Number(e.target.value) } : g) })} /><button type="button" aria-label={`젬 ${index + 1} 삭제`} onClick={() => setDraft({ ...draft, gems: draft.gems.filter((_, i) => i !== index) })}><Trash2 size={14} /></button></div>)}</div>
+    <PobSkillOptions options={inspection?.skills.find(s=>s.groupId===group.id)} diagnostics={inspection?.diagnostics.filter(d=>d.field===`skill-group:${group.id}`)} group={group} setId={set.id} edit={edit} disabled={!inspectionCurrent||JSON.stringify(draft)!==JSON.stringify(group)} pending={inspectionPending}/>
     <CatalogPicker type="gem" title="젬 카탈로그" disabled={!catalogEnabled} onSelect={addCatalogGem} />
     <div className="actions justify-between"><button type="button" onClick={() => setDraft({ ...draft, gems: [...draft.gems, { name: '', level: 1, quality: 0, enabled: true, attributes: {} }] })}><Plus size={14} />원문 젬 추가</button><button className="primary" type="submit">그룹 적용</button></div><p className="muted note">{catalogNote || (catalogEnabled ? '카탈로그 젬은 PoB 내부 젬 ID를 보존합니다. 레벨 정보가 없는 항목은 레벨 1로 시작합니다.' : '현재 빌드의 트리 버전에서는 카탈로그 젬 적용이 비활성화됩니다.')}</p></div></form> : <div className="empty-small">그룹을 추가하세요.</div>}</div></section>;
 }

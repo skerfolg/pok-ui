@@ -24,11 +24,11 @@ function pump() {
 }
 function resetFailedTextures() { failed.clear(); }
 interface Props {
-  data: PassiveTreeData; graph: DisplayTree; assigned: Set<number>; search: Set<number>; selected?: number;
+  data: PassiveTreeData; graph: DisplayTree; assigned: Set<number>; search: Set<number>; selected?: number;preview?:Set<number>;previewRemoval?:boolean;allocationModes?:Map<number,number>;
   className: string; ascendancy: string; camera: Camera; setCamera: (camera: Camera) => void;
   onSize: (width: number, height: number) => void; onSelect: (node: DisplayNode) => void; minScale: number;
 }
-export function PassiveTreeCanvas({ data, graph, assigned, search, selected, className, ascendancy, camera, setCamera, onSize, onSelect, minScale }: Props) {
+export function PassiveTreeCanvas({ data, graph, assigned, search, selected,preview,previewRemoval,allocationModes, className, ascendancy, camera, setCamera, onSize, onSelect, minScale }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null), host = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 1, height: 1 });
   const [hover, setHover] = useState<{ node: DisplayNode; x: number; y: number }>();
@@ -100,9 +100,15 @@ export function PassiveTreeCanvas({ data, graph, assigned, search, selected, cla
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.beginPath(); for (const edge of graph.edges) if (edge.draw) drawEdge(edge);
     ctx.strokeStyle = '#3d3c36'; ctx.lineWidth = Math.max(6, 0.75 / camera.scale); ctx.stroke();
-    ctx.beginPath(); let activeEdges = 0;
-    for (const edge of graph.edges) if (edge.draw && assigned.has(edge.a.id) && assigned.has(edge.b.id)) { drawEdge(edge); activeEdges++; }
-    ctx.strokeStyle = '#d9b66c'; ctx.lineWidth = Math.max(11, 1.5 / camera.scale); ctx.stroke();
+    let activeEdges = 0;
+    for(const mode of [0,1,2]){
+      ctx.beginPath();
+      for(const edge of graph.edges)if(edge.draw&&assigned.has(edge.a.id)&&assigned.has(edge.b.id)&&(allocationModes?.get(edge.a.id)||allocationModes?.get(edge.b.id)||0)===mode){drawEdge(edge);activeEdges++;}
+      ctx.strokeStyle=mode===1?'#de8874':mode===2?'#8dbb79':'#d9b66c';ctx.lineWidth=Math.max(11,1.5/camera.scale);ctx.stroke();
+    }
+    ctx.beginPath();
+    for(const edge of graph.edges)if(edge.draw&&(preview?.has(edge.a.id)||preview?.has(edge.b.id))&&(assigned.has(edge.a.id)||preview?.has(edge.a.id))&&(assigned.has(edge.b.id)||preview?.has(edge.b.id)))drawEdge(edge);
+    ctx.strokeStyle=previewRemoval?'#ef927a':'#71d7eb';ctx.lineWidth=Math.max(10,2/camera.scale);ctx.stroke();ctx.beginPath();
     let drawnNodes = 0;
     for (const node of graph.nodes.values()) {
       if (node.kind === 'ClassStart') continue;
@@ -121,13 +127,15 @@ export function PassiveTreeCanvas({ data, graph, assigned, search, selected, cla
         ctx.beginPath(); ctx.arc(node.x, node.y, node.frameSize * 0.55, 0, Math.PI * 2); ctx.fillStyle = allocated ? '#b69653' : '#232831'; ctx.fill();
       }
       if (!socket && node.kind !== 'AscendClassStart' && overlay) image(overlay[state], node.x, node.y, node.frameSize, node.frameSize, allocated || highlighted ? 1 : 0.65);
-      if (matched || highlighted) { ctx.beginPath(); ctx.arc(node.x, node.y, Math.max(node.frameSize + 14, 5 / camera.scale), 0, Math.PI * 2); ctx.strokeStyle = highlighted ? '#fff1bb' : '#80c8dd'; ctx.lineWidth = 2 / camera.scale; ctx.stroke(); }
+      if (matched || highlighted||preview?.has(node.id)||(allocated&&allocationModes?.has(node.id))) { ctx.beginPath(); ctx.arc(node.x, node.y, Math.max(node.frameSize + 14, 5 / camera.scale), 0, Math.PI * 2); ctx.strokeStyle = highlighted ? '#fff1bb' : preview?.has(node.id)?previewRemoval?'#ef927a':'#71d7eb':allocated&&allocationModes?.has(node.id)?allocationModes.get(node.id)===1?'#de8874':'#8dbb79':'#80c8dd'; ctx.lineWidth = 2 / camera.scale; ctx.stroke(); }
     }
     element.dataset.nodes = String(graph.nodes.size); element.dataset.edges = String(graph.edges.filter(e => e.draw).length); element.dataset.allocatedEdges = String(activeEdges);
+    element.dataset.previewNodes=String(preview?.size||0);element.dataset.previewRemoval=String(Boolean(previewRemoval));
+    element.dataset.weapon1Nodes=String([...assigned].filter(id=>allocationModes?.get(id)===1).length);element.dataset.weapon2Nodes=String([...assigned].filter(id=>allocationModes?.get(id)===2).length);
     element.dataset.visibleNodes = String(drawnNodes); element.dataset.readyImages = String([...used].filter(url => textures.has(url)).length); element.dataset.requiredImages = String(used.size);
     element.dataset.failedImages = String([...used].filter(url => failed.has(url)).length);
     element.dataset.scale = String(camera.scale);
-  }, [data, graph, assigned, search, selected, className, ascendancy, camera, size, imageTick, hover?.node.id]);
+  }, [data, graph, assigned, search, selected,preview,previewRemoval,allocationModes, className, ascendancy, camera, size, imageTick, hover?.node.id]);
   function point(event: React.PointerEvent<HTMLCanvasElement>) { const rect = event.currentTarget.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; }
   function hit(x: number, y: number) {
     const wx = camera.x + (x - size.width / 2) / camera.scale, wy = camera.y + (y - size.height / 2) / camera.scale;

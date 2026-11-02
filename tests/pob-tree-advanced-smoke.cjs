@@ -1,0 +1,28 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+require('tsx/cjs');const {PobRuntime}=require('../src/main/pob-runtime.ts'),{createBlankXml,editBuild,parseBuild}=require('../src/shared/pob-document.ts'),{createBuildDocument}=require('../src/shared/state.ts');
+const runtime=new PobRuntime(path.resolve('resources/pob-runtime')),report={at:new Date().toISOString(),passed:[]};
+(async()=>{
+  let xml=createBlankXml({defaultTreeVersion:'0_5',characterClass:{id:'Ranger',name:'Ranger',internalId:2,legacyId:2,ascendancies:[]}});
+  const input={buildId:'synthetic-tree-advanced',revision:0,xml},inventory=await runtime.tree(input);report.masteryNodes=inventory.nodes.filter(n=>n.type==='Mastery').length;
+  const malformed=xml.replace('<Sockets/>','<Sockets/><Overrides><AttributeOverride dexNodes="722"/></Overrides>');
+  await assert.rejects(runtime.compute(createBuildDocument('Synthetic malformed override',malformed)),/XML load failed/);
+  report.passed.push('native XML load errors are rejected instead of being published as empty default-build calculations');
+  const attribute=inventory.nodes.find(n=>n.isAttribute&&n.pathLength>0),socket=inventory.nodes.filter(n=>n.type==='Socket'&&n.pathLength>0).sort((a,b)=>a.pathLength-b.pathLength)[0];assert(attribute);assert(socket);report.attribute=attribute.id;report.socket=socket.id;
+  const allocated=await runtime.tree({...input,nodeId:attribute.id,action:'allocate',attributeIndex:2});xml=editBuild(xml,{type:'tree-native-patch',specId:'1',patch:allocated.patch});
+  const socketAllocation=await runtime.tree({...input,revision:1,xml,nodeId:socket.id,action:'allocate'});assert.equal(socketAllocation.diagnostics.length,0);xml=editBuild(xml,{type:'tree-native-patch',specId:'1',patch:socketAllocation.patch});
+  xml=editBuild(xml,{type:'item',id:'100',text:'Rarity: RARE\nSynthetic Emerald\nEmerald\n--------\n+10 to Dexterity'});xml=editBuild(xml,{type:'item',id:'101',text:'Rarity: NORMAL\nIron Ring'});
+  xml=xml.replace('<Sockets/>',`<Sockets future="keep"><Socket nodeId="${socket.id}" itemId="0" future="keep"><FutureSocket/></Socket></Sockets>`);
+  const before=await runtime.compute(createBuildDocument('Synthetic baseline',xml));
+  fs.mkdirSync('.local/standalone-pob',{recursive:true});fs.writeFileSync('.local/standalone-pob/tree-advanced-fixture.json',JSON.stringify({xml,attributeId:attribute.id,socketId:socket.id,baselineStats:before.result.stats},null,2));
+  const choice=await runtime.tree({...input,revision:2,xml,nodeId:attribute.id,action:'attribute',attributeIndex:3});assert.equal(choice.diagnostics.length,0);assert(choice.modified.includes(attribute.id));
+  const swapped=editBuild(xml,{type:'tree-native-patch',specId:'1',patch:choice.patch}),after=await runtime.compute(createBuildDocument('Synthetic attribute switch',swapped));assert(after.result.stats.Int>before.result.stats.Int);assert(after.result.stats.Dex<before.result.stats.Dex);report.attributeStats={before:{Dex:before.result.stats.Dex,Int:before.result.stats.Int},after:{Dex:after.result.stats.Dex,Int:after.result.stats.Int}};
+  report.passed.push('allocated attribute re-selection uses original SwitchAttributeNode and changes real Dexterity/Intelligence');
+  const inspect=await runtime.tree({...input,revision:2,xml,nodeId:socket.id});assert(inspect.node.socket.choices.some(i=>i.id===100));assert(!inspect.node.socket.choices.some(i=>i.id===101));
+  const equip=await runtime.tree({...input,revision:2,xml,nodeId:socket.id,action:'jewel',jewelItemId:100});assert.equal(equip.patch.sockets[socket.id],'100');const equipped=editBuild(xml,{type:'tree-native-patch',specId:'1',patch:equip.patch});assert.match(equipped,/future="keep"><FutureSocket/);
+  const equippedStats=await runtime.compute(createBuildDocument('Synthetic jewel equipped',equipped));assert(equippedStats.result.stats.Dex>before.result.stats.Dex);report.jewelStats={beforeDex:before.result.stats.Dex,afterDex:equippedStats.result.stats.Dex};
+  report.passed.push('original slot filters reject a ring and equip a real jewel while preserving socket metadata and changing calculation');
+  await assert.rejects(runtime.tree({...input,revision:3,xml:equipped,nodeId:socket.id,action:'jewel',jewelItemId:101}),/rejected/);
+  const remove=await runtime.tree({...input,revision:3,xml:equipped,nodeId:socket.id,action:'jewel',jewelItemId:0});const removed=editBuild(equipped,{type:'tree-native-patch',specId:'1',patch:remove.patch});assert.equal(parseBuild(removed).trees[0].sockets.find(s=>Number(s.nodeId)===socket.id).itemId,'0');
+  const removedStats=await runtime.compute(createBuildDocument('Synthetic jewel removed',removed));assert.equal(removedStats.result.stats.Dex,before.result.stats.Dex);assert.match(removed,/<FutureSocket\/>/);
+  report.passed.push('invalid item failure cannot contaminate the next request; native unequip restores the measured Dexterity');
+})().catch(error=>{report.error=error.stack;process.exitCode=1;}).finally(()=>{runtime.close();fs.mkdirSync('.local/standalone-pob',{recursive:true});fs.writeFileSync('.local/standalone-pob/tree-advanced-result.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));});

@@ -1,25 +1,51 @@
 import type { CalculationProvenance } from './calculation-context';
+import type { PobRuntimeInfo } from './pob-runtime';
+import type {PobInspection,PobInspectionRequest} from './pob-inspection';
+import type {BuildComparison} from './build-comparison';
+import type {PobCalcs,PobCalcsRequest} from './pob-calcs';
+import type {PobParty,PobPartyRequest,PartyName} from './pob-party';
+import type {PobTreeRequest,PobTreeResult,PobTreePatch} from './pob-tree';
+import type {PobItemControlsRequest,PobItemControls,PobItemMetadata} from './pob-item-controls';
+import type {PobEquipmentRequest,PobEquipment,PobEquipmentPatch} from './pob-equipment';
+import type {PobLoadoutsRequest,PobLoadouts} from './pob-loadouts';
 import type { CatalogEntry, CatalogEntryType, CatalogQuery, CatalogQueryResult, DataBundleInfo, ItemRenderRequest, ItemRenderResult, RuntimeIdentity } from './game-data';
 import type { PassiveTreeData } from './passive-tree';
 
 export type { CatalogEntry, CatalogEntryType, CatalogQuery, CatalogQueryResult, DataBundleInfo, ItemRenderRequest, ItemRenderResult } from './game-data';
 export type { PassiveTreeData } from './passive-tree';
 
-export type View = 'chat' | 'equipment' | 'skills' | 'tree' | 'config' | 'settings' | 'calculations';
+export type View = 'chat' | 'equipment' | 'skills' | 'tree' | 'config' | 'settings' | 'calculations' | 'notes' | 'builds' | 'compare' | 'party' | 'loadouts';
 export type Attributes = Record<string, string>;
+export type BuildSetKind='items'|'skills'|'tree'|'config';
 export interface Item { id: string; name: string; base: string; rarity: string; text: string }
-export interface ItemSet { id: string; title: string; slots: Record<string, string>; active: boolean }
+export interface ItemSet { id: string; title: string; slots: Record<string, string>; active: boolean;useSecondWeaponSet?:boolean }
 export interface Gem { name: string; level: number; quality: number; enabled: boolean; attributes: Attributes; sourceIndex?: number }
 export interface SkillGroup { id: string; label: string; slot: string; enabled: boolean; includeInFullDPS: boolean; gems: Gem[]; attributes: Attributes }
 export interface SkillSet { id: string; title: string; groups: SkillGroup[]; active: boolean }
-export interface TreeSpec { id: string; title: string; version: string; nodes: number[]; sockets: { nodeId: string; itemId: string }[]; active: boolean; attributes: Attributes }
+export interface TreeSpec { weaponSets?:Record<string,number[]>; id: string; title: string; version: string; nodes: number[]; sockets: { nodeId: string; itemId: string }[]; active: boolean; attributes: Attributes }
 export interface ConfigSet { id: string; title: string; inputs: Record<string, string | number | boolean>; placeholders: Attributes[]; active: boolean }
 export interface ParsedBuild {
   className: string; ascendancy: string; level: number; mainSocketGroup: number;
   items: Item[]; itemSets: ItemSet[]; skillSets: SkillSet[]; trees: TreeSpec[]; configs: ConfigSet[];
   stats: Record<string, string>;
+  notes:string;
+  party?:{buffers:Partial<Record<PartyName,string>>;exportEnabled:boolean};
 }
 export type BuildAtomicEdit =
+  | {type:'item-native';id:string;text:string;metadata:PobItemMetadata}
+  | {type:'equipment-native-patch';setId:string;patch:PobEquipmentPatch}
+  | {type:'tree-native-patch';specId:string;patch:PobTreePatch}
+  | {type:'party-buffer';name:PartyName;text:string;exported?:boolean}
+  | {type:'party-export-enabled';enabled:boolean}
+  | {type:'calcs-input';key:'skill_number'|'misc_buffMode'|'showMinion';value?:string|number|boolean}
+  | {type:'skill-active';setId:string;groupId:string;index:number;calcs?:boolean}
+  | {type:'gem-stat-set';setId:string;groupId:string;gemIndex:number;grantedEffectId:string;index:number;calcs?:boolean}
+  | {type:'gem-option';setId:string;groupId:string;gemIndex:number;key:'skillPart'|'skillStageCount'|'skillMineCount'|'skillPartCalcs'|'skillStageCountCalcs'|'skillMineCountCalcs';value?:number}
+  | {type:'notes';text:string}
+  | {type:'set-add';kind:BuildSetKind;title:string;copyFrom?:string}
+  | {type:'set-rename';kind:BuildSetKind;id:string;title:string}
+  | {type:'set-remove';kind:BuildSetKind;id:string}
+  | {type:'config-remove';setId:string;key:string}
   | { type: 'item'; id: string; text: string }
   | { type: 'item-equip'; setId: string; slot: string; id: string; text: string }
   | { type: 'slot'; setId: string; slot: string; itemId: string }
@@ -37,6 +63,9 @@ export interface BuildDocument {
   id: string; name: string; revision: number; createdAt: string; updatedAt: string;
   xml: string; originalXml: string; sourceName: string;
   undo: { xml: string; label: string }[]; calculation?: Calculation;
+  redo?:{xml:string;label:string}[];
+  folder?:string;
+  copiedFrom?:{buildId:string;revision:number};
 }
 export interface ChatImage { id:string; name:string; mimeType:string; size:number }
 export interface AgentModel { id:string; label:string; description?:string; isDefault?:boolean; inputModalities?:string[]; reasoningEfforts?:{effort:string;description:string}[] }
@@ -47,11 +76,12 @@ export interface Message { id: string; role: 'user' | 'assistant' | 'system'; te
 export interface Chat { id: string; title: string; pinned: boolean; updatedAt: string; messages: Message[]; providerThreadId?: string; buildId?: string }
 export interface Settings {
   theme: 'system' | 'dark' | 'light'; density: 'compact' | 'comfortable';
-  pok: { mode: 'checkout' | 'bundled'; root: string; python: string; luajit: string };
+  pok: { mode: 'checkout' | 'bundled'; root: string; python: string; luajit: string; autoConnect?:boolean };
   agent: { provider: 'codex' | 'claude'; executable: string; model: string; reasoningEffort?:string };
   trade: { league: string };
 }
-export interface AppState { schemaVersion: 1; settings: Settings; chats: Chat[]; builds: BuildDocument[]; activeBuildId?: string; activeChatId?: string }
+export interface DeletedBuild {build:BuildDocument;index:number;chatIds:string[];deletedAt:string}
+export interface AppState { schemaVersion: 1; settings: Settings; chats: Chat[]; builds: BuildDocument[]; activeBuildId?: string; activeChatId?: string;trash?:DeletedBuild[];folders?:string[];comparisons?:BuildComparison[] }
 export interface ConnectionInfo { connected: boolean; connecting?: boolean; managed?: boolean; bundleId?: string; identity?: RuntimeIdentity; compatibility?: 'ready' | 'engine-unavailable' | 'incompatible'; info?: unknown; tools?: string[]; error?: string }
 export interface BuildProposalDraft { buildId: string; baseRevision: number; baseXmlSha256: string; bundleId: string; xml: string; summary: string }
 export interface BuildProposal extends BuildProposalDraft { proposalId: string; changes: string[] }
@@ -69,6 +99,15 @@ export interface DesktopApi {
   onPokConnection(listener: (connection: ConnectionInfo) => void): () => void;
   callPok(name: string, args: Record<string, unknown>): Promise<unknown>;
   getDataBundleInfo(): Promise<DataBundleInfo>;
+  getPobRuntimeInfo(): Promise<PobRuntimeInfo>;
+  inspectBuild(request:PobInspectionRequest):Promise<PobInspection>;
+  readCalcs(request:PobCalcsRequest):Promise<PobCalcs>;
+  readParty(request:PobPartyRequest):Promise<PobParty>;
+  readLoadouts(request:PobLoadoutsRequest):Promise<PobLoadouts>;
+  editTree(request:PobTreeRequest):Promise<PobTreeResult>;
+  itemControls(request:PobItemControlsRequest):Promise<PobItemControls>;
+  cancelPobRequest(requestId:string):Promise<boolean>;
+  equipment(request:PobEquipmentRequest):Promise<PobEquipment>;
   queryPobCatalog(query: CatalogQuery): Promise<CatalogQueryResult>;
   getPobCatalogEntry(type: CatalogEntryType, id: string): Promise<CatalogEntry>;
   renderPobItem(request: ItemRenderRequest): Promise<ItemRenderResult>;

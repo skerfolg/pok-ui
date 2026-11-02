@@ -1,0 +1,22 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+require('tsx/cjs');const {PobRuntime}=require('../src/main/pob-runtime.ts'),{createBlankXml,editBuild}=require('../src/shared/pob-document.ts'),{createBuildDocument}=require('../src/shared/state.ts');
+const runtime=new PobRuntime(path.resolve('resources/pob-runtime')),report={at:new Date().toISOString(),passed:[]};
+(async()=>{
+  const original=createBlankXml({defaultTreeVersion:'0_5',characterClass:{id:'Ranger',name:'Ranger',internalId:2,legacyId:2,ascendancies:[]}});
+  const input={buildId:'synthetic-party',revision:0,xml:original},base=await runtime.party(input);assert.equal(base.buffers.Aura,'');assert(base.destinations.includes('All'));assert(base.exports.PartyMemberStats.length>0);
+  report.passed.push('original party controls and support exports are available without PoK');
+  const aura='Synthetic Aura\n100\n100|Synthetic|Life|BASE|0|0|type=GlobalEffect/effectType=Aura\n---';
+  const xml=editBuild(original,{type:'party-buffer',name:'Aura',text:aura}),read=await runtime.party({...input,revision:1,xml});assert.equal(read.buffers.Aura,aura);
+  const calculation=await runtime.compute(createBuildDocument('Synthetic Party',xml));report.life=calculation.result.stats.Life;assert(calculation.result.stats.Life>65);
+  report.passed.push('canonical imported aura text is parsed by stock PoB and affects a real Life calculation');
+  const bad=editBuild(original,{type:'party-buffer',name:'Aura',text:'Synthetic Aura\n100\nbad|line\n---'}),diagnosed=await runtime.party({...input,revision:2,xml:bad});assert(diagnosed.diagnostics.some(d=>d.code==='party-unparsed-line'&&d.line===3));assert(diagnosed.buffers.Aura.includes('bad|line'));
+  report.passed.push('unparsed formatted modifier lines remain in the original buffer and produce diagnostics');
+  const imported=await runtime.party({...input,revision:3,xml,action:'import',destination:'Party Member Stats',append:false,supportXml:original});assert(imported.buffers.PartyMemberStats.length>0);assert.equal(imported.buffers.Aura,aura);assert(imported.supportSha256);
+  report.passed.push('native support export and destination import preserve unrelated party buffers without mutating inputs');
+  const combined=await runtime.party({...input,revision:3,xml:editBuild(xml,{type:'party-buffer',name:'PartyMemberStats',text:imported.buffers.PartyMemberStats}),action:'import',destination:'Party Member Stats',append:true,supportXml:original});
+  assert(combined.buffers.PartyMemberStats.startsWith(imported.buffers.PartyMemberStats+'\n'));assert.equal(combined.buffers.Aura,aura);
+  report.passed.push('native append mode retains existing support stats and leaves unrelated categories intact');
+  const clear=await runtime.party({...input,revision:4,xml,action:'clear',destination:'Aura'});assert.equal(clear.buffers.Aura,'');
+  await assert.rejects(runtime.party({...input,action:'clear',destination:'invalid'}),/destination/);const after=await runtime.party(input);assert.equal(after.buffers.Aura,'');
+  report.passed.push('native destination clearing and errors leave the next request independent');
+})().catch(error=>{report.error=error.stack;process.exitCode=1;}).finally(()=>{runtime.close();fs.mkdirSync('.local/standalone-pob',{recursive:true});fs.writeFileSync('.local/standalone-pob/party-result.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));});
