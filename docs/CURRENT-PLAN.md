@@ -2,6 +2,8 @@
 
 ## 원본 트리 코드 가져오기·내보내기 — 2026-11-03 (22차)
 
+UI 구현 **`ade5cdaa4dedfa9a065bc71421b5d5214e3b7ae5`**, 브랜치 `skerfolg/coho`. 다른 PC는 이후 인계 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다. 다음 재개는 과거 tree의 catalog gate 근거 감사와 원본 세부 control/남은 수동 기능을 따른다. 트리 code를 서비스 URL/전체 빌드 export로 취급하지 않는다. 전체 목표는 active다.
+
 최종 source `.local/tree-code-native-1793654938646/result.json` / Windows packaged `.local/tree-code-native-1793655107706/result.json` **각7개 그룹 통과**. native8/빈 문서1/check173/build/pack:win 통과. readonly export·버전/copy IPC, 명시 version·입력 변경/취소/문서 격리, 원본 full stats/revision1, invalid/partial 원문·미복원 ID/revision2와 재시작, undo3/redo4의 새 수치와 source evidence revision2, no-tree import/계산, 원본 loader/code 누락 구분·다중 문서 복원을 확인했다. 두 크기 source/packaged preview 직접 시각 확인. 두 실행의 clipboard는 `ipc-only-rich-clipboard-preserved`이며 기존 rich clipboard를 보존해 OS write는 미수행이다. 아래 진행 중/초기 실패는 이 최종 결과로 대체한다.
 
 PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB/PoK 비사용. runtime `pob-c3830dc62a9a39bc4040d36bb0ce4448bf5378c4bc5c5849b33a2f7a9906d74e`, manifest SHA256 `3ec5a25f4040e3af75e32df6ae225f5be92e95568cab35304ed02a753d0d6cd7`; editor `pob-editor-d5ab4c116002fb1972629c9803e305127415c3826f6be2903c7a2ee78a33acbe`, manifest SHA256 `f90c7de4c5c0ed873f44da523120a85cef6f35ceaa8f62f16bd2653f230cd885`. 원본/공유 엔진 소스·문서/ref 수정 없음. [원본 제한과 요청할 계약](POB-CODE-LIMITATIONS.md)에 최소 재현·UI 영향을 분리했다. UI에 decoder/번역/게임 규칙을 복제하거나 전체 복원으로 포장하지 않았다.
