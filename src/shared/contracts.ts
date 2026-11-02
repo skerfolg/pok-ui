@@ -7,7 +7,7 @@ import type {PobParty,PobPartyRequest,PartyName} from './pob-party';
 import type {PobTreeRequest,PobTreeResult,PobTreePatch} from './pob-tree';
 import type {PobItemControlsRequest,PobItemControls,PobItemMetadata} from './pob-item-controls';
 import type {PobEquipmentRequest,PobEquipment,PobEquipmentPatch} from './pob-equipment';
-import type {PobLoadoutsRequest,PobLoadouts} from './pob-loadouts';
+import type {PobLoadoutsRequest,PobLoadouts,PobLoadoutSets} from './pob-loadouts';
 import type { CatalogEntry, CatalogEntryType, CatalogQuery, CatalogQueryResult, DataBundleInfo, ItemRenderRequest, ItemRenderResult, RuntimeIdentity } from './game-data';
 import type { PassiveTreeData } from './passive-tree';
 
@@ -32,6 +32,7 @@ export interface ParsedBuild {
   party?:{buffers:Partial<Record<PartyName,string>>;exportEnabled:boolean};
 }
 export type BuildAtomicEdit =
+  | {type:'loadout-native-sets';sets:PobLoadoutSets}
   | {type:'item-native';id:string;text:string;metadata:PobItemMetadata}
   | {type:'equipment-native-patch';setId:string;patch:PobEquipmentPatch}
   | {type:'tree-native-patch';specId:string;patch:PobTreePatch}

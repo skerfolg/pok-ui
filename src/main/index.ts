@@ -218,6 +218,12 @@ function registerIpc():void{
     record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');
     if(!Number.isSafeInteger(request.revision)||Number(request.revision)<0)throw new Error('통합 구성 리비전이 올바르지 않습니다.');
     if(request.runtimeId!==undefined)text(request.runtimeId,128,'PoB 런타임');if(request.requestId!==undefined)text(request.requestId,128,'PoB 요청 ID');if(request.name!==undefined)text(request.name,4096,'원본 통합 구성 이름');
+    if(request.manage!==undefined){record(request.manage);const operation=request.manage;
+      if(!['new','copy','rename','delete','custom','reorder'].includes(String(operation.action)))throw new Error('통합 구성 관리 연산이 올바르지 않습니다.');
+      for(const key of ['index','position'])if(operation[key]!==undefined&&(!Number.isSafeInteger(operation[key])||Number(operation[key])<1))throw new Error('원본 관리 목록 위치가 올바르지 않습니다.');
+      if(operation.title!==undefined)text(operation.title,4096,'원본 구성 이름');
+      if(operation.sources!==undefined){record(operation.sources);for(const key of ['tree','items','skills','config'])text(operation.sources[key],128,'원본 복사 세트');}
+    }
     return pobRuntime.loadouts(request as unknown as import('../shared/pob-loadouts').PobLoadoutsRequest);
   });
   handle('pok:read-party',async(request:unknown)=>{

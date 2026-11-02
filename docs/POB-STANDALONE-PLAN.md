@@ -12,6 +12,8 @@ XML은 편집 정본이다. 계산은 제출 시점 XML을 격리된 원본 PoB�
 
 ## 기능 대응표 (원본 Classes/*Tab.lua 기준, 조사/구현 지속)
 
+16차(2026-11-03): 원본 관리 Popup/BuildSetService를 통한 New/Copy/Custom/Rename/Delete/Reorder와 canonical XML lineage 패치를 연결했다. native6/source5/Windows packaged5개 그룹 및 check160/build/pack:win 통과. 후속 검토 표시 개선은 source/Windows packaged 각2개 그룹과 두 해상도 확인을 완료했다. 원본 ListControl 목록이 빈 brace 연결 항목은 선택만 가능하고 관리 폼 대상에 없다. raw-name Build API를 통한 후속 연결과 모든 버전/특수 공유 조합은 남는다.
+
 15차(2026-11-03): 원본 Loadout 목록/이름·brace 연결/네 세트 동시 선택을 native 어댑터로 연결했다. ‘통합 구성’에서 변경 검토→원자 적용→새 계산, scoped 취소/문서 격리/undo/재시작을 검사했다. native4/최종 source4/Windows packaged4개 그룹 및 check158/build/pack:win 통과. 생성/복사/Custom/이름/삭제/순서 변경 관리 기능은 아직 남는다. 원본 매칭 규칙을 UI에 복제하지 않았다.
 
 14차(2026-11-03): 활성 tree 세트 전환·생성/복사/삭제는 기존 native tree API로 직업 정보를 확인해 canonical Build 정보와 함께 적용한다. 비교도 원본이 확인한 treeIdentity와 정확한 XML/hash를 자동 기록하고 최종 적용 전 재확인한다. native3/source4/Windows packaged4개 그룹, 기존 management-compare4개 그룹과 check156/build/pack:win 통과. 아래의 활성 spec 동기화 감사 범위 중 대표 cross-class 전환은 이 검사로 보완했으며 모든 버전/조합 전수 완료는 아니다. 원본 Build의 통합 Loadout 동시 선택/관리도 개별 세트 UI와 별도로 남는다.
@@ -32,7 +34,7 @@ XML은 편집 정본이다. 계산은 제출 시점 XML을 격리된 원본 PoB�
 | PartyTab | 7종 버퍼 편집/unknown 보존; native 지원 출력 생성·대상별 Import/Append/Clear 미리보기·revision 적용/계산; 미해석/Unknown 진단 | 일시적 disable/rebuild 상태, URL 직접 가져오기, 모든 지원/링크/전투 조합과 원본 GUI 동등성 |
 | NotesTab | 원문 편집·색상 코드 삽입·크기 조절·적용/undo·저장/재시작; 한글/특수 문자·unknown metadata 보존 | 색상 렌더링/코드 표시 모드, 원본 단축키·범위 색상 편집의 전체 동등성 |
 | 원본 Main/Options | UI 테마·밀도·최근 대화·저장 | 원본 옵션/작업 관리/네트워크 기능별 대체·호환 범위 조사 |
-| Build Loadouts | 원본 목록/이름·brace 식별자 연결, 네 세트·직업·무기/주력 그룹 동시 전환의 검토/적용·새 계산, 요청별 취소·원본/unknown 보존 | 원본 New/Copy/Custom/Rename/Delete/Reorder 서비스와 XML lineage 보존 패치, 모든 특수 연결/버전 조합 및 원본 GUI 동등성 |
+| Build Loadouts | 원본 목록/이름·brace 연결과 네 세트 동시 전환; 원본 관리 Popup/서비스의 New/Copy/Custom/Rename/Delete/Reorder·삭제 확인·canonical lineage/unknown 복제·검토/적용/계산·undo/redo | 원본 관리 목록에 없는 brace 항목의 raw-name 서비스 연결, 모든 특수 공유/버전 조합 및 원본 GUI 동등성 |
 
 세부 control/function 목록과 실제 사용자 작업 검증을 계속 확장한다. 탭 단위 표만으로 전 기능 조사를 완료했다고 간주하지 않는다. headless가 지원하지 않는 원본 GUI·네트워크 기능은 빠뜨리지 않고 별도 연산/host 계약과 화면으로 구현한다. 별도 PoB 창을 여는 것만으로 자체 편집기 동등성을 완료 처리하지 않는다.
 
@@ -85,6 +87,8 @@ node tests/pob-tree-sets-smoke.cjs
 node tests/tree-sets-desktop-smoke.cjs
 node tests/pob-loadouts-smoke.cjs
 node tests/loadouts-desktop-smoke.cjs
+node tests/pob-loadout-management-smoke.cjs
+node tests/loadout-management-desktop-smoke.cjs
 npm run verify:pob
 ```
 

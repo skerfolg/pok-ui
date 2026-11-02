@@ -50,6 +50,7 @@ await copy(join(workspace,'runtime','pob','item-controls.lua'),'item-controls.lu
 await copy(join(workspace,'runtime','pob','item-popups.lua'),'item-popups.lua');
 await copy(join(workspace,'runtime','pob','equipment.lua'),'equipment.lua');
 await copy(join(workspace,'runtime','pob','loadouts.lua'),'loadouts.lua');
+await copy(join(workspace,'runtime','pob','loadout-management.lua'),'loadout-management.lua');
 const version=(await readFile(join(root,'manifest.xml'),'utf8')).match(/<Version[^>]*number="([^"]+)"/)?.[1];
 if(!version)throw new Error('PoB version is missing');
 const gameVersions=await readFile(join(root,'src','GameVersions.lua'),'utf8');

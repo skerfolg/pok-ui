@@ -34,7 +34,7 @@ local calcs=dofile(adapter..'calcs.lua')(editor)
 local party=dofile(adapter..'party.lua')(editor)
 local tree=dofile(adapter..'tree.lua')(editor)
 local equipment=dofile(adapter..'equipment.lua')(editor)
-local loadouts=dofile(adapter..'loadouts.lua')(editor)
+local loadouts=dofile(adapter..'loadouts.lua')(editor,dofile(adapter..'loadout-management.lua'))
 local itemControls=dofile(adapter..'item-controls.lua')(editor,dofile(adapter..'item-popups.lua'))
 reply({id=0,ok=true,result={version=launch.versionNumber,treeVersions=treeVersionList}})
 for line in io.stdin:lines() do

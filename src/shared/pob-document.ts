@@ -344,6 +344,30 @@ export function editBuild(xml: string, edit: BuildEdit): string {
     case 'notes': {
       let notes=child(root,'Notes');if(!notes){notes=document.createElement('Notes');root.appendChild(notes);}replaceDirectText(notes,edit.text);break;
     }
+    case 'loadout-native-sets': {
+      let created=0;
+      function fresh(value:import('./pob-loadouts').PobSetNode,depth=0):Element{
+        if(depth>64||++created>100000||!value||typeof value.tag!=='string'||!/^[A-Za-z_][\w:.-]*$/.test(value.tag)||!Array.isArray(value.children))throw new Error('원본 새 세트 XML 구조가 올바르지 않습니다.');
+        const node=document.createElement(value.tag);
+        for(const [key,text]of Object.entries(value.attributes||{})){if(!/^[A-Za-z_][\w:.-]*$/.test(key)||typeof text!=='string')throw new Error('원본 새 세트 속성이 올바르지 않습니다.');node.setAttribute(key,text);}
+        for(const entry of value.children)node.appendChild(typeof entry==='string'?document.createTextNode(entry):fresh(entry,depth+1));return node;
+      }
+      for(const kind of Object.keys(setKinds) as SetKind[]){
+        const entries=edit.sets[kind];if(!Array.isArray(entries)||!entries.length)throw new Error('원본 관리 연산에는 모든 종류의 세트가 필요합니다.');
+        const parent=explicitSets(root,kind),all=sets(root,kind),sources=new Map(all.map((node,index)=>[setId(node,index,kind),node])),ids=new Set<string>(),retained=new Set<string>();
+        const next=entries.map((entry,index)=>{
+          if(!entry||typeof entry.id!=='string'||!/^\d+$/.test(entry.id)||ids.has(entry.id)||kind==='tree'&&entry.id!==String(index+1))throw new Error('원본 관리 세트 ID/순서가 올바르지 않습니다.');ids.add(entry.id);
+          if([entry.sourceId!==undefined,entry.copyFrom!==undefined,entry.node!==undefined].filter(Boolean).length!==1)throw new Error('원본 세트의 출처가 명확하지 않습니다.');
+          let node:Element;
+          if(entry.node){node=fresh(entry.node);if(node.tagName!==setKinds[kind][1])throw new Error('원본 새 세트 태그가 올바르지 않습니다.');}
+          else{const source=entry.sourceId??entry.copyFrom!,original=sources.get(source);if(!original)throw new Error('관리 연산의 원본 XML 세트가 없습니다.');if(entry.sourceId){if(retained.has(source))throw new Error('기존 세트를 중복해서 유지할 수 없습니다.');retained.add(source);}node=original.cloneNode(true) as Element;}
+          if(kind!=='tree')node.setAttribute('id',entry.id);
+          if(entry.title!==undefined){if(typeof entry.title!=='string')throw new Error('원본 세트 이름이 올바르지 않습니다.');node.setAttribute('title',entry.title);}return node;
+        });
+        const anchor=all[0];for(const node of next)parent.insertBefore(node,anchor||null);for(const node of all)parent.removeChild(node);
+      }
+      break;
+    }
     case 'set-add': {
       const title=edit.title.trim();if(!title||title.length>200)throw new Error('세트 이름은 1~200자로 입력해 주세요.');
       const parent=explicitSets(root,edit.kind),all=sets(root,edit.kind).filter(node=>node!==parent);

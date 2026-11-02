@@ -1,5 +1,7 @@
 # 구조와 배포 경계
 
+16차(2026-11-03): loadout-management.lua는 원본 관리 컨트롤을 replay하고 Copy API의 객체 출처를 기록한다. native 관리 목록의 실제 순서를 보존하기 위해 Loadout은 명확한 active set 검증 후 canonical raw XML을 로드한다. `loadout-native-sets` 패치는 기존 노드를 유지/복제하고 새 노드만 원본 Save JSON으로 생성한다. 부모 섹션·공유 item library·unknown 필드는 재생성하지 않는다. 모든 변경/제거는 검토와 revision 검사를 거쳐 적용되며 취소/오류는 격리 요청 안에 머무른다.
+
 15차(2026-11-03): loadouts.lua는 원본 Build의 목록/이름·식별자 해석/동시 전환을 호출한다. main은 projectActiveXml의 spec 위치를 canonical 위치로 역매핑하고 입력/출처를 응답에 붙인다. `loadoutEdit`는 원본이 반환한 네 세트·직업·무기/주력 그룹만 원자 패치한다. renderer는 변경을 검토하고 explicit apply 후 새 계산하며, 요청별 취소·revision/XML/runtime/name 검사로 늦은 결과를 차단한다. Loadout 관리 CRUD/Custom/Reorder는 아직 별도 미구현이다. 새로운 매칭·게임 규칙을 renderer에 만들지 않는다.
 
 14차(2026-11-03): `resolveTreeSetEdit`는 prospective XML을 기존 원본 tree 조회에 보내 직업/전직을 확인하고, 세트 변경+Build identity를 하나의 XML revision으로 반환한다. renderer는 게임 ID→직업 매핑을 추정하지 않는다. `useTreeSetEdits`는 응답 소유·문서 세대·runtime을 검증하고 취소/문서 전환의 늦은 결과를 버린다. 비교의 optional treeIdentity는 원본 조회값만 보관하며 `projectComparisonSide`가 측정 XML을 재구성한다. 적용 직전 원본 재조회/측정 hash/현재 revision이 일치해야 한다. 과거 비교 형식은 보존하며 직업 정보가 달라진 기록은 재비교가 필요하다.

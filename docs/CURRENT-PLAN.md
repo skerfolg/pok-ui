@@ -1,5 +1,23 @@
 # 현재 작업
 
+## 원본 Loadout 관리·XML 출처 보존 — 2026-11-03 (16차 진행)
+
+최종: 관리 전체 source/Windows packaged 각5개 그룹과 native6개 그룹 통과. 최종 표시 전용 Windows packaged `.local/loadout-management-native-1793638401983/result.json`도 **2개 그룹 통과**, 원본 유지·실제 이름 변경·제거 네 세트의 1920/1024 viewport를 확인하고 PNG를 직접 시각 확인했다. 전체 동선 검증 후의 변경은 표시부와 캡처 범위이며 backend/적용 동작은 동일하다. check160/build/최종 pack:win 통과. 아래 진행 중 기록은 이 결과로 대체한다. source 전체 `.local/loadout-management-native-1793637587048`, packaged 전체 `.local/loadout-management-native-1793637875490`, source 표시 `.local/loadout-management-native-1793638186615`가 각 결과 경로다.
+
+최종 manifest SHA256: runtime `373a4eb54fad31e8957fe0828f7407b9e43fd40a3857c82bbc814cc3669194c1`, editor `4a799e18d12fc2849aebd9c3a8017729ee9ffc1d8289780ec0e2e585bf450ff2`. PoB pin/KB 비사용은 유지했고 공유 엔진·원본 PoB 소스는 수정하지 않았다. portable·원본 GUI·실제 모델은 이번에 미수행이며 #188 해결/재평가 준비 완료를 선언하지 않는다.
+
+검증 갱신: 최종 native **6개 그룹 통과**. source `.local/loadout-management-native-1793637587048/result.json` 및 Windows packaged `.local/loadout-management-native-1793637875490/result.json`에서 **각5개 그룹 통과**: 관리 preview/cancel·문서 격리, rename/copy·중복 이름 오류, Custom/New·실계산, 삭제 확인/정렬·undo/redo·새 revision 계산, PoK 없는 재시작. 두 크기 직접 시각 확인. 이후 검토 표시만 개선해 실제 이전/새 이름·복사·순서를 보여 주었고 source 표시 전용 `.local/loadout-management-native-1793638186615/result.json` **2개 그룹 통과**. 최종 packaged 표시 검사는 진행 중이다. 최종 check160/build 통과, pack:win의 원본/실계산 gate·패키징 통과.
+
+범위 주의: brace 연결 fixture는 기존 원본 선택 choices2개지만 `management.entries=[]`였다 (`.local/standalone-pob/loadout-linked-management-inventory.json`). 현재 관리 폼은 원본 ListControl 목록을 사용하므로 이 항목의 rename/copy/delete/reorder는 노출하지 않는다. 이를 PoK 계산 결함이나 Build API 부재로 단정하지 않는다. 원본 raw-name 서비스 호출은 존재하므로 후속에서 그 API를 통한 관리 계약을 조사/연결할 수 있으며, UI의 자체 이름 매칭으로 우회하지 않는다. 전체 원본 기능·모든 버전/공유 조합의 동등성은 미완료다.
+
+원본 BuildSetListControl의 이름 입력/중복 검사/삭제 확인과 BuildSetService의 New/Copy/Custom/Rename/Delete/Reorder를 replay하는 어댑터·관리 폼을 연결했다. native에서 기존 객체 ID와 복사 출처를 기록하고 새 세트만 원본 Save 노드로 전달한다. host는 기존/복사 세트를 canonical DOM에서 clone해 unknown 속성·자식/비활성 세트·공유 아이템을 보존하며, 전체 원본 export로 덮어쓰지 않는다. 제거 목록/변경을 검토한 뒤 한 revision으로 적용·새 계산하고 undo/redo한다. 출처 누락·중복 유지·잘못된 fresh 태그는 거부한다.
+
+관리 순서는 실제 canonical spec 순서가 필요하므로 Loadout 요청은 활성 세트 명확성 검사를 유지하면서 raw XML을 원본에 로드한다. stock loader가 activeSpec을 복원하며 기존 Loadout native4개 그룹을 재실행해 통과했다. renderer에 이름 매칭/게임 규칙을 옮기지 않았다.
+
+native 최초 관리 **5개 그룹 통과** (`.local/standalone-pob/loadout-management-result.json`): 원본 이름 변경·복사(실제 Life170/Dex25), Custom 혼합(Life334/Dex47)·New 기본값, 삭제/정렬 후 동일 계산, 중복 이름/잘못된 항목 후 격리 및 Future XML 보존. 원본 필터 목록의 drag semantics를 추가한 최종 native6/source/packaged 검사는 진행 중이다. check **160 passed**, build 통과. 두 크기 실제 GUI 확인은 검사 후 기록한다. 원본 GUI/portable/실제 모델 및 전 기능 동등성은 미완료다.
+
+runtime `pob-ac2d6492742dcd1ddeb2e3916815e6543abdadb9ddfb62fac8ee93868c8cf2ed`, editor `pob-editor-c9729151adbd0dd1d4ba773b7de5398039a92b71e22f564730e71a7ddad0acee`, PoB `5d173cb`/0.23.1 유지. 공유 엔진 변경 없음. 변경은 체크포인트 이후 작업이며 전체 목표는 active다.
+
 ## 재개 체크포인트 — 2026-11-03
 
 - UI 구현 커밋: **`80226a47daa2d461eee575755360a62ccee64572`**, 작업 브랜치 `skerfolg/coho`. 1~15차의 검증한 누적 독립 작업 공간을 보존했다. 아래 단계별 ‘미커밋’은 당시 진행 기록이며 현재 상태는 이 체크포인트를 따른다. 전체 목표는 active다.

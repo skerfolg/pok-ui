@@ -1,5 +1,17 @@
 # 로컬 검증
 
+## 원본 Loadout 관리·XML lineage — 2026-11-03 (16차 진행)
+
+- 최종 표시 전용 Windows packaged `.local/loadout-management-native-1793638401983/result.json` **2개 그룹 통과**: 비활성 rename의 네 세트 before/after, 삭제할 네 세트·마지막 행의 viewport bounds, 취소 후 원문/revision 불변. 1920/1024 PNG 직접 시각 확인했다. 전체 source/packaged5개 그룹 이후의 변경은 검토 표시이며 관리/적용 backend는 같다. native6/check160/build/최종 pack:win도 통과했다. 아래 표시 검사 진행 중은 이 결과로 대체한다. 합성 입력만 사용했으며 portable·원본 GUI·실제 모델은 미수행이다.
+
+- 최종 native **6개 그룹 통과**, 필터된 관리 목록의 실제 list 이동/원본 OnOrderChange 콜백을 포함한다. source `.local/loadout-management-native-1793637587048/result.json` 및 Windows packaged `.local/loadout-management-native-1793637875490/result.json` **각5개 그룹 통과**: rename/copy·duplicate 오류 후 원본 유지, Custom/New, 삭제/정렬·undo/redo·revision8 재계산, 문서 격리와 PoK 없는 재시작. 1920/1024를 직접 시각 확인했다.
+- 후속 변경은 관리 검토의 구체적인 이전/새 세트 이름·복사/생성/위치 표시다. 표시 전용 source `.local/loadout-management-native-1793638186615/result.json` **2개 그룹 통과**(네 종류 rename 이름과 삭제 목록, 두 크기, 취소 시 원문/revision 불변). 최종 package 표시 검사 진행 중. source 초기 1024 삭제 캡처에는 목록 일부가 아래였으므로 후속 검사는 전체 제거 block과 마지막 행의 viewport bounds를 확인한다. 최종 check160/build·pack:win 통과. 전체 관리 동선5와 후속 표시2의 검사 범위를 구분한다.
+- 원본 brace 입력의 readLoadouts 응답은 choices `Tree {groupA}`, `Tree {groupB}`와 관리 entries0이었다. `.local/standalone-pob/loadout-linked-management-inventory.json`. 이 폼은 original ListControl 기반이므로 해당 source 관리가 아직 노출되지 않는다. raw-name Build 서비스 자체는 있으므로 엔진 결함/계약 부재를 단정하거나 이 제약으로 목표를 축소하지 않는다. 후속 API 연결 대상으로 남긴다.
+
+- 최초 native `tests/pob-loadout-management-smoke.cjs` **5개 그룹 통과**. 이름/중복 입력 검사는 원본 Popup, CRUD/Custom/Reorder는 원본 서비스/리스트 콜백을 실행했다. canonical 원본의 Future 세트 속성·자식/공유 아이템과 root unknown을 유지하고, 복사 Life170/Dex25·Custom Life334/Dex47·삭제/정렬 후 재열기/실계산을 확인했다. 실패 입력이 다음 XML을 바꾸지 않았다. 결과 `.local/standalone-pob/loadout-management-result.json`.
+- 관리 응답의 sourceId/copyFrom은 native 객체 참조에서 기록하며 새 세트만 stock Save 노드를 전송한다. unit은 깊은 unknown 복제/재정렬·공유 item 보존, 잘못된 출처/중복 유지·fresh 태그 교체 거부를 검사했다. check **160 passed**, boundary/type 통과, build 통과. 기존 native Loadout 선택4개 그룹도 새 raw XML 로드 경로로 재통과했다.
+- 초기 Lua 다중 local 선언의 구문 오류는 loadfile 검사에서 수정한 뒤 runtime을 준비했다. 원본/공유 엔진 소스는 수정하지 않았다. filtered list drag 분기와 실제 source/packaged 관리·두 해상도 검사는 진행 중이다. 개인 입력은 사용하지 않았다. 전체 PoB GUI/portable/실제 모델 완료를 뜻하지 않는다.
+
 ## 원본 Loadout 선택·동시 전환 — 2026-11-03 (15차 진행)
 
 - 최종 source `.local/loadouts-native-1793635727983/result.json` 및 Windows packaged `.local/loadouts-native-1793636011892/result.json` **각4개 그룹 통과**. 원본 이름/brace 연결, scoped 취소/문서 격리·원문/unknown 보존, 네 세트·직업·활성 무기 동시 적용/실계산, undo/PoK 없는 재시작과 두 해상도를 확인했다. PNG 직접 시각 확인. `pack:win` 통과(고정 원본 출처/실계산/build 포함). 아래 진행 중 표기는 이 결과로 대체한다. native4/check158도 통과. 전체 Loadout 관리/PoB GUI/portable/실제 모델 완료로 처리하지 않는다.

@@ -11,3 +11,15 @@ test('native loadout projection atomically selects all four sets and owned chara
 test('loadout projection rejects unavailable sets and a response that differs from the requested original choice',()=>{
   const {xml,result}=fixture();assert.throws(()=>loadoutEdit({xml},{...result,requestedName:'Unknown'}),/요청/);assert.throws(()=>loadoutEdit({xml},{...result,selection:{...result.selection,tree:'999'}}),/세트 ID/);assert.throws(()=>loadoutEdit({xml},{...result,selection:{...result.selection,items:'1'}}),/요청/);
 });
+test('native management lineage reorders and copies exact source nodes without rebuilding unknown fields or shared item storage',()=>{
+  const {xml}=fixture(),base=parseBuild(xml),sets=Object.fromEntries((['tree','items','skills','config'] as const).map(kind=>[kind,[{id:'1',sourceId:'1'},{id:'2',sourceId:'2'},{id:'3',copyFrom:'2',title:'Copy'}]])) as import('../src/shared/pob-loadouts').PobLoadoutSets;
+  sets.tree=[{id:'1',sourceId:'2'},{id:'2',sourceId:'1'},{id:'3',copyFrom:'2',title:'Copy'}];
+  const next=editBuild(xml,{type:'loadout-native-sets',sets}),parsed=parseBuild(next);assert.equal(parsed.trees[0].title,base.trees[1].title);assert.equal(parsed.trees[2].title,'Copy');assert.equal((next.match(/<FutureSpec keep="yes"\/>/g)||[]).length,3);assert.deepEqual(parsed.items,base.items);
+  const unsafe=structuredClone(sets);unsafe.tree[0].sourceId='missing';assert.throws(()=>editBuild(xml,{type:'loadout-native-sets',sets:unsafe}),/원본 XML 세트/);
+  const duplicate=structuredClone(sets);duplicate.items[2]={id:'3',sourceId:'1'};assert.throws(()=>editBuild(xml,{type:'loadout-native-sets',sets:duplicate}),/중복/);
+});
+test('fresh native sets accept only the declared XML set type and cannot replace their parent section',()=>{
+  const {xml}=fixture(),sets=Object.fromEntries((['tree','items','skills','config'] as const).map(kind=>[kind,[{id:'1',sourceId:'1'},{id:'2',sourceId:'2'}]])) as import('../src/shared/pob-loadouts').PobLoadoutSets;
+  sets.skills.push({id:'3',node:{tag:'SkillSet',attributes:{id:'3',title:'Fresh'},children:[]}});assert.equal(parseBuild(editBuild(xml,{type:'loadout-native-sets',sets})).skillSets[2].title,'Fresh');
+  sets.skills[2].node!.tag='Skills';assert.throws(()=>editBuild(xml,{type:'loadout-native-sets',sets}),/태그/);
+});
