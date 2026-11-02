@@ -1,5 +1,13 @@
 # 현재 작업
 
+## 최신 체크포인트 — 2026-11-03, 17차
+
+UI 구현 **`633214593764f0cfece5aaf29472f8bdd102ea9e`**, 브랜치 `skerfolg/coho`. 원본 이름으로 연결 구성을 관리하고 생존 구성 선택/관계 변화/입력 근거를 보존한다. named native6/일반 native6/source5/Windows packaged5/check160/build/pack:win 통과, 1920/1024 직접 확인. 아래 16차의 미노출 raw-name 관리는 이번 단계에서 rename/copy/delete까지 연결했다.
+
+PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, 독립 편집 KB 비사용. runtime `pob-41528f5ed360ff1e0ca5e39a4a47cae12e63053a7f4a8f6fa29eac8ac01611fe` / manifest SHA256 `cacd0ee25e46f9dde35484263f94a0e757847572845e7d957a3340998bba6584`; editor `pob-editor-f4e803b67e03d8b2fab251f28e2452b383615bf3506ff3de0f23d96d4ad3cd0a` / manifest SHA256 `ad1b8694208541a1fa5b44d3a53f977ce7c9c62f4a922cc913db3aef1a1cb05e`. 공유 엔진/원본 소스·문서/ref는 수정하지 않았다.
+
+다음은 이름 기반 구성 reorder에 사용할 원본 트리 관리 API 조사/연결, 모호한 이름·모든 공유/버전 조합, 전체 원본 control 및 고급 장비/스킬·미니언/특수 트리·네트워크/옵션/단축키/노트 동등성, PoB GUI 왕복·portable·선택 PoK/AI 잔여 결합이다. 전체 목표는 active다. 이번 결과를 원본 GUI/모델/portable 또는 #188 해결·재평가 준비 완료로 확대하지 않는다.
+
 ## 연결 구성의 이름 기반 관리·관계 변화 기록 — 2026-11-03 (17차 진행)
 
 최종: named native6/기존 일반 native6, source `.local/linked-management-native-1793640282299/result.json` 및 Windows packaged `.local/linked-management-native-1793640658461/result.json` **각5개 그룹 통과**. 한국어 복사·혼합 관리 주소·명시적 생존 구성 삭제·undo/redo/revision4 재계산, 공유 spec의 두 연결 제외/실제 세트 보존, 입력 근거와 관계 변화의 재시작 보존을 확인했다. 두 크기 PNG를 직접 시각 확인했다. check160/build/pack:win 통과. 아래 실행 중 표기는 이 결과로 대체한다.
