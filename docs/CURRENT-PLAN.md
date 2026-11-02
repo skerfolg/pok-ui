@@ -2,6 +2,8 @@
 
 ## 과거 지원 트리의 공통 카탈로그 — 2026-11-03 (23차)
 
+UI 구현 **`4ebeaa0ab4ab62c662dc287d505a761228bd0e04`**, 브랜치 `skerfolg/coho`. 다른 PC는 이후 인계 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다.22차의 과거 tree catalog gate 감사는 이번에 완료했고, 전체 원본 control/남은 수동 기능·다른 load 실패 감사는 계속한다. 전체 목표 active.
+
 최종 source `.local/catalog-versions-native-1793656910921/result.json` / Windows packaged `.local/catalog-versions-native-1793657050359/result.json` **각5개 그룹 통과**. native6/check176/build/pack:win 통과. old0_1/latest0_5 원본 item/mod/gem 선택→적용→full numeric stats 일치, tree version/unknown/originalXml 보존, old undo4/redo5·새 계산, unsupported active/inactive 진단·카탈로그/계산 차단/원문0, 저장/재시작·PoK 미연결을 확인했다. source/packaged 두 크기의 과거 tree catalog/선택·적용 버튼과 수치를 직접 시각 확인했다. 아래 진행 중/하네스 실패는 이 최종 결과로 대체한다.
 
 PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB/PoK 비사용. 이번은 UI/host 변경이며22차 runtime `pob-c3830dc62a9a39bc4040d36bb0ce4448bf5378c4bc5c5849b33a2f7a9906d74e` / manifest SHA256 `3ec5a25f4040e3af75e32df6ae225f5be92e95568cab35304ed02a753d0d6cd7`, editor `pob-editor-d5ab4c116002fb1972629c9803e305127415c3826f6be2903c7a2ee78a33acbe` / SHA256 `f90c7de4c5c0ed873f44da523120a85cef6f35ceaa8f62f16bd2653f230cd885`를 그대로 검증/사용했다. 원본/공유 엔진 소스·문서/ref 변경 없음. [로드 계약 최소 재현/필요 계약](POB-LOAD-CONTRACT.md)을 별도로 남겼다.
