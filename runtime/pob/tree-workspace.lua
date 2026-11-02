@@ -7,9 +7,23 @@ return function(states)
     for id,value in ipairs(build.treeTab.specList)do out.tree[#out.tree+1]={id=tostring(id),value=value}end
     for _,row in ipairs({{'items',build.itemsTab.itemSetOrderList,build.itemsTab.itemSets},{'skills',build.skillsTab.skillSetOrderList,build.skillsTab.skillSets},{'config',build.configTab.configSetOrderList,build.configTab.configSets}})do for _,id in ipairs(row[2])do out[row[1]][#out[row[1]]+1]={id=tostring(id),value=row[3][id]}end end;return out
   end
+  local function popup(work)
+    local open,close,copy=main.OpenPopup,main.ClosePopup,Copy;local controls,copied
+    main.OpenPopup=function(self,w,h,title,value)controls=value;return{SelectControl=function()end}end;main.ClosePopup=function()end;Copy=function(value)copied=value end
+    local ok,message=pcall(function()work(function()return controls end)end);main.OpenPopup,main.ClosePopup,Copy=open,close,copy;assert(ok,message);return controls,copied
+  end
+  local function decode(spec,text)
+    local missing,seen=array(),{};local allocate=spec.AllocateDecodedNodes
+    spec.AllocateDecodedNodes=function(self,...)
+      local nodes,meta=self.nodes,getmetatable(self.nodes);assert(not meta,'Original node table already has lookup behavior')
+      setmetatable(nodes,{__index=function(_,id)if type(id)=='number'and not seen[id]then missing[#missing+1]=id;seen[id]=true end end})
+      local ok,message=pcall(allocate,self,...);setmetatable(nodes,meta);assert(ok,message)
+    end
+    local ok,message=pcall(spec.DecodeURL,spec,text);spec.AllocateDecodedNodes=allocate;assert(ok,message);assert(not message,message);table.sort(missing);return missing
+  end
   return function(request)
     local operation=request.treeWorkspace;assert(type(operation)=='table','Original tree workspace operation is required')
-    local action=operation.action;assert(action=='inspect'or action=='initialize'or action=='convert'or action=='convert-all'or action=='adopt','Unknown original tree workspace operation')
+    local action=operation.action;assert(action=='inspect'or action=='initialize'or action=='convert'or action=='convert-all'or action=='adopt'or action=='import-code'or action=='export-code','Unknown original tree workspace operation')
     local before,source,lineage,patches,changes=objects(),{},{},array(),array()
     local activeOthers={build.itemsTab.activeItemSet,build.skillsTab.skillSets[build.skillsTab.activeSkillSetId],build.configTab.configSets[build.configTab.activeConfigSetId]}
     for kind,entries in pairs(before)do source[kind]={};local ids={};for _,id in ipairs(assert(request.canonicalSets[kind],'Canonical set inventory is required'))do ids[id]=true end;for _,entry in ipairs(entries)do if ids[entry.id]then source[kind][entry.value]=entry.id end end end
@@ -22,7 +36,26 @@ return function(states)
     build:UpdateClassDropdowns(build.spec.treeVersion)
     local trees=array();for _,entry in ipairs(before.tree)do trees[#trees+1]={id=entry.id,title=entry.value.title or 'Default',version=entry.value.treeVersion,active=entry.value==build.spec}end
     local metadata={operation=operation,versions=versions,trees=trees,initializationRequired=#request.canonicalSets.tree==0,changes=changes}
-    if action=='adopt'then
+    if action=='export-code'then
+      assert(not metadata.initializationRequired,'Create or import a canonical tree before exporting')
+      local active=build.spec;local controls,text=popup(function(get)build.treeTab:OpenExportPopup();assert(get().copy,'Original export copy control is unavailable');get().copy.onClick()end);assert(type(text)=='string'and#text>0,'Original export did not provide a tree code')
+      local restored=new('PassiveSpec',build,active.treeVersion);local decoded,missing=pcall(decode,restored,text);local warnings=array();local saved=states.read(active)
+      if not decoded then warnings[#warnings+1]='원본 코드 왕복 복원을 확인하지 못했습니다: '..tostring(missing);missing=array()end
+      if next(saved.weaponSets)then warnings[#warnings+1]='무기별 할당 구분은 원본 트리 코드에 포함되지 않습니다.'end
+      for _,value in pairs(saved.attributeOverrides)do if value~=''then warnings[#warnings+1]='능력치 노드 선택은 원본 트리 코드에 포함되지 않습니다.';break end end
+      if next(saved.sockets)then warnings[#warnings+1]='장착 주얼은 원본 트리 코드에 포함되지 않습니다.'end
+      if decoded then for id in pairs(active.allocNodes)do if not restored.allocNodes[id]then if not isValueInArray(missing,id)then missing[#missing+1]=id end end end;table.sort(missing)
+        if active.curClassId~=restored.curClassId or active.curAscendClassId~=restored.curAscendClassId or(active.curSecondaryAscendClassId or 0)~=(restored.curSecondaryAscendClassId or 0)then warnings[#warnings+1]='원본 코드의 직업/전직 왕복 결과가 현재 트리와 다릅니다.'end
+      end
+      local sourceNodes=array();for id in pairs(active.allocNodes)do sourceNodes[#sourceNodes+1]=id end;table.sort(sourceNodes)
+      assert(build.spec==active,'Original code export changed the active tree');metadata.treeCode={text=text,version=active.treeVersion,warnings=warnings,missingNodes=missing,sourceNodes=sourceNodes}
+    elseif action=='import-code'then
+      local valid=false;for _,version in ipairs(versions)do if version.id==operation.version then valid=true end end;assert(valid,'Choose the original tree version for this versionless code')
+      assert(type(operation.code)=='string'and#operation.code>0,'Original tree code is required');assert(not operation.code:match('poeurl%.com/')and not operation.code:match('poeplanner%.com/'),'Short links and PoEPlanner formats require a separate original decoder/network contract; paste the original PoB/GGG tree code')
+      local controls=popup(function(get)build.treeTab:OpenImportPopup();get().name:SetText(assert(operation.title,'Original import name is required'),true);get().edit:SetText(operation.code,true);assert(get().name.buf==operation.title and get().edit.buf==operation.code and get().import:IsEnabled(),'Original tree import fields are unavailable')end)
+      local imported=new('PassiveSpec',build,operation.version);local missing=decode(imported,controls.edit.buf);imported.title=controls.name.buf;table.insert(build.treeTab.specList,imported);build.treeTab:SetActiveSpec(#build.treeTab.specList);build.treeTab.modFlag=true;build.buildFlag=true;imported:AddUndoState()
+      metadata.treeCode={version=imported.treeVersion,missingNodes=missing,warnings=array()};metadata.treeCode.warnings[1]='트리 전용 복원입니다. 주얼·능력치 선택·무기별 할당·장비·스킬·조건은 코드에 포함되지 않을 수 있습니다.'
+    elseif action=='adopt'then
       assert(#before.tree==1 and source.tree[build.spec]=='1','Legacy source does not match the original single spec');patches[#patches+1]={id='1',patch=states.full(states.read(build.spec))}
       metadata.warning='Legacy Spec was loaded by the original PoB loader. Its restored version and known fields will be saved in Tree/Spec format; the source XML remains available for undo.'
     elseif action~='inspect'then

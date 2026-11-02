@@ -12,6 +12,8 @@ XML은 편집 정본이다. 계산은 제출 시점 XML을 격리된 원본 PoB�
 
 ## 기능 대응표 (원본 Classes/*Tab.lua 기준, 조사/구현 지속)
 
+22차(2026-11-03): 원본 export Copy/명시 version DecodeURL의 tree code 가져오기·내보내기·copy IPC를 연결했다. 현재 pin은 URL prefix/버전이 없는 code를 내므로 웹 공유 링크로 표시하지 않는다. loader 누락·code 왕복 누락/미포함 필드·고급 전직 한계와 부분 복원을 구분하고 source/revision/known-state를 보존한다. 같은 입력 재측정에는 과거 edit 근거만 별도 source revision으로 보존하고 숫자는 새 계산을 쓴다. native8/빈 문서1/source7/Windows packaged7/check173/build/pack:win·두 크기 확인 통과. 실제 OS clipboard는 rich 원본 보호 때문에 미수행이며 copy IPC만 확인했다. [원본 제한/남은 서비스 계약](POB-CODE-LIMITATIONS.md)을 따른다. 네트워크 단축 링크/PoEPlanner 및 모든 code 조합 완료가 아니다.
+
 21차(2026-11-03): 단일 root Spec을 원본 PoB의 실제 복원 결과로 검토한 뒤 현재 Tree/Spec 편집 형식으로 옮긴다. 원문 선언 버전과 실제 복원 버전이 다르면 드러내며 버전 업그레이드는 별도 선택이다. 동일 DOM/source lineage·native known-state 적용으로 unknown/루트 형제·비트리 XML과 원문/undo를 보존한다. native4/source5/Windows packaged5/check169/build/pack:win·두 크기 직접 시각 확인 통과. 구형 단일 Spec 자체를 편집할 수 없다는20차 제약은 이 명시 전환으로 보완했으며, Tree 혼합/여러 root Spec의 자동 해석과 전수 조합은 남는다.
 
 20차(2026-11-03): 초기 트리의 원본 버전/직업/전직/이름 선택과 원본 Copy + Convert/replace/ConvertAll을 연결했다. 변환은 canonical lineage에 stock 최종 Save의 알려진 필드를 반영하며 저장 입력/복원 후 노드 변화·소켓 변경을 검토하고 새 revision으로 계산한다. 기본 섹션이 모두 없는 문서도 native 기본 세트를 생성한다. root의 구형 단일 Spec은 빈 문서와 구분하고 초기화를 거부하며 원문을 보존한다. native6/구형 guard1/기존 tree5/source7/Windows packaged7/check167/build/pack:win·두 크기 확인 통과. 최종 전체 동선은 CURRENT-PLAN/VALIDATION을 따른다. 해당 구형 형식의 직접 편집/정규화·전체 버전/직업·전직/특수 주얼 조합은 아직 남는다.
@@ -37,7 +39,7 @@ XML은 편집 정본이다. 계산은 제출 시점 XML을 격리된 원본 PoB�
 | ImportTab / 빌드 관리 | 독립 새 빌드·직업 metadata, XML/공유코드/JSON 가져오기·내보내기, revision/undo/redo·저장/재시작, 검색·복사·이름/가상 폴더·삭제 보관함/복원 | 계정/캐릭터 가져오기, 원본 파일 기반 빌드 관리와 GUI 형식 왕복 검증 |
 | ItemsTab | 독립 base/unique/mod 카탈로그; 슬롯·원문·생성/장착/해제; rare affix/roll·quality·unique variant UI/원본 API; 세트 CRUD; 원본 단순 옵션 metadata/콜백·품질/소켓/룬 검토→적용→계산; 성유/원본 오염 팝업·고유 roll; 저장 목록 원본 장착 콜백; 동적 장비 내부 주얼·활성 무기/연동 스킬 전환 | 특수 오염/성유/장비 주얼 조합·카탈로그/원문 관련 부수 변경·affix/일반 범위/특수 제작 전체, 원본 필터·후보 비교/요구량 표시. variant/catalyst/cluster 연결 컨트롤과 모든 고유의 실제 동선 전수 검증 |
 | SkillsTab | 독립 gem/skill 카탈로그; 그룹/젬/레벨/퀄리티·활성·주력/Full DPS; 세트 CRUD; 원본 활성 효과/모드/부분/단계·지뢰 컨트롤 연결. Ice Nova 모드 변경 native 검증 | 미니언·아이템 부여 효과/모드, 단계형·지뢰 실제 빌드 UI 검증, 보조·소켓·요구량·호환성 전체. 현재 젬 외부 부여 효과는 미지원 진단 표시 |
-| TreeTab / PassiveSpec | 0_1~0_5 좌표·이미지, 확대/이동/검색·상세·ID 편집, 세트 CRUD UI; 위치 기반 활성 번호 보존; 원본 경로 할당/종속 제거와 지도 강조, 무기 세트 1/2 색상·능력치 선택/재선택·일반 주얼 장착/해제의 native 패치; 원본 직업 reset/connect·전직 변경 미리보기/적용·새 계산; 초기 버전/직업 선택·복사/교체/전체 버전 변환 검토·새 계산 | 단축키·모든 직업/전직 조합과 활성 spec 전환의 표시 동기화 감사·특수 주얼/동적 그래프·특수 노드, 과거 버전별 동등성, 구형 혼합/다중 Spec 정규화·트리 URL 동선 |
+| TreeTab / PassiveSpec | 0_1~0_5 좌표·이미지, 확대/이동/검색·상세·ID 편집, 세트 CRUD UI; 위치 기반 활성 번호 보존; 원본 경로 할당/종속 제거와 지도 강조, 무기 세트 1/2 색상·능력치 선택/재선택·일반 주얼 장착/해제의 native 패치; 원본 직업 reset/connect·전직 변경 미리보기/적용·새 계산; 초기 버전/직업 선택·복사/교체/전체 버전 변환 검토·새 계산 | 단축키·모든 직업/전직 조합과 활성 spec 전환의 표시 동기화 감사·특수 주얼/동적 그래프·특수 노드, 과거 버전별 동등성, 구형 혼합/다중 Spec 정규화·네트워크 tree URL/PoEPlanner·code 전체 조합 |
 | ConfigTab | 원본 7분류·651 정의의 표시/가용성·기본값·선택지·tooltip을 실제 XML로 평가하는 UI; 0/false/미설정; 세트 CRUD; 원문 고급 편집·placeholder 보존 | 모든 실제 빌드/부모 의존 조합·적/보스/상태 상호작용 전수 검증, 특수 툴팁·연관 위치 이동과 전체 UI 동등성 확인. 정의 개수는 기능 완료 수가 아님 |
 | CalcsTab | 독립 실제 계산; 원본 분류/표/포맷과 TEXT/TABLE 분해·modifier 출처; 그룹/버프 모드/플레이어·미니언 선택; Calcs 전용 효과/모드/부분/단계·지뢰; revision/XML hash/runtime 귀속·과거 저장값 분리 | 반경 지도 시각화·분해 출처 위치 이동, 미니언 종류/전용 스킬 컨트롤, 원본 GUI 및 모든 지원 빌드·컨트롤 동등성 검증 |
 | CompareTab | AI 제안 검토/적용/undo; 일반 두 빌드/세트 조합의 원본 계산·활성 구성/수치 차이; XML/revision/runtime 기록; 해당 문서의 선택 세트 적용·최종 재계산 | 원본 비교 탭의 모든 표시/검색/연산, 다른 문서로 구성 복사·개별 변경 병합, 고급 구성 전체 검증 |
@@ -110,6 +112,8 @@ node tests/pob-tree-workspace-smoke.cjs
 node tests/tree-workspace-desktop-smoke.cjs
 node tests/pob-tree-adoption-smoke.cjs
 node tests/tree-adoption-desktop-smoke.cjs
+node tests/pob-tree-code-smoke.cjs
+node tests/tree-code-desktop-smoke.cjs
 npm run verify:pob
 ```
 

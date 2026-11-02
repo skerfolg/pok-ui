@@ -23,6 +23,7 @@ const api:DesktopApi={
   readCalcs:request=>ipcRenderer.invoke('pok:read-calcs',request),
   readParty:request=>ipcRenderer.invoke('pok:read-party',request),
   readLoadouts:request=>ipcRenderer.invoke('pok:read-loadouts',request),
+  copyText:text=>ipcRenderer.invoke('pok:copy-text',text),
   editTree:request=>ipcRenderer.invoke('pok:edit-tree',request),
   itemControls:request=>ipcRenderer.invoke('pok:item-controls',request),
   cancelPobRequest:id=>ipcRenderer.invoke('pok:cancel-pob-request',id),

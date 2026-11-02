@@ -1,5 +1,17 @@
 # 현재 작업
 
+## 원본 트리 코드 가져오기·내보내기 — 2026-11-03 (22차)
+
+최종 source `.local/tree-code-native-1793654938646/result.json` / Windows packaged `.local/tree-code-native-1793655107706/result.json` **각7개 그룹 통과**. native8/빈 문서1/check173/build/pack:win 통과. readonly export·버전/copy IPC, 명시 version·입력 변경/취소/문서 격리, 원본 full stats/revision1, invalid/partial 원문·미복원 ID/revision2와 재시작, undo3/redo4의 새 수치와 source evidence revision2, no-tree import/계산, 원본 loader/code 누락 구분·다중 문서 복원을 확인했다. 두 크기 source/packaged preview 직접 시각 확인. 두 실행의 clipboard는 `ipc-only-rich-clipboard-preserved`이며 기존 rich clipboard를 보존해 OS write는 미수행이다. 아래 진행 중/초기 실패는 이 최종 결과로 대체한다.
+
+PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB/PoK 비사용. runtime `pob-c3830dc62a9a39bc4040d36bb0ce4448bf5378c4bc5c5849b33a2f7a9906d74e`, manifest SHA256 `3ec5a25f4040e3af75e32df6ae225f5be92e95568cab35304ed02a753d0d6cd7`; editor `pob-editor-d5ab4c116002fb1972629c9803e305127415c3826f6be2903c7a2ee78a33acbe`, manifest SHA256 `f90c7de4c5c0ed873f44da523120a85cef6f35ceaa8f62f16bd2653f230cd885`. 원본/공유 엔진 소스·문서/ref 수정 없음. [원본 제한과 요청할 계약](POB-CODE-LIMITATIONS.md)에 최소 재현·UI 영향을 분리했다. UI에 decoder/번역/게임 규칙을 복제하거나 전체 복원으로 포장하지 않았다.
+
+다음은 같은 PoB pin에서 과거 tree 버전의 catalog gate가 실제 원본 기능을 불필요하게 막는지 감사, 원본 control/옵션/명령 전수 대응표, 고급 아이템/스킬/미니언/트리·계산/파티/노트/네트워크/단축키, 혼합 구형 입력 선택, 전체 revision 장기 근거 이력, 원본 GUI 왕복/portable·선택 PoK/AI 검증이다. 모든 code/직업/버전/특수 조합과 원본 서비스 URL은 미완료다. #188 해결/재평가 준비 완료를 선언하지 않는다. 전체 목표 active.
+
+원본 OpenExportPopup의 Copy 결과는 현재 pin에서 URL이 아닌 버전 없는 GGG 코드다(GameVersions의 url 없음). UI도 코드로 표시하고 버전을 별도로 전달/선택한다. 원본 Import popup의 이름/입력을 검증한 뒤 명시 버전의 원본 PassiveSpec.DecodeURL을 호출해 새 트리를 추가하며, 과거 popup의 latest 자동 가정을 사용하지 않는다. code에 없는 주얼/능력치 선택/무기별 할당·전직 및 인코더 한계는 원본 왕복으로 진단한다. 원본 AllocateDecodedNodes의 실패 lookup만 관측해 미복원 ID를 반환하며 렌더러에 byte decoder/게임 규칙을 넣지 않았다. 저장 XML→원본 복원과 원본 복원→코드 왕복의 누락을 별도로 표시한다. 내보내기/미리보기는 readonly이며 검토 적용만 새 revision 계산과 receipt를 만든다.
+
+native8 및 빈 문서1 검사 통과, check173/build 통과. 현재 XML/hash/runtime이 같을 때 재계산은 새 수치/리비전만 쓰면서 이전 편집 근거를 별도 source evidence로 보존한다(입력/소유/엔진이 다르면 계승 안 함). GUI/패키지·두 크기·복사·부분 복원/재시작은 진행 중이다. 처음 270개 임의 ID는 원본이 1개만 복원해 인코더 한계 fixture로 부적합했으며, 원본 그래프의 연결된 입력과 실제 로드 수를 검증하도록 고쳤다. 원본이 지원하지 않는 단축 URL/PoEPlanner의 네트워크/버전 계약은 계속 미지원이며 원문은 보존한다. 모든 원본 기능 완료를 선언하지 않는다.
+
 ## 구형 단일 Spec의 편집 형식 전환 — 2026-11-03 (21차)
 
 UI 구현 **`616e4546e0e07f7894573edec499c467ec0bb731`**, 브랜치 `skerfolg/coho`. 다른 PC는 이후 인계 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다.20차의 단일 root Spec 미지원은 이번 명시 전환으로 보완했다. 다음은 원본 트리 URL/세부 control 대응표와 남은 전체 수동 기능이며, 전체 목표는 active다.

@@ -96,6 +96,7 @@ export interface DesktopApi {
   saveState(state: AppState): Promise<void>;
   importBuild(): Promise<BuildDocument | null>;
   exportBuild(build: BuildDocument, format: 'xml' | 'pob' | 'json'): Promise<string | null>;
+  copyText(text:string):Promise<void>;
   connectPok(settings: Settings['pok']): Promise<ConnectionInfo>;
   getPokConnection(): Promise<ConnectionInfo>;
   onPokConnection(listener: (connection: ConnectionInfo) => void): () => void;

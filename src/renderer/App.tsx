@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageSquare, Shield, Gem, Network, SlidersHorizontal, Settings2, Plus, MoreHorizontal, Upload, Download, Undo2, Redo2, GitCompare, Calculator, Pin, FolderOpen, X } from 'lucide-react';
 import type { DataBundleInfo } from '../shared/game-data';
 import type { PobRuntimeInfo } from '../shared/pob-runtime';
-import { hashBuildXml, isCalculationCurrent } from '../shared/calculation-context';
+import { hashBuildXml, isCalculationCurrent,preserveWorkspaceEvidence } from '../shared/calculation-context';
 import type { AgentEvent, AgentQuestionRequest, ChatImage, BuildDocument,Calculation, BuildEdit, Chat, ConnectionInfo, Message, View } from '../shared/contracts';
 import { createBuildDocument, createChat } from '../shared/state';
 import { createBlankXml, parseBuild } from '../shared/pob-document';
@@ -109,7 +109,7 @@ export function App() {
   }
   function newChat() { const next = createChat(build?.id); update(s => ({ ...s, chats: [next, ...s.chats], activeChatId: next.id })); setView('chat'); }
   const edit = (operation: BuildEdit, label: string) => { if (!build||treeSetEdits.handle(operation,label)) return; try { applyEdit(build.id, operation, label); } catch (e) { setError(String(e)); } };
-  function attachCalculation(submitted:Pick<BuildDocument,'id'|'revision'|'xml'>,calculation:Calculation){let attached=false;changeBuild(submitted.id,current=>{if(current.revision!==submitted.revision||current.xml!==submitted.xml)return current;attached=true;return{...current,calculation};});return attached;}
+  function attachCalculation(submitted:Pick<BuildDocument,'id'|'revision'|'xml'>,calculation:Calculation){let attached=false;changeBuild(submitted.id,current=>{if(current.revision!==submitted.revision||current.xml!==submitted.xml)return current;attached=true;return{...current,calculation:preserveWorkspaceEvidence(current.calculation,calculation)};});return attached;}
   async function compute() { if (!build) return; const submitted = build; setBusy('PoB 계산 중…'); try { const result = await api.computeBuild(submitted); attachCalculation(submitted,result); if (result.result.ok === false) { setNotice('계산을 완료하지 못했습니다. 복원·계산 진단을 확인하세요.'); setView('calculations'); } else setNotice('계산 결과를 받았습니다. 진단 항목도 확인하세요.'); } catch (e) { setError(String(e)); } finally { setBusy(''); } }
   async function send(prompt: string,images:ChatImage[]=[],targetChatId?:string) {
     if (activeTurn.current) return;

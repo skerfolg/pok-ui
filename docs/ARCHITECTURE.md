@@ -1,5 +1,7 @@
 # 구조와 배포 경계
 
+22차: treeWorkspace의 import-code/export-code는 원본 popup의 필드/Copy callback과 명시 version의 PassiveSpec.DecodeURL을 사용한다. versionless code에 latest를 추정하지 않는다. 원본 allocator의 missing lookup을 관측하고 export의 실제 sourceNodes와 원문 노드를 host에서 비교해 로더 누락과 code 왕복 누락을 분리한다. export/inspect는 loadoutEdit가 적용을 거부하고, import만 fresh native Spec을 추가한다. renderer에는 byte parser/번역/게임 규칙이 없다. copyText IPC는 Electron의 Promise 완료를 기다린다. 동일 owner/XML/hash/runtime의 재계산에는 이전 edit 근거만 workspace_operation_source로 source revision과 함께 계승하며 수치/provenance는 항상 새 결과다. 다른 입력/engine 또는 새 명시 operation에는 이를 계승하지 않는다.
+
 21차: `tree-adopt-legacy`는 단일 root Spec/Tree 부재를 검증해 동일한 DOM 노드를 원래 위치의 Tree 아래로 옮긴다. native 요청은 정규화 전 원문을 로드하고 `adopt`로 원본 복원 후 Save의 known state를 전달한다. host가 검증한 source ID1을 native lineage에 연결하며 loadoutEdit는 구조 이동→clone/placement→known-state 패치→identity 순으로 적용한다. raw의 선언 버전을 UI가 모델 버전으로 추정하지 않는다. NativeTreeWorkspace의 adopt 검토는 버전/직업 선택과 분리하며, unknown metadata와 원문/undo를 보존한다. 혼합/다중 입력은 임의의 첫/마지막 spec을 선택하지 않고 거부한다.
 
 20차: readLoadouts의 선택 treeWorkspace 요청은 원본 versionSelect/Convert popup/ConvertAll 및 초기 spec의 class/ascend/name 컨트롤을 replay한다. main은 canonical set ID 목록을 XML에서 산출해 내부 요청에만 공급하고 요청 echo를 키 순서와 무관하게 검증한다. 원본 객체 lineage로 converted spec의 source/copy를 추적하고 native Save의 알려진 상태를 treePatches로 전달한다. loadoutEdit는 canonical clone/placement 후 패치하며 replaceState는 원본에 없는 기존 소켓을 비우면서 unknown metadata를 보존한다. 초기 빈 섹션은 자기 자신을 set으로 취급하지 않는다. 생성 가능 여부는 계산 가능한 기존 트리와 분리하고, root Spec은 별도 진단/거부로 보호한다. NativeTreeWorkspace는 선택지·XML 차이·검토/취소·revision 적용·새 계산/receipt만 담당한다.

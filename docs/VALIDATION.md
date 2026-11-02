@@ -1,5 +1,18 @@
 # 로컬 검증
 
+## 원본 트리 코드 — 2026-11-03 (22차)
+
+- 최종 Windows packaged `.local/tree-code-native-1793655107706/result.json` **7개 그룹 통과**. source7과 같은 code/partial/새 수치·원본 근거 분리/빈 문서·다중 문서/재시작·PoK 미연결을 확인했다. source/packaged 1920/1024의 미복원 ID/원문·버전·적용 버튼을 직접 시각 확인했다. renderer pageerror 없음. packaged도 clipboard=`ipc-only-rich-clipboard-preserved`: 실제 IPC 전달만 검증하고 OS clipboard 쓰기는 기존 rich 원본 보호를 위해 미수행이다. 아래 진행 중은 native8/빈 문서1/source7/packaged7/check173/build/pack:win 통과로 대체한다. 실제 서비스 링크/전체 code 조합·OS clipboard write·원본 PoB GUI·portable·실제 모델은 미수행/미완료다.
+
+- 최종 source `.local/tree-code-native-1793654938646/result.json` **7개 그룹 통과**: readonly export/원본버전·copy IPC, 명시 version·입력 변경/취소/문서 격리, ordinary import의 원본 full stats/revision1, invalid input 보존·partial ID/입력/revision2·재시작 경고 유지, undo3/redo4의 새 수치와 source evidence revision2 분리, no-tree code import/새 계산, loader 누락/code 한계 구분·다중 문서·재시작·PoK 미연결. renderer pageerror 없음. 1920/1024 partial preview와 실제 미복원 ID/적용 버튼을 직접 시각 확인했다. clipboard는 `ipc-only-rich-clipboard-preserved`: 기존 rich clipboard를 건드리지 않고 실제 IPC가 검토한 code와 동일한 문자열을 write 호출로 넘기는 것만 확인했다. OS clipboard 쓰기는 미수행이다. packaged 최종 실행은 진행 중이다.
+
+- 초기 source `.local/tree-code-native-1793654569941/result.json` 및 `.local/tree-code-native-1793654717410/result.json`은 clipboard 하네스의 구형 availableFormats 호출에서 중단했다. 설치된 Electron44 SDK는 read/readText/writeText의 Promise API다. 하네스를 현재 read/types로 고치고 제품 copyText도 writeText 완료를 await하도록 수정했다. 클립보드에 쓰기 전 중단된 실패 시도이며 성공에 포함하지 않는다. 최종 source에서 copy-complete 신호를 확인했고 이후 import/partial/restart 검증 중이다.
+
+- check **173 passed**, boundary/type 통과, build 통과. 새 단위는 export readonly, partial 근거/source code·원본 XML 보존, 동일 XML 재측정의 source evidence 분리와 다른 입력/owner/runtime 시 비계승을 검사한다. 새 수치·provenance revision을 이전 결과로 덮어쓰지 않는다.
+- native `.local/standalone-pob/tree-code-result.json` **8개 그룹 통과**: 원본 Copy callback·버전 없는 code/적용 거부, 일반 code 동일 full numeric stats/Life170·기존 Spec/비트리 XML 유지, 무기별 할당 미포함, 높은 전직의 원본 왕복 비호환/코드 보존, decoder 누락 ID 관측, 로더가 제외한 저장 ID와 코드 왕복 누락 구분, 실제 로드>255인 연결 fixture의 encoder 한계, invalid/버전 없음/빈 이름/네트워크 형식 거부 후 원본 계산 불변. 별도 `.local/standalone-pob/tree-code-empty-result.json` **1개 그룹 통과**, 트리 없는 문서의 native 기본 세트+code import·실제 계산 확인. 개인 데이터는 사용하지 않았다.
+- 초기 임의 ID270/불연결 fixture는 원본 복원1이어서 encoder 한계를 검증하지 못했다. 실제 로드 수를 확인하고 원본 static graph로 연결된 합성 fixture를 만들었다. 원본 규칙·byte parser를 제품에 복제하지 않았다. 공간 확보는 manifest identity/절대 workspace 경로/known content/reparse 확인 후 20차의 비검증 중간 백업4개만 제거했고 검증된19/20/21차 및 사용자 데이터를 보존했다.
+- 실제 source/packaged·복사·두 해상도와 부분 복원 재시작은 진행 중이다. clipboard에 rich format이 있으면 원본을 건드리지 않고 실제 IPC의 write 호출만 검증하고, plain/empty이면 실제 text write/read를 확인한 뒤 원래 상태를 복구한다. 결과의 clipboard 필드로 OS 쓰기 범위를 구분하며 원래 clipboard 내용을 로그/fixture에 저장하지 않는다.
+
 ## 구형 단일 Spec의 편집 형식 전환 — 2026-11-03 (21차)
 
 - 최종 Windows packaged `.local/tree-adoption-native-1793652224912/result.json` **5개 그룹 통과**, source5와 동일한 전체 동선이다. 1920/1024 packaged의 원문/실제 복원 version 차이·저장 입력 diff·적용/취소 버튼을 직접 시각 확인했다. renderer pageerror 없음. 아래 진행 중은 source5/packaged5/native4/check169/build/pack:win 통과로 대체한다. 전체 버전/직업/전직/특수 노드·실물 사용자 빌드 전수와 실제 원본 GUI/portable/모델은 미수행/미완료다. 개인 데이터는 fixture/배포물에 포함하지 않았다.

@@ -7,8 +7,9 @@ export interface PobLoadoutOperation {action:'new'|'copy'|'rename'|'delete'|'cus
 export interface PobSetNode {tag:string;attributes:Record<string,string>;children:(PobSetNode|string)[]}
 export interface PobSetEntry {id:string;sourceId?:string;copyFrom?:string;title?:string;node?:PobSetNode}
 export type PobLoadoutSets=Record<keyof PobLoadoutSelection,PobSetEntry[]>;
-export interface PobTreeWorkspaceOperation {action:'inspect'|'initialize'|'convert'|'convert-all'|'adopt';version?:string;mode?:'replace'|'copy';title?:string;classId?:number;ascendancyId?:number}
+export interface PobTreeWorkspaceOperation {action:'inspect'|'initialize'|'convert'|'convert-all'|'adopt'|'import-code'|'export-code';version?:string;mode?:'replace'|'copy';title?:string;classId?:number;ascendancyId?:number;code?:string}
 export interface PobLoadoutsRequest extends PobInspectionRequest {runtimeId?:string;requestId?:string;name?:string;manage?:PobLoadoutOperation;treeWorkspace?:PobTreeWorkspaceOperation}
+export interface PobTreeCode {text?:string;version:string;warnings:string[];missingNodes:number[];sourceNodes?:number[];inputMissingNodes?:number[]}
 export interface PobLoadouts {
   buildId:string;revision:number;xmlSha256:string;runtimeId:string;pobCommit:string;
   choices:{name:string;label:string;selection:PobLoadoutSelection}[];selection:PobLoadoutSelection;activeName?:string;requestedName?:string;
@@ -17,11 +18,11 @@ export interface PobLoadouts {
   loadoutChanges?:Record<'added'|'removed'|'changed',{name:string;label:string}[]>;
   movement?:{scope:'tree';sourceTree:string;destinationTree:string;activePreserved?:boolean;affectedNames:{name:string;label:string}[]};
   treePatches?:{id:string;patch:PobTreePatch}[];
-  treeWorkspace?:{operation:PobTreeWorkspaceOperation;initializationRequired:boolean;nonTreeSelectionPreserved?:boolean;versions:{id:string;label:string;classes:{id:number;label:string;ascendancies:{id:number;label:string}[]}[]}[];trees:{id:string;title:string;version:string;active:boolean}[];warning?:string;changes:{sourceId?:string;title:string;from:string;to:string;added:number[];removed:number[]}[]};
+  treeWorkspace?:{operation:PobTreeWorkspaceOperation;initializationRequired:boolean;nonTreeSelectionPreserved?:boolean;versions:{id:string;label:string;classes:{id:number;label:string;ascendancies:{id:number;label:string}[]}[]}[];trees:{id:string;title:string;version:string;active:boolean}[];treeCode?:PobTreeCode;warning?:string;changes:{sourceId?:string;title:string;from:string;to:string;added:number[];removed:number[]}[]};
 }
 export function loadoutEdit(snapshot:Pick<BuildDocument,'xml'>,result:PobLoadouts):BuildEdit{
   const workspace=result.treeWorkspace?.operation;
-  if(workspace?.action==='inspect')throw new Error('트리 조회 결과는 적용할 수 없습니다.');
+  if(workspace?.action==='inspect'||workspace?.action==='export-code')throw new Error('트리 조회 결과 또는 내보내기 결과는 적용할 수 없습니다.');
   if((result.operation||workspace)&&!result.sets)throw new Error('원본 관리 연산의 XML 출처 정보가 없습니다.');
   const prefix:BuildEdit=result.sets?{type:'loadout-native-sets',sets:result.sets}:{type:'batch',edits:[]};
   const patches=(result.treePatches||[]).map(entry=>({type:'tree-native-patch' as const,specId:entry.id,patch:entry.patch}));

@@ -33,6 +33,7 @@ const browserPreview: DesktopApi = {
   onPokConnection() { return ()=>{}; },
   getDataBundleInfo: () => previewJson('/info'),
   getPobRuntimeInfo:async()=>({status:'missing',error:'원본 PoB 계산은 데스크톱 앱에서 사용할 수 있습니다.'}),
+  copyText:unavailable,
   inspectBuild:unavailable,
   readCalcs:unavailable,
   readParty:unavailable,
