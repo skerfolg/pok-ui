@@ -1,5 +1,13 @@
 # 현재 작업
 
+## 재개 체크포인트 — 2026-11-03
+
+- UI 구현 커밋: **`80226a47daa2d461eee575755360a62ccee64572`**, 작업 브랜치 `skerfolg/coho`. 1~15차의 검증한 누적 독립 작업 공간을 보존했다. 아래 단계별 ‘미커밋’은 당시 진행 기록이며 현재 상태는 이 체크포인트를 따른다. 전체 목표는 active다.
+- 원본 PoB: **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**. 독립 작업에는 PoK/KB를 사용하지 않는다. 선택 PoK 감사의 과거 기준은 `e7bd429…`/KB0.5.4b였으며, 이번 독립 편집기 검증을 최신 PoK·모델 연결 성공으로 바꾸어 기록하지 않는다. 공유 엔진 소스/문서/ref는 수정하지 않았다.
+- runtime ID `pob-9c0f11f7af084703005a13e0d3071a2000e393fd00597d051e72286b29df3722`, manifest SHA256 `448259527ccd24c11a8b2107cb34ead5f1c95e9d1ee032d0df2dbdcf5682a74a`. editor ID `pob-editor-47d2a3c7d94c3960a9e318fdf2b56d221ec9fe0acbe63e9dca7c81eb25aacaa8`, manifest SHA256 `2b2703dfb356c3c1ae1a62769275b2f9b4c4b5ce268ce3b4212c311fa878792a`. 생성물은 Git 제외이며 다른 PC에서는 독립 계획의 준비 절차로 재생성한다.
+- 최종 check158/build/pack:win 통과. Loadout native4/source4/Windows packaged4개 그룹과 1920/1024 확인. 이전 각 기능의 실제 검증과 실패 시도는 아래 및 VALIDATION에 기록했다. 개인 데이터는 fixture/배포물/Git에 넣지 않았다.
+- 다음 큰 격차: 원본 Loadout 관리 New/Copy/Custom/Rename/Delete/Reorder와 unknown XML lineage, 전체 원본 control/옵션 목록 완성, 고급 장비/미니언·부여 스킬/특수 트리·버전/네트워크 가져오기/옵션·단축키/노트 표현, 실제 PoB GUI 내보내기 왕복, portable 최종 배포, 선택 PoK/AI 잔여 결합 정리. 이 목록은 전체 기능 범위를 줄이는 완료 기준이 아니다. **#188 재평가를 시작할 수 있는 검증 완료 상태나 해결 상태로 선언하지 않는다.**
+
 ## 원본 Loadout 동시 전환 — 2026-11-03 (15차 진행)
 
 최종: native4개 그룹, 최종 source `.local/loadouts-native-1793635727983/result.json` 및 Windows packaged `.local/loadouts-native-1793636011892/result.json` **각4개 그룹 통과**. 최종 무기 I→II 변경 표시·취소/문서 격리·네 세트 적용/새 계산·brace 연결·undo·재시작을 확인했고 두 해상도를 직접 시각 확인했다. check158/build/`pack:win` 통과. 아래 재검증 중 표기는 이 결과로 대체한다. 누적 구현을 작업 브랜치 체크포인트로 보존한다. 전체 기능 목표는 미완료다.
