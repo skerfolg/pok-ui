@@ -1,5 +1,17 @@
 # 현재 작업
 
+## 구형 단일 Spec의 편집 형식 전환 — 2026-11-03 (21차)
+
+최종 source `.local/tree-adoption-native-1793652063718/result.json` / Windows packaged `.local/tree-adoption-native-1793652224912/result.json` **각5개 그룹 통과**. native4/check169/build/pack:win 및 source/packaged 두 해상도 직접 시각 확인 통과. 원문 preview/대기 취소·문서 격리, 원본 전체 수치와 동일한 adoption/revision1, unknown/원문/receipt 재시작, 별도 원본 Copy + Convert/revision2, undo3/4 원문 복귀·redo5 새 계산, 혼합 입력 거부/타 문서 보존/재시작·PoK 미연결을 검증했다. 아래 진행 중 기록은 이 최종 결과로 대체한다.
+
+PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB/PoK 비사용. runtime `pob-66822b826219a0f943515ba0b1146cd43912720cf23f0dbbf9b2facf12ee4620`, manifest SHA256 `0296ce574c57c47a4a6cd5f0ba5bff4798a65011ab9f3ea37f8bfdf6d6aa4e08`; editor `pob-editor-f1b8538a45faf3fc8fb6ba72a5f1ed480d4d79fae9d55bf71fc161a2be56c100`, manifest SHA256 `d99bb53d35a19481bfcb162cd6cd97f4d11ab96fe7f2564ae356a6cc9da9d055`. 원본/공유 엔진 소스·문서/ref 수정 없음. 새 엔진 결함을 확인하지 않았으며 Tree 혼합/다중 root Spec은 명시 선택 계약이 없는 UI 미지원으로 보존/진단한다.
+
+다음은 트리 URL·원본 control/옵션/명령 전수 대응표, 고급 아이템/스킬/미니언/특수 트리·계산/파티/노트/네트워크/단축키, 혼합 구형 입력 선택, 원본 PoB GUI 왕복·portable·선택 PoK 호환/AI 검증이다. #188의 최종 조합·실물 피드백·에이전트 재설계 검증을 수행하지 않았으므로 해결/재평가 준비 완료를 선언하지 않는다. 전체 목표 active.
+
+기존 root Spec 보호를 유지하면서 명시 `adopt`를 추가했다. 원본 PoB는 원문 그대로 로드하며 실제 복원 version/class/할당을 Save로 조회한다. host는 단일 root Spec/Tree 부재를 검증하고 원래 위치에서 정확한 Spec을 Tree로 감싼 뒤 native 최종 known state를 적용한다. unknown Spec 자식/속성·루트 형제·비트리 XML을 유지하고 source 원문/undo를 보존한다. 초기 생성·버전 업그레이드와 분리하며, 원문 버전과 실제 복원 버전의 차이 및 저장 ID/소켓 변화를 검토한다. 여러 root Spec 또는 Tree 혼합은 원문을 보존하며 거부한다.
+
+native `tests/pob-tree-adoption-smoke.cjs` **4개 그룹 통과**, `.local/standalone-pob/tree-adoption-result.json`: 원본/옮긴 전체 numeric stat 일치(Life170), native 경로 편집/새 계산, 별도 Copy + Convert, 혼합/중복/잘못된 초기화 거부 후 원본 계산 불변. canonical 이동과 정규화 unit은 해당 파일13개 통과. 전체 check169/build 및 source/Windows packaged 동선은 진행 중이다. 전체 원본 기능·전수 버전/주얼/노드 조합·GUI 왕복/portable/PoK·모델 완료를 선언하지 않는다.
+
 ## 초기 트리·원본 버전 변환 — 2026-11-03 (20차)
 
 UI 구현 **`dc36350249ebb356050be81dc17c71b2a19baa9f`**, 브랜치 `skerfolg/coho`. 다른 PC에서는 이 구현 이후의 인계 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다. 다음은 구형 root Spec 정규화/직접 편집, 원본 tree URL·control/옵션/명령의 세부 대응표와 남은 고급 기능을 계속 구현한다. 아래19차의 ‘초기 생성·버전 변환이 다음’은 이번에 보완했으며 전체 목표는 유지한다.

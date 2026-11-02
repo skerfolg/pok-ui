@@ -45,7 +45,7 @@ export function TreeView({ build,runtimeId,applyExpected,calculated,parsed, edit
   const preview=useMemo(()=>new Set(operation.current?[...operation.current.data.added,...operation.current.data.removed,...(operation.current.data.modified||[])]:[]),[operation.current]);
   const allocationModes=useMemo(()=>treeAllocationModes(spec),[spec]);
   const nativeNode=operation.layout?.data.node;
-  if (!spec) return <section className="tree-page"><h1>패시브트리</h1>{hasLegacyPassiveSpec(build.xml)?<p className="warning" role="alert">{LEGACY_TREE_WORKSPACE_MESSAGE}</p>:<><p>저장된 트리가 없습니다. 버전·직업을 선택해 원본 PoB의 초기 트리를 검토하고 생성할 수 있습니다.</p><NativeTreeWorkspace build={build} parsed={parsed} runtimeId={runtimeId} enabled={canInitialize} applyExpected={applyExpected} calculated={calculated}/></>}</section>;
+  if (!spec) return <section className="tree-page"><h1>패시브트리</h1>{hasLegacyPassiveSpec(build.xml)?<><p className="warning" role="alert">{LEGACY_TREE_WORKSPACE_MESSAGE}</p><NativeTreeWorkspace build={build} parsed={parsed} runtimeId={runtimeId} enabled={canInitialize} applyExpected={applyExpected} calculated={calculated}/></>:<><p>저장된 트리가 없습니다. 버전·직업을 선택해 원본 PoB의 초기 트리를 검토하고 생성할 수 있습니다.</p><NativeTreeWorkspace build={build} parsed={parsed} runtimeId={runtimeId} enabled={canInitialize} applyExpected={applyExpected} calculated={calculated}/></>}</section>;
   const minScale = loaded ? fitCamera(loaded.graph.bounds, viewport.width, viewport.height, 24).scale * 0.6 : 0.001;
   const baseScale = minScale / 0.6;
   const missing = loaded ? spec.nodes.filter(id => !loaded.graph.nodes.has(id)) : [];

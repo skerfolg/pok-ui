@@ -5,7 +5,7 @@ import {partyNames,type PartyName} from './pob-party';
 
 /** Also enforced on edited output; documents remain small enough to parse in the renderer. */
 export const MAX_XML_BYTES = 10 * 1024 * 1024;
-export const LEGACY_TREE_WORKSPACE_MESSAGE='기존 단일 Spec 트리가 있습니다. 이 UI의 초기 생성으로 덮어쓸 수 없습니다. 원본 PoB에서 Tree/Spec 형식으로 저장한 뒤 가져와 편집해 주세요. 원본 XML은 보존됩니다.';
+export const LEGACY_TREE_WORKSPACE_MESSAGE='기존 단일 Spec 트리가 있습니다. 초기 생성 대신 원본 PoB의 복원 결과를 검토해 편집 형식으로 옮겨 주세요. 적용 전에는 원문이 바뀌지 않습니다.';
 export function hasLegacyPassiveSpec(xml:string):boolean{return children(readXml(xml).documentElement!,'Spec').length>0;}
 
 // PoB's XML reader expects literal attribute whitespace, unlike a standard XML parser.
@@ -266,6 +266,10 @@ export function editBuild(xml: string, edit: BuildEdit): string {
   const root = document.documentElement!;
   const build = child(root, 'Build')!;
   switch (edit.type) {
+    case 'tree-adopt-legacy': {
+      const legacy=children(root,'Spec');if(legacy.length!==1||children(root,'Tree').length)throw new Error('단일 root Spec만 옮길 수 있습니다. 여러 Spec 또는 Tree와의 혼합 입력은 원본을 보존합니다.');
+      const tree=document.createElement('Tree');tree.setAttribute('activeSpec','1');root.replaceChild(tree,legacy[0]);tree.appendChild(legacy[0]);break;
+    }
     case 'item-native': {
       const item=children(child(root,'Items'),'Item').find(node=>attr(node,'id')===edit.id);if(!item)throw new Error('원본 아이템을 찾지 못했습니다.');
       const variantKeys=['variant','variantAlt','variantAlt2','variantAlt3','variantAlt4','variantAlt5'];

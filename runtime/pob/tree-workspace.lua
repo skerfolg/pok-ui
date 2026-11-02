@@ -9,7 +9,7 @@ return function(states)
   end
   return function(request)
     local operation=request.treeWorkspace;assert(type(operation)=='table','Original tree workspace operation is required')
-    local action=operation.action;assert(action=='inspect'or action=='initialize'or action=='convert'or action=='convert-all','Unknown original tree workspace operation')
+    local action=operation.action;assert(action=='inspect'or action=='initialize'or action=='convert'or action=='convert-all'or action=='adopt','Unknown original tree workspace operation')
     local before,source,lineage,patches,changes=objects(),{},{},array(),array()
     local activeOthers={build.itemsTab.activeItemSet,build.skillsTab.skillSets[build.skillsTab.activeSkillSetId],build.configTab.configSets[build.configTab.activeConfigSetId]}
     for kind,entries in pairs(before)do source[kind]={};local ids={};for _,id in ipairs(assert(request.canonicalSets[kind],'Canonical set inventory is required'))do ids[id]=true end;for _,entry in ipairs(entries)do if ids[entry.id]then source[kind][entry.value]=entry.id end end end
@@ -22,7 +22,10 @@ return function(states)
     build:UpdateClassDropdowns(build.spec.treeVersion)
     local trees=array();for _,entry in ipairs(before.tree)do trees[#trees+1]={id=entry.id,title=entry.value.title or 'Default',version=entry.value.treeVersion,active=entry.value==build.spec}end
     local metadata={operation=operation,versions=versions,trees=trees,initializationRequired=#request.canonicalSets.tree==0,changes=changes}
-    if action~='inspect'then
+    if action=='adopt'then
+      assert(#before.tree==1 and source.tree[build.spec]=='1','Legacy source does not match the original single spec');patches[#patches+1]={id='1',patch=states.full(states.read(build.spec))}
+      metadata.warning='Legacy Spec was loaded by the original PoB loader. Its restored version and known fields will be saved in Tree/Spec format; the source XML remains available for undo.'
+    elseif action~='inspect'then
       local valid=false;for _,version in ipairs(versions)do if version.id==operation.version then valid=true end end;assert(valid,'Original target tree version is unavailable')
       local open,close,confirm,convert=main.OpenPopup,main.ClosePopup,main.OpenConfirmPopup,build.treeTab.ConvertToVersion;local controls,warning
       main.OpenPopup=function(self,w,h,title,value)controls=value;warning=value.warningLabel and StripEscapes(value.warningLabel.label)end

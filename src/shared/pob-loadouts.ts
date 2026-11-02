@@ -7,7 +7,7 @@ export interface PobLoadoutOperation {action:'new'|'copy'|'rename'|'delete'|'cus
 export interface PobSetNode {tag:string;attributes:Record<string,string>;children:(PobSetNode|string)[]}
 export interface PobSetEntry {id:string;sourceId?:string;copyFrom?:string;title?:string;node?:PobSetNode}
 export type PobLoadoutSets=Record<keyof PobLoadoutSelection,PobSetEntry[]>;
-export interface PobTreeWorkspaceOperation {action:'inspect'|'initialize'|'convert'|'convert-all';version?:string;mode?:'replace'|'copy';title?:string;classId?:number;ascendancyId?:number}
+export interface PobTreeWorkspaceOperation {action:'inspect'|'initialize'|'convert'|'convert-all'|'adopt';version?:string;mode?:'replace'|'copy';title?:string;classId?:number;ascendancyId?:number}
 export interface PobLoadoutsRequest extends PobInspectionRequest {runtimeId?:string;requestId?:string;name?:string;manage?:PobLoadoutOperation;treeWorkspace?:PobTreeWorkspaceOperation}
 export interface PobLoadouts {
   buildId:string;revision:number;xmlSha256:string;runtimeId:string;pobCommit:string;
@@ -27,7 +27,7 @@ export function loadoutEdit(snapshot:Pick<BuildDocument,'xml'>,result:PobLoadout
   const patches=(result.treePatches||[]).map(entry=>({type:'tree-native-patch' as const,specId:entry.id,patch:entry.patch}));
   if(patches.length&&!workspace)throw new Error('트리 버전 패치의 요청 근거가 없습니다.');
   if(new Set(patches.map(entry=>entry.specId)).size!==patches.length||patches.some(entry=>entry.patch.buildAttributes||!result.sets?.tree.some(set=>set.id===entry.specId&&(set.sourceId||set.copyFrom))))throw new Error('트리 변환 패치의 원본 출처가 올바르지 않습니다.');
-  const prefixEdits=[...(result.sets?[prefix as Extract<BuildEdit,{type:'loadout-native-sets'}>]:[]),...patches];
+  const prefixEdits=[...(workspace?.action==='adopt'?[{type:'tree-adopt-legacy' as const}]:[]),...(result.sets?[prefix as Extract<BuildEdit,{type:'loadout-native-sets'}>]:[]),...patches];
   const parsed=parseBuild(prefixEdits.length?editBuild(snapshot.xml,{type:'batch',edits:prefixEdits}):snapshot.xml),selection=result.selection;
   for(const [kind,sets]of [['tree',parsed.trees],['items',parsed.itemSets],['skills',parsed.skillSets],['config',parsed.configs]] as const)if(!sets.some(set=>set.id===selection[kind]))throw new Error('원본 통합 구성의 세트 ID가 현재 XML에 없습니다. 원본을 보존합니다.');
   if(!result.operation&&!workspace&&(!result.requestedName||!result.choices.some(choice=>choice.name===result.requestedName&&Object.keys(selection).every(key=>selection[key as keyof PobLoadoutSelection]===choice.selection[key as keyof PobLoadoutSelection]))))throw new Error('원본이 선택한 통합 구성이 요청과 일치하지 않습니다.');

@@ -32,6 +32,7 @@ export interface ParsedBuild {
   party?:{buffers:Partial<Record<PartyName,string>>;exportEnabled:boolean};
 }
 export type BuildAtomicEdit =
+  | {type:'tree-adopt-legacy'}
   | {type:'loadout-native-sets';sets:PobLoadoutSets}
   | {type:'item-native';id:string;text:string;metadata:PobItemMetadata}
   | {type:'equipment-native-patch';setId:string;patch:PobEquipmentPatch}

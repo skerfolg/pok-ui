@@ -5,7 +5,7 @@ import { isAbsolute, join, relative, resolve } from 'node:path';
 import { sha256File } from '../../scripts/file-integrity.mjs';
 import type { PobRuntimeInfo } from '../shared/pob-runtime';
 import type { BuildDocument, Calculation } from '../shared/contracts';
-import { projectActiveXml,parseBuild,hasLegacyPassiveSpec,LEGACY_TREE_WORKSPACE_MESSAGE } from '../shared/pob-document';
+import { projectActiveXml,parseBuild,editBuild,hasLegacyPassiveSpec,LEGACY_TREE_WORKSPACE_MESSAGE } from '../shared/pob-document';
 import {isDeepStrictEqual} from 'node:util';
 import { xmlHash } from './build-proposals';
 import type {PobEditorCatalog} from '../shared/pob-editor';
@@ -123,10 +123,13 @@ export class PobRuntime {
   }
   async loadouts(input:PobLoadoutsRequest):Promise<PobLoadouts>{
     const snapshot=structuredClone(input),parsed=parseBuild(snapshot.xml);projectActiveXml(snapshot.xml);
-    if(snapshot.treeWorkspace&&hasLegacyPassiveSpec(snapshot.xml))throw new PobRuntimeError('POB_TREE_LEGACY',LEGACY_TREE_WORKSPACE_MESSAGE);
+    const adopt=snapshot.treeWorkspace?.action==='adopt',legacy=hasLegacyPassiveSpec(snapshot.xml);
+    if(snapshot.treeWorkspace&&legacy&&!adopt)throw new PobRuntimeError('POB_TREE_LEGACY',LEGACY_TREE_WORKSPACE_MESSAGE);
+    if(adopt&&!legacy)throw new PobRuntimeError('POB_TREE_LEGACY','옮길 단일 Spec 원문이 없습니다.');
+    const canonical=adopt?parseBuild(editBuild(snapshot.xml,{type:'tree-adopt-legacy'})):parsed;
     // Original Loadout management operates on canonical tree order, including filtered rows.
     if(snapshot.treeWorkspace&&(snapshot.manage||snapshot.name))throw new PobRuntimeError('POB_REQUEST','트리 작업의 요청 출처가 둘 이상입니다.');
-    const canonicalSets=snapshot.treeWorkspace?{tree:parsed.trees.map(set=>set.id),items:parsed.itemSets.map(set=>set.id),skills:parsed.skillSets.map(set=>set.id),config:parsed.configs.map(set=>set.id)}:undefined;
+    const canonicalSets=snapshot.treeWorkspace?{tree:canonical.trees.map(set=>set.id),items:canonical.itemSets.map(set=>set.id),skills:canonical.skillSets.map(set=>set.id),config:canonical.configs.map(set=>set.id)}:undefined;
     const {result,manifest}=await this.request({op:'loadouts',xml:snapshot.xml,name:snapshot.name,manage:snapshot.manage,treeWorkspace:snapshot.treeWorkspace,canonicalSets},snapshot.runtimeId,undefined,snapshot.requestId);
     if(!Array.isArray(result.choices)||!Array.isArray(result.diagnostics)||!result.identity||!result.equipment)throw new PobRuntimeError('POB_PROTOCOL','원본 통합 구성 응답이 올바르지 않습니다.');
     const map=(value:unknown):PobLoadoutSelection=>{

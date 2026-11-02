@@ -1,5 +1,15 @@
 # 로컬 검증
 
+## 구형 단일 Spec의 편집 형식 전환 — 2026-11-03 (21차)
+
+- 최종 Windows packaged `.local/tree-adoption-native-1793652224912/result.json` **5개 그룹 통과**, source5와 동일한 전체 동선이다. 1920/1024 packaged의 원문/실제 복원 version 차이·저장 입력 diff·적용/취소 버튼을 직접 시각 확인했다. renderer pageerror 없음. 아래 진행 중은 source5/packaged5/native4/check169/build/pack:win 통과로 대체한다. 전체 버전/직업/전직/특수 노드·실물 사용자 빌드 전수와 실제 원본 GUI/portable/모델은 미수행/미완료다. 개인 데이터는 fixture/배포물에 포함하지 않았다.
+
+- 최종 source `.local/tree-adoption-native-1793652063718/result.json` **5개 그룹 통과**: 원문 preview/대기 취소·문서 격리, 1920/1024 명시 검토→adopt/revision1/원본 전체 수치 일치, 원문/unknown/receipt·지도3149노드·26/26이미지, 저장/재시작 후 별도 Copy + Convert/revision2, undo3/4로 canonical/원문 정확 복귀·redo5/새 계산, 혼합 입력 거부·타 문서 원문·재시작·PoK 미연결. renderer pageerror 없음. 두 크기의 원본 복원 version 차이와 적용/취소 버튼을 직접 시각 확인했다. pack:win도 통과했으며 최종 Windows packaged 실행은 진행 중이다.
+
+- `npm run check` **169 passed**, boundary/type 통과. build 통과. native `tests/pob-tree-adoption-smoke.cjs` **4개 그룹 통과**, `.local/standalone-pob/tree-adoption-result.json`. raw root Spec의 원본 계산과 canonical Tree/Spec의 전체 numeric stat을 비교했고 Life170 및 다른 수치가 일치했다. numeric signed zero만 JSON 표현에 맞춰 정규화하며 누락 키/오차를 허용하지 않는다. unknown Spec/루트·비트리 XML 보존, 원본 경로 편집/새 계산, 별도 업그레이드, 혼합/중복 거부/다음 계산 불변도 확인했다.
+- 고정 원본은 legacy Spec의 명시 treeVersion=0_5를 그대로 active version으로 쓰지 않고 실제0_1로 복원했다. UI에서 이를 추정/강제하지 않고 원본이 저장한 version/class/할당을 검토·적용한다. source XML은 원문 그대로 유지되고 최신 버전 업그레이드는 별도 작업이다. 해당 단위13개 통과; 새 회귀의 선언 버전 fixture를 명시적으로0_5로 고쳐 원본 복원 버전과 구분했다.
+- 실제 source/Windows packaged와 두 해상도·undo/redo·재시작은 진행 중이다. 여러 root Spec 또는 Tree와 혼합된 입력은 아직 자동 정규화하지 않는다. 원본 GUI/portable/실제 모델/전수 조합 성공을 주장하지 않는다. 개인 XML·세션은 사용하지 않았다.
+
 ## 초기 트리·원본 버전 변환 — 2026-11-03 (20차)
 
 - 최종 Windows packaged `.local/tree-workspace-native-1793650959965/result.json` **7개 그룹 통과**. source7과 같은 전체 동선과 다중 문서 재시작·PoK 미연결을 확인했다. 1920/1024 packaged PNG도 직접 시각 확인했으며 원본 경고·저장 입력 차이·적용/취소/미리보기 버튼이 접근 가능하다. renderer pageerror 없음. 아래 진행 중은 최종 source7/packaged7/native6/legacy1/기존tree5/check167/build/pack:win 통과로 대체한다. 원본 PoB GUI·portable·실제 모델·모든 버전/직업/전직/특수 조합은 미수행/미완료다. 개인 XML·대화·세션을 사용하지 않았다.
