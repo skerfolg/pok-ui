@@ -1,5 +1,8 @@
 # 구조와 배포 경계
 
+26차: `skillGroups.copy/move`는 LoadSkill에서 관측한 XML node를 원본 parser로 대상 skillSet 끝에 로드한다. move는 원본 OnSelDelete를 호출한다. source 객체→원래 XML 위치와 대상 append 위치·기존 선택을 반환하며 host는 요청과 일치하는 transfer만 받아 `skill-copy-native`로 원본 DOM 전체를 복제한다. renderer에는 텍스트 parser/게임 규칙을 추가하지 않는다. 비활성 대상은 별도 전환 전까지 계산하지 않은 것으로 표시한다. 원본 텍스트 교환과 무손실 XML 복제를 구분한다. portal modal의 submit은 stopPropagation으로 바깥 group editor의 submit과 분리하며, 생략 속성 입력의 readonly preview에서도 XML/revision을 유지한다.
+
+
 25차: `readLoadouts.skillGroups`는 SkillsTab.LoadSkill의 원본 삽입 객체를 임시 관측하고 SkillListControl drag/OnSelDelete 및 CalcSetup을 실행한다. host는 source inventory/요청 순서를 검증하고 `skill-native-order`로 기존 DOM 전체를 source 순서대로 배치한다. 주력/Calcs 선택은 native 반환값이다. NativeSkillGroups는 XML hash/revision/runtime·generation에 귀속한 검토/취소/적용/계산 receipt만 담당한다. generated-group lineage가 없으면 진단/거부하고 이름 매칭이나 renderer 계산으로 우회하지 않는다. 계약/미완료 범위는 POB-SKILL-GROUPS를 따른다.
 
 

@@ -1,5 +1,15 @@
 # 로컬 검증
 
+## 전체 XML 그룹 복제·이동 — 2026-11-03 (26차)
+
+- 최종 source `.local/skill-transfer-native-1793663206062/result.json` / Windows packaged `.local/skill-transfer-native-1793663669798/result.json` **각5개 그룹 통과**. includeInFullDPS 생략 입력에서 readonly preview의 XML/revision0 불변을 먼저 검사한다. 대상 변경/대기 취소·문서 격리, 같은/비활성 세트 deep copy·확인 이동·transfer receipt, undo/redo·명시 대상 활성/revision7 full numeric output 및 저장/재시작·PoK 미연결을 확인했다. 두 크기 최종 source/packaged PNG를 직접 시각 확인했고 renderer pageerror 없음. packaged는 실제 exe의 resources에 포함된 runtime/editor를 사용한다.
+- 기존 `skill-groups-desktop-smoke.cjs` source `.local/skill-groups-native-1793663479356/result.json` **5개 그룹 통과**: 위/아래 이동·확인 삭제·두 selector/전체 수치·unknown/비활성 XML, 취소/문서 격리·undo/redo/revision5 새 계산·재시작.
+- `npm run check` **188 passed**, boundary/type 통과; build/최종 pack:win 통과. unit5는 기존 source deep XML·형제/비활성 보존·빈 세트/오류에 더해 같은/다른 세트 복제·이동과 forged lineage/잘못된 대상 위치/같은 세트 이동을 검사한다.
+- `tests/pob-skill-transfer-smoke.cjs`, `.local/standalone-pob/skill-transfer-result.json` **실제 native5개 그룹 통과**. 같은 세트 복제의 두 actor/전체 수치 보존, 비활성 복제/명시 actor 선택의 전체 수치 일치, 원본 확인 삭제/주력 actor 이동, Calcs gem option·StatSetIndex·중첩 unknown Gem XML 보존, 빈 대상·invalid 요청/다음 계산 불변. 게임 성립/최적화 완료를 주장하지 않는다.
+- UI 결함 최소 재현 `.local/skill-transfer-native-1793663024140`: 생략 속성 빌드의 modal preview submit이 바깥 group form으로 전파돼 미적용 revision0→1이 됐다. stopPropagation 수정 후 최신 source/packaged에서 같은 입력으로 전체 동선을 통과했다. 초기 명시 속성 source `.local/skill-transfer-native-1793662434163`/packaged `.local/skill-transfer-native-1793662696123`의5개 통과만으로 이 회귀를 해결했다고 간주하지 않는다.
+- 환경 실패: 최초 pack:win ENOSPC, source `1793661818229`의 revision3 계산 저장 대기 timeout, 기존 그룹 `1793661872762`의 PNG/result 쓰기 ENOSPC. source/test 수정 당시 신규 CJS가0바이트가 된 것을 원문 복구했고 다른 source/test/runtime0바이트가 없음을 확인했다. 생성 캐시만 정리하고 check/native/build/pack 및 모든 GUI를 새 프로필로 재실행했다. source `1793662137379`의 screenshot90초 timeout은 원인을 단정하지 않는다(동일 실행의 finally failure PNG는 정상 캡처). 실패 실행은 전체 통과로 집계하지 않는다.
+- PoB/runtime/editor ID·manifest SHA 및 캐시 정리 범위는 CURRENT-PLAN26차를 따른다. 어댑터 source/개발 runtime/packaged runtime의 skill-groups.lua SHA256도 같음을 확인했다. 원본/공유 엔진을 수정하지 않았고 합성 XML만 사용했다. 원본 PoB GUI/OS clipboard/portable/실제 모델·선택 PoK·전수 조합·장기 ledger는 미수행/미완료다.
+
 ## 원본 스킬 그룹 순서·삭제 — 2026-11-03 (25차)
 
 - 최종 source `.local/skill-groups-native-1793660957383/result.json` 및 Windows packaged `.local/skill-groups-native-1793661015590/result.json` **각5개 그룹 통과**. pending/preview 취소·문서 격리, 원본 양방향 drag/중복 이름 source 선택·확인 삭제·두 selector, full numeric stats/unknown/비활성 XML·원문 보존, undo/redo/revision5 새 계산·저장/재시작·PoK 미연결을 확인했다. packaged는 실제 배포 exe와 그 resources에 포함된 runtime/editor를 사용했고 경로 junction도 확인했다. source/packaged의1920/1024 preview를 직접 시각 확인했다. 기존 `sets-config-desktop-smoke.cjs` source8(`.local/sets-config-native-1793660903295/result.json`)도 통과했다. 아래 진행 중을 이 최종 결과로 대체한다.

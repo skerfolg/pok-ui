@@ -1,5 +1,21 @@
 # 현재 작업
 
+## 전체 XML 스킬 그룹 복제·세트 간 이동 — 2026-11-03 (26차)
+
+UI 구현 **`200e309bb8eae979230d1ba8a8fa0b26d26c9c21`**, 브랜치 `skerfolg/coho`. 다른 PC는 이후 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다. 다음은 다른 portal 편집 폼의 submit 전파 감사, 원본 그룹 텍스트 가져오기/내보내기·클립보드 계약, generated-group lineage와 원본 control/옵션/남은 전체 수동 기능이다. 전체 목표 active.
+
+최종 source `.local/skill-transfer-native-1793663206062/result.json` / Windows packaged `.local/skill-transfer-native-1793663669798/result.json` **각5개 그룹 통과**. native5/unit5/check188/build/pack:win 및 기존 그룹 source5(`.local/skill-groups-native-1793663479356/result.json`) 통과. 생략 속성 입력의 미리보기 XML/revision0 불변·대상 변경/취소/문서 격리, 전체 XML 복제·확인 이동·source/target 근거, undo/redo·명시 대상 활성/revision7의 원래 actor full numeric output·저장/재시작·PoK 미연결을 확인했다. 최종 source/packaged의1920/1024 PNG를 직접 시각 확인했다. packaged는 실제 exe에 포함된 runtime/editor payload를 사용한다.
+
+같은/비활성 대상 세트 끝에 원본 LoadSkill로 observed XML을 복원하고, 이동은 원본 삭제 컨트롤로 source를 제거한다. host는 요청·lineage·append 위치·active 순서·두 selector를 검증해 canonical DOM 전체를 복제한다. source unknown/비활성 XML·원문을 보존하며 renderer에 게임 규칙/텍스트 parser를 복제하지 않는다. UI는 대상 ID/이름/그룹 수·비활성 대상 미측정, 검토/취소/적용/새 계산과 transfer receipt를 제공한다. [계약과 범위](POB-SKILL-GROUPS.md)를 따른다.
+
+UI 결함 최소 재현 `.local/skill-transfer-native-1793663024140`: includeInFullDPS 생략 XML에서 모달 preview submit이 바깥 SkillsView form까지 전파돼 미적용 revision0→1을 만들었다. stopPropagation으로 수정하고 위 생략 속성 fixture 전체 동선으로 검증했다. 초기 명시 속성 source5/packaged5(`1793662434163`/`1793662696123`)는 이 회귀를 잡지 못했으며 최신 결과로 쓰지 않는다.
+
+환경 실패 이력: 최초 pack:win/source transfer `1793661818229`/기존 그룹 `1793661872762`는 ENOSPC로 중단됐다. source revision3 계산 저장 대기·PNG/result0바이트를 성공으로 집계하지 않는다. 꽉 찬 디스크에서 테스트 수정 시 신규 CJS 파일 하나가0바이트가 되어 원문을 복구하고 다른 src/tests/runtime 파일에0바이트가 없음을 확인했다. 이후 source `1793662137379`는 screenshot90초 timeout(원인 미확정)으로 중단됐다. 최종은 공간 확보·복구/수정 후 새 합성 프로필로 전부 재실행했다.
+
+PoB **0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`**, KB/PoK 비사용. runtime `pob-0b53f1ea06c9c93d59cb2a964c2aded41fbbb714756f42d53acba7d684613eea` / manifest SHA256 `772d1b751c7c102f6a5c912ffd37d60943b5018d53284566700155f5e6739a4e`; editor `pob-editor-411c6eb7ad7207cfb47f313c1d40873db0e606b251175471980d7292a7ac32cb` / SHA256 `b3b1fa576c7a77208167b8857b1e4db0eed54a35921fd96c3d55614995a14315`. 원본 PoB/공유 엔진 소스·문서/ref 수정 없음. 경로/manifest/known content/reparse 검사 후 중간3b8a 및 오래된 재생성 가능 b68aec/83c3b의 runtime/editor 캐시6개만 정리했다. 최신 검증24/25차 백업·사용자 workspace를 보존했다.
+
+남은 범위: 원본 텍스트 붙여넣기/내보내기·OS clipboard, source 비활성 직접 관리·전체 삭제/drag UI·generated-group lineage, 미니언/부여 효과·전수 조합·원본 control/옵션/네트워크 기능, 전체 revision ledger, 원본 PoB GUI 왕복/portable·선택 PoK/모델 검증. 새 엔진 결함을 확인한 것은 아니며 UI submit 결함을 해결했다. 전체 PoB 동등성 및 #188 해결/재평가 준비 완료를 선언하지 않는다.
+
 ## 원본 스킬 그룹 순서·삭제 — 2026-11-03 (25차)
 
 UI 구현 **`061319d42bcc242a5365dd7c3204d04cfaf117e9`**, 브랜치 `skerfolg/coho`. 다른 PC는 이후 인계 문서까지 포함한 `origin/skerfolg/coho` tip을 받는다. 다음은 원본 그룹 복사/붙여넣기·세트 간 이동 계약과 generated-group lineage 조사, 원본 control/옵션/명령 전수 대응표 및 남은 전체 수동 기능이다. 전체 목표 active.

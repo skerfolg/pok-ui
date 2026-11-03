@@ -6,7 +6,7 @@ PoE2 빌드와 대화를 관리하는 Electron + React + TypeScript 앱. 지식�
 
 **2026-11-03 현재 방향:** 목표는 **PoK·AI 없이 PoB 전체 작업을 완결하는 독립 pok-ui**다. [현재 진행](docs/CURRENT-PLAN.md)과 [독립 런타임 설계·준비 절차](docs/POB-STANDALONE-PLAN.md)를 따른다. [10월 인계](docs/HANDOFF-20261030.md)는 요구 변경과 당시 검증의 기록이다. 연동 시 양쪽 PoB 버전 호환성을 확인하며, 아래 과거 엔진 자동 실행·번들 설명을 최신 기본 경로로 사용하지 않는다.
 
-**현재 구현과 한계:** 원본 PoB 0.23.1/`5d173cb`의 독립 계산·카탈로그·트리·새 빌드·아이템 생성과 여러 편집/비교/통합 구성 동선을 구현했다. PoK·Python·KB 없이 합성 빌드를 실제 Electron과 Windows unpacked에서 편집·계산·저장/재시작했다. PoK는 명시적으로 선택할 때만 연결한다. check186/build 통과는 전체 PoB 동등성, portable, 원본 GUI 왕복, 실제 AI 모델 동선의 완료를 뜻하지 않는다. 세부 기능별 상태와 남은 범위는 위 계획/검증 문서를 따른다.
+**현재 구현과 한계:** 원본 PoB 0.23.1/`5d173cb`의 독립 계산·카탈로그·트리·새 빌드·아이템 생성과 여러 편집/비교/통합 구성 동선을 구현했다. PoK·Python·KB 없이 합성 빌드를 실제 Electron과 Windows unpacked에서 편집·계산·저장/재시작했다. PoK는 명시적으로 선택할 때만 연결한다. check188/build 통과는 전체 PoB 동등성, portable, 원본 GUI 왕복, 실제 AI 모델 동선의 완료를 뜻하지 않는다. 세부 기능별 상태와 남은 범위는 위 계획/검증 문서를 따른다.
 
 ## 실행
 
@@ -43,6 +43,8 @@ npm start
 검증 항목과 외부 XML을 사용한 화면 테스트 방법은 [검증 기록](docs/VALIDATION.md)에 있다.
 
 ## 현재 구현
+
+2026-11-03 26차: 원본 LoadSkill을 이용한 전체 XML 스킬 그룹 복제·세트 간 이동을 검토/적용/새 계산으로 연결했다. 비활성 대상의 계산은 전환 전 미측정으로 표시하고 source/target 근거를 기록한다. 생략 속성 XML에서 모달 submit이 바깥 그룹 편집 폼까지 전파되던 UI 결함을 재현·수정했다. native5/unit5/source5/실제 Windows packaged5/기존 그룹 source5/check188/build/pack:win 및 두 크기 확인 통과. 원본 텍스트 붙여넣기·클립보드 교환과 전체 PoB 동등성은 남는다. [계약·범위](docs/POB-SKILL-GROUPS.md)를 따른다.
 
 2026-11-03 25차: 스킬 그룹 위/아래 이동·삭제는 원본 SkillListControl로 검토한 뒤 적용·새 계산한다. 중복 이름의 source XML과 주력/Calcs 선택을 보존한다. native4/unit3/source5/실제 Windows packaged5/기존 sets-config8/check186/build/pack:win·두 크기 확인 통과. 복사/붙여넣기·세트 간 이동·generated-group lineage와 장기 이력은 남는다. [계약과 범위](docs/POB-SKILL-GROUPS.md)를 따른다.
 
