@@ -1,13 +1,15 @@
 import {NumberField} from '../components/NumberField';
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import type {PobItemPopup,PobItemPopupState} from '../../shared/pob-item-controls';
 export function NativeItemPopup({data,state,pending,error,change,commit,close}:{data?:PobItemPopup;state:PobItemPopupState;pending:boolean;error?:string;change:(state:PobItemPopupState)=>void;commit:(state?:PobItemPopupState)=>void;close:()=>void}){
+  const closeButton=useRef<HTMLButtonElement>(null);
+  useEffect(()=>{const opener=document.activeElement as HTMLElement|null;closeButton.current?.focus();return()=>{if(opener?.isConnected)opener.focus();};},[]);
   const [query,setQuery]=useState(state.query||'');
   const customField=data?.fields.find(field=>field.kind==='edit'),[custom,setCustom]=useState('');
   useEffect(()=>setCustom(String(customField?.value??'')),[customField?.value]);
   useEffect(()=>setQuery(state.query||''),[state.query]);
   const selection=(id:string,value:string|number|boolean)=>change({...data!.state,selections:data?.kind==='add'&&id==='source'?{source:value}:{...data!.state.selections,[id]:value},...(data?.kind==='anoint'?{nodeId:undefined}:{})});
-  return <div className="modal-backdrop"><section className="modal native-item-popup" data-kind={state.kind} role="dialog" aria-modal="true" aria-label="원본 아이템 팝업"><header className="panel-heading"><h2>{state.kind==='anoint'?`원본 성유 편집 · ${state.slot||1}`:state.kind==='add'?'원본 옵션 추가':'원본 오염 편집'}</h2><button onClick={close}>팝업 취소</button></header><div className="panel-body scroll">
+  return <div className="modal-backdrop" onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();close();}if(event.key==='Tab'){const controls=[...event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),summary')].filter(control=>control.getClientRects().length>0),first=controls[0],last=controls[controls.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}}}}><section className="modal native-item-popup" data-kind={state.kind} role="dialog" aria-modal="true" aria-label="원본 아이템 팝업"><header className="panel-heading"><h2>{state.kind==='anoint'?`원본 성유 편집 · ${state.slot||1}`:state.kind==='add'?'원본 옵션 추가':'원본 오염 편집'}</h2><button ref={closeButton} onClick={close}>팝업 취소</button></header><div className="panel-body scroll">
     <p className="muted note">선택·필터·수치는 원본 PoB가 처리합니다. 완료하기 전까지 선택은 별도 초안입니다. 선택 완료를 누르면 아이템 옵션에 반영합니다.</p>{pending&&<p role="status">원본 팝업 처리 중… 취소하면 해당 요청만 중지합니다.</p>}{error&&<p className="warning" role="alert">{error}</p>}
     {data&&<>{data.kind==='anoint'&&<div className="actions"><input aria-label="원본 성유 검색" value={query} maxLength={100} disabled={pending} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')change({...data.state,query,nodeId:undefined});}}/><button disabled={pending} onClick={()=>change({...data.state,query,nodeId:undefined})}>원본 목록 검색</button><span className="muted">{data.notables?.length||0}개</span></div>}
       {data.modes.length>0&&<label>오염 모드<select aria-label="원본 오염 모드" disabled={pending} value={data.state.mode||'enchants'} onChange={e=>change({...data.state,mode:e.target.value as 'enchants'|'rolls'})}>{data.modes.map(m=><option key={m.id} value={m.id}>{m.label}</option>)}</select></label>}
