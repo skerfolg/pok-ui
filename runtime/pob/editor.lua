@@ -26,7 +26,9 @@ local function raw(value,seen,depth)
   return setmetatable(out,{__jsontype='object'})
 end
 local function array() return setmetatable({},{__jsontype='array'}) end
+local readXml
 local function setup(xml)
+  readXml=nil
   local previous=launch.ShowErrMsg
   local errors={}
   launch.ShowErrMsg=function(self,format,...)errors[#errors+1]=string.format(format,...)end
@@ -41,6 +43,21 @@ local function setup(xml)
   end
 end
 api.load=setup
+function api.invalidateRead()readXml=nil end
+-- Only Calcs/tooltip reads may share this restored and calculated context.
+-- Every editor operation still calls setup and invalidates it first.
+function api.read(xml)
+  if readXml~=xml then setup(xml);build.calcsTab:BuildOutput();readXml=xml end
+end
+function api.itemPresentation(item)
+  local result={displayLines=api.itemLines(item),requirements=array()}
+  if item.requirements then
+    local tooltip=new('Tooltip');local req=item.requirements
+    build:AddRequirementsToTooltip(tooltip,req.level,req.strMod,req.dexMod,req.intMod,req.str or 0,req.dex or 0,req.int or 0)
+    for _,line in ipairs(tooltip.lines)do if line.text then result.requirements[#result.requirements+1]=StripEscapes(line.text)end end
+  end
+  return result
+end
 function api.itemLines(item)
   local lines=array()
   for _,list in ipairs({item.enchantModLines,item.runeModLines,item.implicitModLines,item.explicitModLines})do

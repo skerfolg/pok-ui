@@ -203,6 +203,7 @@ function registerIpc():void{
     if(request.slot!==undefined)text(request.slot,128,'아이템 비교 슬롯');
     if(request.nodeId!==undefined&&(!Number.isSafeInteger(request.nodeId)||Number(request.nodeId)<0))throw new Error('주얼 비교 소켓이 올바르지 않습니다.');
     if(request.nodeId!==undefined&&request.slot!==undefined)throw new Error('비교 위치를 하나만 선택해 주세요.');
+    if(request.prefetch!==undefined&&typeof request.prefetch!=='boolean')throw new Error('미리 읽기 요청이 올바르지 않습니다.');
     return pobDetailRuntime.itemTooltip(request as unknown as import('../shared/pob-item-tooltip').PobItemTooltipRequest);
   });
   handle('pok:item-controls',async(request:unknown)=>{
@@ -281,7 +282,8 @@ function registerIpc():void{
     if(!Number.isSafeInteger(request.revision)||Number(request.revision)<0)throw new Error('계산 상세 리비전이 올바르지 않습니다.');
     if(request.cellId!==undefined){text(request.cellId,80,'계산 셀');if(!/^\d+:\d+:\d+:\d+$/.test(String(request.cellId)))throw new Error('계산 셀 식별자가 올바르지 않습니다.');}
     if(request.runtimeId!==undefined)text(request.runtimeId,128,'계산 런타임');
-    return pobDetailRuntime.calcs({buildId:request.buildId,revision:Number(request.revision),xml:request.xml,cellId:request.cellId as string|undefined,runtimeId:request.runtimeId as string|undefined});
+    if(request.prefetch!==undefined&&typeof request.prefetch!=='boolean')throw new Error('미리 읽기 요청이 올바르지 않습니다.');
+    return pobDetailRuntime.calcs({prefetch:request.prefetch as boolean|undefined,buildId:request.buildId,revision:Number(request.revision),xml:request.xml,cellId:request.cellId as string|undefined,runtimeId:request.runtimeId as string|undefined});
   });
   handle('pok:inspect-build',async(request:unknown)=>{
     record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');

@@ -45,6 +45,7 @@ for line in io.stdin:lines() do
     reply({id=json.null,ok=false,error={code='BAD_REQUEST',message=tostring(decodeError)}})
   else
     local worked, result = pcall(function()
+      if request.op~='calcs' and request.op~='item-tooltip'then editor.invalidateRead()end
       if request.op=='catalog' then return editor.catalog() end
       if request.op=='tree-source' then return editor.treeSource(request.version) end
       if request.op=='item' then return editor.item(request.args) end
@@ -88,8 +89,13 @@ for line in io.stdin:lines() do
       table.sort(diagnostics,function(a,b)return a.slot<b.slot end)
       -- These reads share only this freshly restored request, never another XML.
       local snapshot={equipment=equipment({},true),character=tree({action='character'},true),inspection=inspect(nil,true)}
-      return {ok=true,stats=stats,warnings=warnings,target=target,inputDiagnostics=diagnostics,workspaceSnapshot=snapshot,version=launch.versionNumber,treeVersion=build.spec.treeVersion}
+      local itemDisplays,detailTargets={},setmetatable({},{__jsontype='array'});local displayCount=0
+      for id,item in pairs(build.itemsTab.items)do if displayCount<128 then local ok,value=pcall(editor.itemPresentation,item);if ok then itemDisplays[tostring(id)]=value;displayCount=displayCount+1 end end end
+      for _,slot in ipairs(snapshot.equipment.slots)do if slot.visible and slot.itemId~='0'then detailTargets[#detailTargets+1]={itemId=slot.itemId,slot=slot.name}end end
+      local ids={};for id in pairs(itemDisplays)do ids[#ids+1]=id end;table.sort(ids);for i=1,math.min(4,#ids)do detailTargets[#detailTargets+1]={itemId=ids[i]}end
+      return {ok=true,stats=stats,warnings=warnings,target=target,inputDiagnostics=diagnostics,workspaceSnapshot=snapshot,itemDisplays=itemDisplays,detailTargets=detailTargets,version=launch.versionNumber,treeVersion=build.spec.treeVersion}
     end)
+    if not worked then editor.invalidateRead()end
     if worked then reply({id=request.id,ok=true,result=result})
     else reply({id=request.id,ok=false,error={code=request.op=='compute' and 'POB_COMPUTE' or 'POB_EDITOR',message=tostring(result)}}) end
   end

@@ -1,3 +1,4 @@
+import {useDetailReads,peekCalcs,readCalcs} from '../state/native-detail-cache';
 import {NativeBreakdown} from '../components/NativeBreakdown';
 import {HoverCard} from '../components/HoverCard';
 import {CalcHover} from './CalcHover';
@@ -7,31 +8,31 @@ import type {BuildDocument,BuildEdit,ParsedBuild} from '../../shared/contracts';
 import type {PobCalcs,PobCalcCell} from '../../shared/pob-calcs';
 import {hashBuildXml} from '../../shared/calculation-context';
 import {calculationStats} from '../components/StatsRail';
-import {api} from '../services/api';
 import {PobSkillOptions} from './PobSkillOptions';
 export function CalcsView({build,parsed,runtimeId,edit,navigate}:{build:BuildDocument;parsed:ParsedBuild;runtimeId?:string;edit:(edit:BuildEdit,label:string)=>void;navigate?:(target:WorkspaceLocation)=>void}){
+  useDetailReads();
   const [saved,setSaved]=useState<{xml:string;data:PobCalcs}>(),[pending,setPending]=useState(false),[error,setError]=useState(''),[filter,setFilter]=useState(''),[retry,setRetry]=useState(0);
   const [detail,setDetail]=useState<{label:string;data:PobCalcs}>(),[detailBusy,setDetailBusy]=useState(false),[detailError,setDetailError]=useState('');
   const owner=useRef(0);
   useEffect(()=>{
     let cancelled=false;owner.current++;setDetail(undefined);setDetailError('');setDetailBusy(false);setError('');
     if(!runtimeId){setPending(false);return;}
-    const request={buildId:build.id,revision:build.revision,xml:build.xml,runtimeId};setPending(true);
-    const timer=setTimeout(()=>{void Promise.all([api.readCalcs(request),hashBuildXml(request.xml)]).then(([data,hash])=>{
+    const request={buildId:build.id,revision:build.revision,xml:build.xml,runtimeId};const cached=peekCalcs(request);if(cached){setSaved({xml:request.xml,data:cached});setPending(false);return;}setPending(true);
+    const timer=setTimeout(()=>{void Promise.all([readCalcs(request),hashBuildXml(request.xml)]).then(([data,hash])=>{
       if(cancelled)return;
       if(data.buildId!==request.buildId||data.revision!==request.revision||data.xmlSha256!==hash||data.runtimeId!==runtimeId)throw new Error('계산 상세의 입력 또는 PoB 버전이 현재 문서와 다릅니다.');
       setSaved({xml:request.xml,data});setPending(false);
-    }).catch(reason=>{if(!cancelled){setError(String(reason));setPending(false);}});},250);
+    }).catch(reason=>{if(!cancelled){setError(String(reason));setPending(false);}});},0);
     return()=>{cancelled=true;owner.current++;clearTimeout(timer);};
   },[build.id,build.revision,build.xml,runtimeId,retry]);
-  const current=saved?.xml===build.xml&&saved.data.buildId===build.id&&saved.data.revision===build.revision&&saved.data.runtimeId===runtimeId?saved.data:undefined;
+  const current=peekCalcs({buildId:build.id,revision:build.revision,xml:build.xml,runtimeId});
   const layout=current||saved?.data;
   const skillSet=parsed.skillSets.find(s=>s.active),skillGroup=skillSet?.groups.find(g=>g.id===layout?.selectors.skill?.groupId);
   async function inspect(cell:PobCalcCell,label:string){
     if(!current||detailBusy)return;
-    const token=++owner.current,request={buildId:build.id,revision:build.revision,xml:build.xml,runtimeId,cellId:cell.id};setDetail(undefined);setDetailBusy(true);setDetailError('');
+    const token=++owner.current,request={buildId:build.id,revision:build.revision,xml:build.xml,runtimeId,cellId:cell.id};const cached=peekCalcs(request);if(cached){setDetail({label,data:cached});setDetailBusy(false);setDetailError('');return;}setDetail(undefined);setDetailBusy(true);setDetailError('');
     try{
-      const [data,hash]=await Promise.all([api.readCalcs(request),hashBuildXml(request.xml)]);if(token!==owner.current)return;
+      const [data,hash]=await Promise.all([readCalcs(request),hashBuildXml(request.xml)]);if(token!==owner.current)return;
       if(data.buildId!==request.buildId||data.revision!==request.revision||data.xmlSha256!==hash||data.runtimeId!==runtimeId||data.breakdown?.cellId!==cell.id)throw new Error('상세 근거가 선택한 입력·셀과 일치하지 않습니다.');
       setDetail({label,data});
     }catch(reason){if(token===owner.current)setDetailError(String(reason));}finally{if(token===owner.current)setDetailBusy(false);}

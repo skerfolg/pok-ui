@@ -4,7 +4,7 @@ return function(editor)
   local function array() return setmetatable({},{__jsontype='array'}) end
   local function text(value) return value==nil and '' or StripEscapes(tostring(value)) end
   return function(xml,cellId)
-    editor.load(xml);build.calcsTab:BuildOutput();build.viewMode='CALCS'
+    editor.read(xml);local previousView=build.viewMode;build.viewMode='CALCS'
     local tab=build.calcsTab
     local result={sections=array(),diagnostics=array(),selectors={group=tab.input.skill_number,mode=tab.input.misc_buffMode,showMinion=not not tab.input.showMinion,groups=array(),modes=array(),minionAvailable=tab.calcsEnv.minion~=nil}}
     local function attempt(field,fn)
@@ -45,7 +45,8 @@ return function(editor)
     end)
     if tab.input.showMinion and not tab.calcsEnv.minion then
       result.diagnostics[#result.diagnostics+1]={code='calcs-actor-unavailable',message='The selected minion actor is unavailable. Select player to inspect its calculations.'}
-      return result
+      build.viewMode=previousView
+    return result
     end
     local actor=tab.input.showMinion and tab.calcsEnv.minion or tab.calcsEnv.player
     local selected
@@ -98,6 +99,7 @@ return function(editor)
         end
       end)
     end
+    build.viewMode=previousView
     return result
   end
 end

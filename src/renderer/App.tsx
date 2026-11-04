@@ -1,3 +1,4 @@
+import {clearDetailReads,seedCalculationDisplays,warmDetails} from './state/native-detail-cache';
 import type {WorkspaceLocation} from './state/workspace-location';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageSquare, Shield, Gem, Network, SlidersHorizontal, Settings2, Plus, MoreHorizontal, Undo2, Redo2, GitCompare, Calculator, Pin, FolderOpen, X } from 'lucide-react';
@@ -60,7 +61,7 @@ export function App() {
   const liveRuntimeId=useRef<string|undefined>(undefined);
   const [dataInfo,setDataInfo]=useState<DataBundleInfo>({status:'missing',error:'게임 데이터 확인 중…'});
   const [pobInfo,setPobInfo]=useState<PobRuntimeInfo>({status:'missing',error:'PoB 런타임 확인 중…'});
-  useEffect(()=>{let timer:ReturnType<typeof setTimeout>|undefined;const stop=api.onPobRuntimeInvalidated(()=>{runtimeVersion.current++;liveRuntimeId.current=undefined;setPobInfo({status:'corrupt',error:'PoB 출처 변경 확인 중…'});setDataInfo({status:'corrupt',error:'PoB 출처 변경 확인 중…'});clearTimeout(timer);timer=setTimeout(()=>void refreshRuntime(),300);});void refreshRuntime();return()=>{runtimeVersion.current++;clearTimeout(timer);stop();};},[]);
+  useEffect(()=>{let timer:ReturnType<typeof setTimeout>|undefined;const stop=api.onPobRuntimeInvalidated(()=>{runtimeVersion.current++;clearDetailReads();liveRuntimeId.current=undefined;setPobInfo({status:'corrupt',error:'PoB 출처 변경 확인 중…'});setDataInfo({status:'corrupt',error:'PoB 출처 변경 확인 중…'});clearTimeout(timer);timer=setTimeout(()=>void refreshRuntime(),300);});void refreshRuntime();return()=>{runtimeVersion.current++;clearTimeout(timer);stop();};},[]);
   const [xmlSha256,setXmlSha256]=useState<string>();
 
   const build = state.builds.find(b => b.id === state.activeBuildId) ?? state.builds[0];
@@ -75,6 +76,7 @@ export function App() {
   const catalogState=unsupportedTrees.length?{enabled:false,reason:`현재 고정 PoB에 미지원 트리 ${unsupportedTrees.map(tree=>`${tree.id}:${tree.version}`).join(', ')}가 있습니다. 비활성 트리도 로드 대상이며 원문은 보존됩니다.`}:catalogAccess(dataInfo,pobInfo,activeTree?.version),catalogEnabled=catalogState.enabled;
   useEffect(()=>{let alive=true;setXmlSha256(undefined);if(build)void hashBuildXml(build.xml).then(hash=>{if(alive)setXmlSha256(hash);});return()=>{alive=false;};},[build?.id,build?.xml]);
   const calculationBundleId=pobInfo.status==='ready'?pobInfo.runtimeId:undefined;liveRuntimeId.current=calculationBundleId;
+  useEffect(()=>{if(!build||!calculationBundleId||!xmlSha256||build.calculation?.revision!==build.revision||build.calculation.provenance?.xmlSha256!==xmlSha256||build.calculation.provenance.bundleId!==calculationBundleId)return;seedCalculationDisplays(build,calculationBundleId,xmlSha256);let alive=true;const timer=setTimeout(()=>{void warmDetails(build,calculationBundleId,()=>alive).catch(()=>{});},100);return()=>{alive=false;clearTimeout(timer);};},[build?.id,build?.revision,build?.xml,build?.calculation,calculationBundleId,xmlSha256]);
   const treeSetEdits=useTreeSetEdits(build,calculationBundleId,applyExpected,setError);
   const canCalculate=pobInfo.status==='ready'&&!unsupportedTrees.length&&Boolean(activeTree?.version&&pobInfo.supportedTreeVersions?.includes(activeTree.version));
   const showStats = Boolean(build && parsed && ['equipment', 'skills', 'tree', 'config','party','loadouts','notes','exchange'].includes(view));

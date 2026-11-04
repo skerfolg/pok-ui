@@ -2,8 +2,7 @@
 return function(editor)
   local function array()return setmetatable({},{__jsontype='array'})end
   return function(request)
-    editor.load(request.xml)
-    build.calcsTab:BuildOutput()
+    editor.read(request.xml)
     local tab=build.itemsTab
     tab:PopulateSlots()
     local item=assert(tab.items[tonumber(request.itemId)],'Original stored item was not found')
@@ -17,7 +16,7 @@ return function(editor)
       assert(tab:IsItemValidForSlot(item,slot.slotName),'Original item is not valid for this jewel socket')
     end
     local result={comparisons=array(),requirements=array(),displayLines=editor.itemLines(item)}
-    local original,slotOnly=build.AddStatComparesToTooltip,main.slotOnlyTooltips
+    local original,slotOnly,showDifferences=build.AddStatComparesToTooltip,main.slotOnlyTooltips,tab.showStatDifferences
     build.AddStatComparesToTooltip=function(self,tooltip,before,after,header,...)
       local start=#tooltip.lines
       local count=original(self,tooltip,before,after,header,...)
@@ -32,7 +31,7 @@ return function(editor)
     tab.showStatDifferences=true
     main.slotOnlyTooltips=slot~=nil
     local worked,message=pcall(function()tab:AddItemTooltip(new('Tooltip'),item,slot)end)
-    build.AddStatComparesToTooltip=original;main.slotOnlyTooltips=slotOnly
+    build.AddStatComparesToTooltip=original;main.slotOnlyTooltips=slotOnly;tab.showStatDifferences=showDifferences
     if not worked then error(message)end
     if item.requirements then
       local requirements=new('Tooltip');local req=item.requirements

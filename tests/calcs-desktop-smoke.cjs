@@ -17,6 +17,7 @@ async function ready(){await poll(()=>page.getByLabel('계산 상세 모드',{ex
   await launch();await page.getByRole('button',{name:'계산',exact:true}).click();await ready();
   await page.getByLabel('계산 상세 검색',{exact:true}).fill('Life');await page.getByLabel('Life Total 1 상세',{exact:true}).click();
   const modal=page.getByRole('dialog',{name:'계산 분해 근거',exact:true});await modal.getByText('62 (base)',{exact:true}).waitFor();await modal.getByRole('button',{name:'닫기',exact:true}).click();
+  const repeatStart=performance.now();await page.getByLabel('Life Total 1 상세',{exact:true}).click();await modal.getByText('62 (base)',{exact:true}).waitFor();report.reopenMs=performance.now()-repeatStart;assert(report.reopenMs<200);assert.equal(await modal.getByRole('status').count(),0);await modal.getByRole('button',{name:'닫기',exact:true}).click();
   assert.equal((await current()).xml,xml);report.passed.push('original Life cell opens native formatted breakdown without changing the build XML');
   await page.getByLabel('계산 상세 모드',{exact:true}).selectOption('UNBUFFED');await poll(current,b=>b.revision===1);await ready();assert.equal(await page.getByLabel('계산 상세 모드',{exact:true}).inputValue(),'UNBUFFED');
   await page.getByLabel('PoB 스킬 모드',{exact:true}).selectOption('2');const modeBuild=await poll(current,b=>b.revision===2);assert.match(modeBuild.xml,/<StatSetCalcsIndex[^>]*index="2"/);await ready();

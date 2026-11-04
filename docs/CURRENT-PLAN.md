@@ -1,3 +1,15 @@
+# 후속 수정: 상세 조회 재사용·hover 지연 — 2026-11-04
+
+사용자가 원본 비교/계산 근거를 열 때의 체감 지연을 제보했다. 동일 XML의250ms 대기와 매회 복원/BuildOutput·완료 결과 폐기를 확인해 제거했다. 상세 worker의 Calcs/tooltip만 읽기 전용 컨텍스트를 공유하고, 편집/다른 XML/실패는 이를 무효화한다. 주 계산/편집의 요청별 XML 복원·상세 lane 격리와 source 검증은 유지한다.
+
+main의 검증된 완료 조회 캐시와 renderer의 immutable context 캐시/동일 요청 병합을 추가했다. XML/revision/runtime/item/slot/socket/cell에 결합하고 source 변경 시 폐기한다. 현재 주 계산 snapshot에 원본 formatter의 아이템 옵션/요구량을 함께 담아 hover 본문을 먼저 보여주며, 계산이 끝난 입력의 상세를 한 요청씩 낮은 우선순위로 미리 준비한다. UI 문구를 가리는 방식으로 지연을 숨기지 않는다.
+
+native 동일 아이템517~592ms→15~17ms, 다른 아이템577→48ms, 같은 셀485~554→11~16ms, 다른 셀490→29ms. 실제 package tooltip 재진입32~36ms/임시 비교 문구 없음. cold 시작 비용 자체는 남으며 새 입력의 첫 준비는 필요하다. 상세 실측/한계는 `DETAIL-READ-PERFORMANCE-20261104.md` 참조.
+
+check215/native 재사용 대조4 통과. runtime `pob-3ed100ee996959dce23a5cc129bb2166812b6d6f4506476fae6f468040a94aed`, editor `pob-editor-621c406e080ff3a4e7f9ec0946e6d606399a71aed38f5bb8978acc7cf5d7dcea`, 원본 PoB0.23.1/5d173cb는 변경하지 않았다. `release/detail-fast-20261104/win-unpacked/POK.exe` package에서 hover6/Calcs4/상세 격리3/원문5/workspace9/persistent7 회귀를 통과했다. hover 재진입32~36ms와 Calcs 재열기115ms를 관측했다. 원본 XML/수치 불변과 다른 revision·runtime 결과 배제를 유지했다. 의도적으로 hold하는 격리 검사는 이미 완료된 캐시가 native 호출을 생략할 수 있으므로 고유한 합성 읽기 XML로 실제 상세 요청을 막도록 이관했다.
+
+---
+
 # 후속 수정: 실제 옵션 표시·원문 편집·즉시 노드 반영 — 2026-11-04
 
 사용자 Ironbound 화면에서 `{range:0.5}`와 범위 원문이 일반 카드에 노출되는 문제를 수정했다. 기존 ItemSummary는 입력 원문을 걸러 표시했으므로 실제 roll 값이 아니었다. 이제 원본 PoB `GetModLineVariantCount`/`itemLib.formatModLine` 결과만 카드와 hover에 제공한다. 렌더러에서 범위 보간/반올림·게임 수식을 구현하지 않는다. Ironbound의30%/125 Armour/8% Attack Speed와 range1의35%/150 Armour를 native2에서 확인했다.

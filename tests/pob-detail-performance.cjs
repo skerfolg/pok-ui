@@ -1,0 +1,10 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');require('tsx/cjs');const {PobRuntime}=require('../src/main/pob-runtime.ts'),{parseBuild}=require('../src/shared/pob-document.ts');
+const runtime=new PobRuntime(path.resolve('resources/pob-runtime')),xml=JSON.parse(fs.readFileSync('.local/standalone-pob/equipment-fixture.json','utf8')).xml,items=parseBuild(xml).items,report={at:new Date().toISOString(),operations:[]};
+async function measure(name,read){const start=performance.now(),value=await read();report.operations.push({name,ms:performance.now()-start});return value;}
+(async()=>{const info=await runtime.getInfo();assert.equal(info.status,'ready');report.runtimeId=info.runtimeId;const input={buildId:'synthetic-detail-performance',revision:0,xml,runtimeId:info.runtimeId};
+ const a=await measure('item cold',()=>runtime.itemTooltip({...input,itemId:items[0].id}));for(let i=0;i<3;i++)assert.deepEqual(await measure('item repeated '+i,()=>runtime.itemTooltip({...input,itemId:items[0].id})),a);
+ if(items[1])await measure('different item',()=>runtime.itemTooltip({...input,itemId:items[1].id}));
+ const all=await measure('calcs table',()=>runtime.calcs(input)),cells=all.sections.flatMap(s=>s.subsections.flatMap(s=>s.rows.flatMap(r=>r.cells))),cell=cells.find(cell=>cell.breakdown);assert(cell);
+ const detail=await measure('calcs first cell',()=>runtime.calcs({...input,cellId:cell.id}));for(let i=0;i<3;i++){const value=await measure('calcs repeated '+i,()=>runtime.calcs({...input,cellId:cell.id}));assert.deepEqual(value.breakdown,detail.breakdown);}
+ const other=cells.find(value=>value.breakdown&&value.id!==cell.id);if(other)await measure('different cell',()=>runtime.calcs({...input,cellId:other.id}));
+})().catch(error=>{report.error=error.stack;process.exitCode=1;}).finally(()=>{runtime.close();fs.writeFileSync('.local/ui-rebuild-review/detail-performance-'+(process.env.POK_DETAIL_LABEL||'after')+'.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));});

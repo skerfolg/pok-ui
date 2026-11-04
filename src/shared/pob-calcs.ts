@@ -1,5 +1,5 @@
 import type {PobInspectionRequest,PobSkillOptions} from './pob-inspection';
-export interface PobCalcsRequest extends PobInspectionRequest {cellId?:string;runtimeId?:string}
+export interface PobCalcsRequest extends PobInspectionRequest {cellId?:string;prefetch?:boolean;runtimeId?:string}
 export interface PobCalcCell {id:string;text:string;breakdown:boolean}
 export interface PobBreakdownSection {
   type:string;label?:string;footer?:string;lines?:string[];radius?:number;

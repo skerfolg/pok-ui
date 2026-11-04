@@ -37,7 +37,7 @@ export class PobRuntime {
   private tasks:{priority:number;run:()=>Promise<void>}[]=[];
   private pumping=false;
   private schedule<T>(op:string,run:()=>Promise<T>):Promise<T>{
-    const priority=op==='compute'?0:['equipment','item-controls','loadouts','party'].includes(op)?1:op==='tree'?2:3;
+    const priority=op==='prefetch'?4:op==='compute'?0:['equipment','item-controls','loadouts','party'].includes(op)?1:op==='tree'?2:3;
     const result=new Promise<T>((resolve,reject)=>{this.tasks.push({priority,run:async()=>{try{resolve(await run());}catch(error){reject(error);}}});});
     if(!this.pumping){this.pumping=true;queueMicrotask(()=>{void this.drain();});}
     return result;
@@ -59,13 +59,13 @@ export class PobRuntime {
   private verifiedManifest?:{key:string;epoch:number;at:number};
   private manifestPending?:Promise<Manifest>;
   private invalidateSource():void{
-    this.fileEpoch++;this.verifiedManifest=undefined;this.workspaceReads.clear();
+    this.fileEpoch++;this.verifiedManifest=undefined;this.workspaceReads.clear();this.readonlyReads.clear();this.calcsContexts.clear();
     this.worker?.close(new PobRuntimeError('POB_CHANGED','PoB runtime 파일 변경을 감지했습니다. 다시 계산해 주세요.'));
     this.worker=undefined;this.workerRuntimeId=undefined;this.onInvalidated?.();
   }
   private watchRoot(base:string,identity:string):void{
     if(this.watcher&&this.watchedRoot===base&&this.watchedIdentity===identity)return;
-    if(this.watchedRoot&&(this.watchedRoot!==base||this.watchedIdentity!==identity)){this.worker?.close(new PobRuntimeError('POB_CHANGED','PoB runtime 폴더가 교체되었습니다.'));this.worker=undefined;this.workerRuntimeId=undefined;this.verifiedFiles.clear();this.workspaceReads.clear();this.onInvalidated?.();}
+    if(this.watchedRoot&&(this.watchedRoot!==base||this.watchedIdentity!==identity)){this.worker?.close(new PobRuntimeError('POB_CHANGED','PoB runtime 폴더가 교체되었습니다.'));this.worker=undefined;this.workerRuntimeId=undefined;this.verifiedFiles.clear();this.workspaceReads.clear();this.readonlyReads.clear();this.calcsContexts.clear();this.onInvalidated?.();}
     this.watcher?.close();this.watcher=undefined;this.watchedRoot=base;this.watchedIdentity=identity;this.verifiedManifest=undefined;
     const invalidate=(event?:string,name?:string|Buffer|null)=>{
       this.validationEpoch++;this.verifiedManifest=undefined;
@@ -86,7 +86,8 @@ export class PobRuntime {
   private generation=0;
   private computes=new Map<string,{key:string;pending:Promise<Calculation>}>();
   private workspaceReads=new Map<string,WorkspaceReads>();
-  private invalidResponse(message:string):never{const error=new PobRuntimeError('POB_PROTOCOL',message);this.worker?.close(error);this.worker=undefined;this.workerRuntimeId=undefined;this.workspaceReads.clear();throw error;}
+  private readonlyReads=new Map<string,{runtimeId:string;result:Record<string,unknown>}>();
+  private invalidResponse(message:string):never{const error=new PobRuntimeError('POB_PROTOCOL',message);this.worker?.close(error);this.worker=undefined;this.workerRuntimeId=undefined;this.workspaceReads.clear();this.readonlyReads.clear();this.calcsContexts.clear();throw error;}
   private async cachedWorkspace(input:PobInspectionRequest,runtimeId?:string,requestId?:string):Promise<WorkspaceReads|undefined>{
     const saved=this.workspaceReads.get(input.buildId);
     if(!saved||saved.revision!==input.revision||saved.xmlSha256!==xmlHash(input.xml)||runtimeId&&saved.runtimeId!==runtimeId)return;
@@ -103,6 +104,7 @@ export class PobRuntime {
   private inspections=new Map<string,number>();
   private inspectionRequests=new Map<string,{key:string;pending:Promise<PobInspection>}>();
   private calcsVersions=new Map<string,number>();
+  private calcsContexts=new Map<string,{key:string;revision:number}>();
   private calcsRequests=new Map<string,{key:string;pending:Promise<PobCalcs>}>();
   private treeRequests=new Map<string,{key:string;pending:Promise<PobTreeResult>}>();
   constructor(private root:string,private timeoutMs=120_000,private onInvalidated?:()=>void){}
@@ -170,9 +172,9 @@ export class PobRuntime {
   async sourceProof():Promise<import('./pob-source-compatibility').PobSourceProof>{const manifest=await this.manifest();return{runtimeId:manifest.runtimeId,commit:manifest.commit,files:Object.fromEntries(manifest.files.filter(file=>file.path.startsWith('pob/src/')).map(file=>[file.path.slice(4),file.sha256]))};}
   async getInfo():Promise<PobRuntimeInfo>{
     try{return this.info(await this.manifest());}
-    catch(error){this.worker?.close();this.worker=undefined;this.workerRuntimeId=undefined;this.verifiedFiles.clear();this.workspaceReads.clear();return{status:(error as NodeJS.ErrnoException).code==='ENOENT'?'missing':'corrupt',error:'독립 PoB 런타임을 준비해 주세요. '+(error instanceof PobRuntimeError?error.message:'npm run pob:prepare 절차를 확인해 주세요.')};}
+    catch(error){this.worker?.close();this.worker=undefined;this.workerRuntimeId=undefined;this.verifiedFiles.clear();this.workspaceReads.clear();this.readonlyReads.clear();this.calcsContexts.clear();return{status:(error as NodeJS.ErrnoException).code==='ENOENT'?'missing':'corrupt',error:'독립 PoB 런타임을 준비해 주세요. '+(error instanceof PobRuntimeError?error.message:'npm run pob:prepare 절차를 확인해 주세요.')};}
   }
-  close():void{this.generation++;this.tooltipKey='';this.tooltipPending=undefined;this.computes.clear();this.workspaceReads.clear();this.equipmentReadKeys.clear();this.itemReadKeys.clear();this.inspectionRequests.clear();this.calcsRequests.clear();this.treeRequests.clear();this.worker?.close();this.worker=undefined;this.workerRuntimeId=undefined;this.verifiedFiles.clear();this.verifiedManifest=undefined;this.watcher?.close();this.watcher=undefined;}
+  close():void{this.generation++;this.tooltipKey='';this.tooltipPending=undefined;this.computes.clear();this.workspaceReads.clear();this.readonlyReads.clear();this.calcsContexts.clear();this.equipmentReadKeys.clear();this.itemReadKeys.clear();this.inspectionRequests.clear();this.calcsRequests.clear();this.treeRequests.clear();this.worker?.close();this.worker=undefined;this.workerRuntimeId=undefined;this.verifiedFiles.clear();this.verifiedManifest=undefined;this.watcher?.close();this.watcher=undefined;}
   cancel(requestId:string):boolean{
     if(!this.requestIds.has(requestId))return false;
     this.cancelledIds.add(requestId);if(this.activeRequestId===requestId){this.worker?.close();this.worker=undefined;this.workerRuntimeId=undefined;}return true;
@@ -227,12 +229,12 @@ export class PobRuntime {
   private tooltipKey='';
   private tooltipPending?:{key:string;promise:Promise<PobItemTooltip>};
   itemTooltip(input:PobItemTooltipRequest):Promise<PobItemTooltip>{
-    const snapshot=structuredClone(input),key=JSON.stringify(snapshot);
+    const snapshot=structuredClone(input),key=JSON.stringify({...snapshot,prefetch:undefined});
     if(this.tooltipPending?.key===key)return this.tooltipPending.promise;
-    this.tooltipKey=key;
+    if(!snapshot.prefetch)this.tooltipKey=key;
     const promise=(async()=>{
       if(!parseBuild(snapshot.xml).items.some(item=>item.id===snapshot.itemId))throw new PobRuntimeError('POB_ITEM','비교할 보유 아이템을 찾지 못했습니다.');
-      const {result,manifest}=await this.request({op:'item-tooltip',xml:projectActiveXml(snapshot.xml),itemId:snapshot.itemId,slot:snapshot.slot,nodeId:snapshot.nodeId},snapshot.runtimeId,()=>this.tooltipKey!==key);
+      const {result,manifest}=await this.request({op:'item-tooltip',xml:projectActiveXml(snapshot.xml),itemId:snapshot.itemId,slot:snapshot.slot,nodeId:snapshot.nodeId,prefetch:snapshot.prefetch},snapshot.runtimeId,snapshot.prefetch?undefined:()=>this.tooltipKey!==key);
       if(!Array.isArray(result.displayLines)||result.displayLines.some(line=>typeof line!=='string')||!Array.isArray(result.requirements)||result.requirements.some(line=>typeof line!=='string')||!Array.isArray(result.comparisons)||result.comparisons.some(section=>!section||typeof section!=='object'||typeof section.header!=='string'||!Array.isArray(section.lines)||section.lines.some((line:unknown)=>typeof line!=='string')))this.invalidResponse('원본 아이템 비교 응답이 올바르지 않습니다.');
       return{...result,buildId:snapshot.buildId,revision:snapshot.revision,xmlSha256:xmlHash(snapshot.xml),runtimeId:manifest.runtimeId,pobCommit:manifest.commit,itemId:snapshot.itemId,slot:snapshot.slot,nodeId:snapshot.nodeId} as unknown as PobItemTooltip;
     })();
@@ -245,8 +247,8 @@ export class PobRuntime {
     const text=snapshot.draftText??item.text,key=JSON.stringify([snapshot.revision,xmlHash(snapshot.xml),snapshot.runtimeId,snapshot.itemId,snapshot.slot]),reading=!snapshot.field&&!snapshot.popup&&!snapshot.similar;
     if(reading){this.itemReadKeys.set(snapshot.buildId,key);if(this.itemReadKeys.size>64)this.itemReadKeys.delete(this.itemReadKeys.keys().next().value!);}
     const {result,manifest}=await this.request({op:'item-controls',xml:projectActiveXml(snapshot.xml),itemId:snapshot.itemId,text,sourceText:item.text,field:snapshot.field,value:snapshot.value,slot:snapshot.slot,popup:snapshot.popup,similar:snapshot.similar},snapshot.runtimeId,reading?()=>this.itemReadKeys.get(snapshot.buildId)!==key:undefined,snapshot.requestId);
-    if(snapshot.slot&&result.validatedSlot!==snapshot.slot)throw new PobRuntimeError('POB_PROTOCOL','원본 슬롯 검증이 누락되었습니다. 런타임을 다시 준비해 주세요.');
-    if(!Array.isArray(result.displayLines)||result.displayLines.some(line=>typeof line!=='string')||typeof result.text!=='string'||typeof result.sourcePreserved!=='boolean'||!result.metadata||!Array.isArray(result.fields)||!Array.isArray(result.diagnostics))throw new PobRuntimeError('POB_PROTOCOL','원본 아이템 편집 응답이 올바르지 않습니다.');
+    if(snapshot.slot&&result.validatedSlot!==snapshot.slot)this.invalidResponse('원본 슬롯 검증이 누락되었습니다. 런타임을 다시 준비해 주세요.');
+    if(!Array.isArray(result.displayLines)||result.displayLines.some(line=>typeof line!=='string')||typeof result.text!=='string'||typeof result.sourcePreserved!=='boolean'||!result.metadata||!Array.isArray(result.fields)||!Array.isArray(result.diagnostics))this.invalidResponse('원본 아이템 편집 응답이 올바르지 않습니다.');
     if(snapshot.similar&&(!result.similar||typeof result.similar!=='object'||typeof (result.similar as Record<string,unknown>).url!=='string'||!Array.isArray((result.similar as Record<string,unknown>).rows)))this.invalidResponse('원본 검색 조건 응답이 올바르지 않습니다.');
     return{...result,buildId:snapshot.buildId,revision:snapshot.revision,xmlSha256:xmlHash(snapshot.xml),runtimeId:manifest.runtimeId,pobCommit:manifest.commit,itemId:snapshot.itemId,inputTextSha256:xmlHash(text)} as unknown as PobItemControls;
   }
@@ -307,15 +309,18 @@ export class PobRuntime {
   }
   async calcs(input:PobCalcsRequest):Promise<PobCalcs>{
     const snapshot=structuredClone(input),hash=xmlHash(snapshot.xml),key=JSON.stringify([snapshot.revision,hash,snapshot.cellId,snapshot.runtimeId]);
-    const existing=this.calcsRequests.get(snapshot.buildId);if(existing?.key===key)return existing.pending;
-    const token=(this.calcsVersions.get(snapshot.buildId)||0)+1;this.calcsVersions.set(snapshot.buildId,token);
+    const owner=snapshot.buildId+':'+(snapshot.cellId||'table'),context=JSON.stringify([snapshot.revision,hash,snapshot.runtimeId]),prior=this.calcsContexts.get(snapshot.buildId);
+    if(snapshot.prefetch&&prior&&(prior.revision>snapshot.revision||prior.revision===snapshot.revision&&prior.key!==context))throw new PobRuntimeError('POB_SUPERSEDED','더 최신 입력이 상세 읽기를 대체했습니다.');
+    this.calcsContexts.set(snapshot.buildId,{key:context,revision:snapshot.revision});if(this.calcsContexts.size>64)this.calcsContexts.delete(this.calcsContexts.keys().next().value!);
+    const existing=this.calcsRequests.get(owner);if(existing?.key===key)return existing.pending;
+    const token=(this.calcsVersions.get(owner)||0)+1;this.calcsVersions.set(owner,token);
     if(this.calcsVersions.size>64)this.calcsVersions.delete(this.calcsVersions.keys().next().value!);
-    const pending=this.request({op:'calcs',xml:projectActiveXml(snapshot.xml),cellId:snapshot.cellId},snapshot.runtimeId,()=>this.calcsVersions.get(snapshot.buildId)!==token).then(({result,manifest})=>{
-      if(!Array.isArray(result.sections)||!Array.isArray(result.diagnostics)||!result.selectors)throw new PobRuntimeError('POB_PROTOCOL','원본 계산 상세 응답이 올바르지 않습니다.');
+    const pending=this.request({op:'calcs',xml:projectActiveXml(snapshot.xml),cellId:snapshot.cellId,prefetch:snapshot.prefetch},snapshot.runtimeId,()=>this.calcsVersions.get(owner)!==token||this.calcsContexts.get(snapshot.buildId)?.key!==context).then(({result,manifest})=>{
+      if(!Array.isArray(result.sections)||!Array.isArray(result.diagnostics)||!result.selectors)this.invalidResponse('원본 계산 상세 응답이 올바르지 않습니다.');
       return{...result,buildId:snapshot.buildId,revision:snapshot.revision,xmlSha256:hash,runtimeId:manifest.runtimeId,pobCommit:manifest.commit,at:new Date().toISOString()} as unknown as PobCalcs;
     });
-    this.calcsRequests.set(snapshot.buildId,{key,pending});
-    const cleanup=()=>{if(this.calcsRequests.get(snapshot.buildId)?.pending===pending)this.calcsRequests.delete(snapshot.buildId);};void pending.then(cleanup,cleanup);return pending;
+    this.calcsRequests.set(owner,{key,pending});
+    const cleanup=()=>{if(this.calcsRequests.get(owner)?.pending===pending)this.calcsRequests.delete(owner);};void pending.then(cleanup,cleanup);return pending;
   }
   async renderItem(args:ItemRenderRequest,expectedRuntimeId?:string):Promise<ItemRenderResult>{
     const submitted={...args,...(args.buildXml?{buildXml:projectActiveXml(args.buildXml)}:{})};
@@ -353,7 +358,7 @@ export class PobRuntime {
   private request(payload:Record<string,unknown>,expectedRuntimeId?:string,obsolete?:()=>boolean,requestId?:string,readCache?:ReadCacheContext):Promise<{result:Record<string,unknown>;manifest:Manifest;fromCache?:true}>{
     if(requestId){if(this.requestIds.has(requestId))return Promise.reject(new PobRuntimeError('POB_PROTOCOL','같은 PoB 요청 ID가 이미 실행 중입니다.'));this.requestIds.add(requestId);}
     const generation=this.generation,submitted=structuredClone(payload);
-    const pending=this.schedule(String(submitted.op),async()=>{
+    const pending=this.schedule(submitted.prefetch?'prefetch':String(submitted.op),async()=>{
       const requireCurrent=()=>{if(generation!==this.generation||requestId&&this.cancelledIds.has(requestId))throw new PobRuntimeError('POB_CANCELLED','PoB 요청이 취소되었습니다.');if(obsolete?.())throw new PobRuntimeError('POB_SUPERSEDED','더 최신 입력의 조회로 대체되었습니다.');};
       requireCurrent();
       if(generation!==this.generation)throw new PobRuntimeError('POB_CANCELLED','대기 중 PoB 계산이 취소되었습니다.');
@@ -367,14 +372,18 @@ export class PobRuntime {
         if(unsupported.length)throw new PobRuntimeError('POB_TREE_VERSION',`${label}의 미지원 트리 ${unsupported.map(tree=>`${tree.id}:${tree.version}`).join(', ')}를 현재 고정 PoB에 로드할 수 없습니다. 원문을 보존합니다.`);
       }
       if(generation!==this.generation)throw new PobRuntimeError('POB_CANCELLED','PoB 계산이 취소되었습니다.');
+      const memo= submitted.op==='calcs'||submitted.op==='item-tooltip'||submitted.op==='item-controls'&&!submitted.field&&!submitted.popup&&!submitted.similar;
+      const {prefetch:_,...identity}=submitted;const readKey=memo?sha(JSON.stringify(identity)):undefined,cached=readKey?this.readonlyReads.get(readKey):undefined;
+      if(cached?.runtimeId===manifest.runtimeId){this.readonlyReads.delete(readKey!);this.readonlyReads.set(readKey!,cached);return{result:structuredClone(cached.result),manifest};}
       const sourceEpoch=this.fileEpoch,result=await this.run(manifest,submitted,requestId);
       const after=await this.manifest();
       requireCurrent();
       if(generation!==this.generation)throw new PobRuntimeError('POB_CANCELLED','PoB 계산이 취소되었습니다.');
       if(after.runtimeId!==manifest.runtimeId||sourceEpoch!==this.fileEpoch)throw new PobRuntimeError('POB_CHANGED','계산 도중 PoB 출처가 변경되었습니다. 다시 계산해 주세요.');
+      if(readKey){this.readonlyReads.set(readKey,{runtimeId:manifest.runtimeId,result:structuredClone(result)});if(this.readonlyReads.size>64)this.readonlyReads.delete(this.readonlyReads.keys().next().value!);}
       return{result,manifest};
     });
-    const discardOnFailure=()=>{this.workspaceReads.clear();this.worker?.close();this.worker=undefined;this.workerRuntimeId=undefined;};
+    const discardOnFailure=()=>{this.workspaceReads.clear();this.readonlyReads.clear();this.calcsContexts.clear();this.worker?.close();this.worker=undefined;this.workerRuntimeId=undefined;};
     void pending.catch(error=>{if(error instanceof PobRuntimeError&&['POB_INTEGRITY','POB_MANIFEST','POB_CHANGED'].includes(error.code))discardOnFailure();});
     const cleanup=()=>{if(requestId){this.requestIds.delete(requestId);this.cancelledIds.delete(requestId);}};void pending.then(cleanup,cleanup);
     return pending;

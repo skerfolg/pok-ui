@@ -1,5 +1,5 @@
 import type {PobInspectionRequest} from './pob-inspection';
-export interface PobItemTooltipRequest extends PobInspectionRequest {runtimeId:string;itemId:string;slot?:string;nodeId?:number}
+export interface PobItemTooltipRequest extends PobInspectionRequest {runtimeId:string;prefetch?:boolean;itemId:string;slot?:string;nodeId?:number}
 export interface PobItemTooltip {
   displayLines:string[];
   buildId:string;revision:number;xmlSha256:string;runtimeId:string;pobCommit:string;itemId:string;slot?:string;nodeId?:number;
