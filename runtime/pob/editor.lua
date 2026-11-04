@@ -119,10 +119,7 @@ function api.item(args)
       item:Craft()
     end
   else error('Unsupported item kind') end
-  if args.quality~=nil then
-    assert(type(args.quality)=='number' and args.quality>=0 and args.quality<=100,'Quality must be between 0 and 100')
-    item.quality=args.quality;item:BuildAndParseRaw()
-  end
+  assert(args.quality==nil,'Edit quality with original item controls after creating the draft')
   if args.slot then
     assert(type(args.slot)=='string' and build.itemsTab.slots[args.slot],'Unknown PoB item slot')
     assert(build.itemsTab:IsItemValidForSlot(item,args.slot),'PoB item is not valid for slot '..args.slot)

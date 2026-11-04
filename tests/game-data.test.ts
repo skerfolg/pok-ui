@@ -273,3 +273,17 @@ test('missing bundle info returns a user-facing message without local paths', as
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+
+test('optional engine compatibility compares verified bundled PoB bytes and rechecks them after cached info',async()=>{
+  const f=await fixture();
+  try{
+    const sources=['src/HeadlessWrapper.lua','src/GameVersions.lua','src/Modules/Calcs.lua','src/Data/Example.lua'];
+    const sourceHashes=Object.fromEntries(sources.map(path=>[path,sha256(path)]));
+    for(const path of sources){const bundled='pok-runtime/external/pob/'+identity.pob.commit.slice(0,7)+'/'+path;await mkdir(join(f.root,bundled,'..'),{recursive:true});await writeFile(join(f.root,bundled),path);f.manifest.files.push({path:bundled,size:Buffer.byteLength(path),sha256:sha256(path)});}
+    f.manifest.bundleId='pokbundle-'+sha256(stable({...f.manifest,bundleId:undefined})).slice(0,32);await json(join(f.root,'bundle-manifest.json'),f.manifest);
+    const store=new GameDataStore(f.root),proof={runtimeId:'pob-'+digest,commit:identity.pob.commit,files:sourceHashes};assert.equal((await store.getInfo()).status,'ready');await store.verifyStandalonePob(proof);
+    await assert.rejects(store.verifyStandalonePob({...proof,files:{...sourceHashes,'src/Data/Example.lua':sha256('different source')}}),/Example.lua/);
+    await writeFile(join(f.root,'pok-runtime/external/pob',identity.pob.commit.slice(0,7),'src/Data/Example.lua'),'modified');await assert.rejects(store.verifyStandalonePob(proof),/해시|크기/);
+  }finally{await f.cleanup();}
+});

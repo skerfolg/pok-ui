@@ -8,11 +8,12 @@ import {hashBuildXml} from '../../shared/calculation-context';
 import {api} from '../services/api';
 export function NativeSkillGroups({build,setId,groupId,runtimeId,enabled,applyExpected,calculated,select}:{build:BuildDocument;setId:string;groupId?:string;runtimeId?:string;enabled:boolean;applyExpected:(snapshot:BuildDocument,edit:BuildEdit,label:string)=>BuildDocument;calculated:(build:BuildDocument,result:Calculation)=>boolean;select:(id:string)=>void}){
   const [inventory,setInventory]=useState<PobLoadouts>(),[preview,setPreview]=useState<{snapshot:BuildDocument;data:PobLoadouts;edit:BuildEdit;xml:string;token:number}>(),[pending,setPending]=useState(false),[applying,setApplying]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState<{revision:number;text:string}>(),[transferAction,setTransferAction]=useState<'copy'|'move'>(),[targetSetId,setTargetSetId]=useState('');
+  const readOnlyRequest=useRef(true);
   const generation=useRef(0),requestId=useRef<string|undefined>(undefined),latest=useRef(build);latest.current=build;
-  function cancel(){generation.current++;const id=requestId.current;requestId.current=undefined;if(id)void api.cancelPobRequest(id).catch(()=>{});setPending(false);setPreview(undefined);}
+  function cancel(){generation.current++;const id=requestId.current;requestId.current=undefined;if(id&&!readOnlyRequest.current)void api.cancelPobRequest(id).catch(()=>{});setPending(false);setPreview(undefined);}
   function close(){cancel();setTransferAction(undefined);setError('');}
   async function read(operation:PobSkillGroupOperation){
-    cancel();const token=generation.current,id=crypto.randomUUID(),snapshot=build;requestId.current=id;setPending(true);setError('');
+    cancel();readOnlyRequest.current=operation.action==='inspect'||operation.action==='export-text';const token=generation.current,id=crypto.randomUUID(),snapshot=build;requestId.current=id;setPending(true);setError('');
     try{const [data,hash]=await Promise.all([api.readLoadouts({buildId:snapshot.id,revision:snapshot.revision,xml:snapshot.xml,runtimeId,requestId:id,skillGroups:operation}),hashBuildXml(snapshot.xml)]);
       if(token!==generation.current)return;
       if(data.buildId!==snapshot.id||data.revision!==snapshot.revision||data.xmlSha256!==hash||data.runtimeId!==runtimeId||JSON.stringify(data.skillGroups?.operation)!==JSON.stringify(operation))throw new Error('원본 스킬 그룹 응답의 입력·요청·PoB 버전이 다릅니다.');
@@ -20,7 +21,7 @@ export function NativeSkillGroups({build,setId,groupId,runtimeId,enabled,applyEx
       else{const edit=skillGroupEdit(snapshot.xml,data.skillGroups!);setPreview({snapshot,data,edit,xml:editBuild(snapshot.xml,edit),token});}
     }catch(reason){if(token===generation.current)setError(String(reason));}finally{if(requestId.current===id)requestId.current=undefined;if(token===generation.current)setPending(false);}
   }
-  useEffect(()=>{close();setInventory(undefined);if(enabled&&runtimeId)void read({action:'inspect',setId});return()=>{generation.current++;const id=requestId.current;requestId.current=undefined;if(id)void api.cancelPobRequest(id).catch(()=>{});};},[build.id,build.revision,build.xml,setId,runtimeId,enabled]);
+  useEffect(()=>{close();setInventory(undefined);if(enabled&&runtimeId)void read({action:'inspect',setId});return()=>{generation.current++;const id=requestId.current;requestId.current=undefined;if(id&&!readOnlyRequest.current)void api.cancelPobRequest(id).catch(()=>{});};},[build.id,build.revision,build.xml,setId,runtimeId,enabled]);
   const data=inventory?.skillGroups,group=data?.groups.find(value=>value.id===groupId),index=data?.groups.findIndex(value=>value.id===groupId)??-1,ready=Boolean(enabled&&runtimeId&&inventory?.buildId===build.id&&inventory?.revision===build.revision&&inventory?.runtimeId===runtimeId&&group&&!pending&&!applying);
   const current=preview&&preview.token===generation.current&&preview.snapshot.id===build.id&&preview.snapshot.revision===build.revision&&preview.snapshot.xml===build.xml&&preview.data.runtimeId===runtimeId?preview:undefined;
   const result=current?.data.skillGroups;
@@ -30,7 +31,7 @@ export function NativeSkillGroups({build,setId,groupId,runtimeId,enabled,applyEx
     try{const info=await api.getPobRuntimeInfo();if(info.status!=='ready'||info.runtimeId!==current.data.runtimeId)throw new Error('검토 후 PoB 런타임이 바뀌었습니다. 다시 검토해 주세요.');
       const label='원본 스킬 그룹 '+labels[result.operation.action];committed=applyExpected(current.snapshot,current.edit,label);setPreview(undefined);setTransferAction(undefined);
       select(result.operation.action==='reorder'?String(result.order.indexOf(result.operation.groupId!)+1):result.operation.action==='copy'?(result.transfer?.targetSetId===setId?result.transfer.targetGroupId:result.operation.groupId!):'');
-      const computed=await api.computeBuild(committed),attached=calculated(committed,{...computed,result:{...computed.result,workspace_operation:{kind:'skill-groups',operation:result.operation,inputRevision:current.snapshot.revision,inputXmlSha256:current.data.xmlSha256,reviewRuntimeId:current.data.runtimeId,pobCommit:current.data.pobCommit,order:result.order,transfer:result.transfer,mainSocketGroup:result.mainSocketGroup,calcsSkillNumber:result.calcsSkillNumber}}});
+      const computed=await api.computeBuild(committed,'workspace'),attached=calculated(committed,{...computed,result:{...computed.result,workspace_operation:{kind:'skill-groups',operation:result.operation,inputRevision:current.snapshot.revision,inputXmlSha256:current.data.xmlSha256,reviewRuntimeId:current.data.runtimeId,pobCommit:current.data.pobCommit,order:result.order,transfer:result.transfer,mainSocketGroup:result.mainSocketGroup,calcsSkillNumber:result.calcsSkillNumber}}});
       if(latest.current.id===committed.id)setNotice({revision:committed.revision,text:`리비전 ${committed.revision} ${computed.result.ok===false?'계산 진단 확인 필요':'새 계산 수신'}${attached?'':' · 입력 변경으로 최신 결과에 반영하지 않음'}`});
     }catch(reason){const owner=committed||current.snapshot;if(latest.current.id===owner.id&&latest.current.revision===owner.revision&&latest.current.xml===owner.xml)setError(String(reason));}finally{setApplying(false);}
   }

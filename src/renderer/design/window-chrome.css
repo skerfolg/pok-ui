@@ -71,3 +71,5 @@
     --window-titlebar-controls-width: 130px;
   }
 }
+
+.window-frame[data-window-chrome=false] { grid-template-rows:minmax(0,1fr); }

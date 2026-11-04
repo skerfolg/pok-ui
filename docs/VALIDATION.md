@@ -1,3 +1,53 @@
+## 단독 성능·notes/affix 검사 이관 — 2026-11-04
+
+check213/build/pack:win 통과. source notes6/affix4와 actual packaged notes6/affix4/workspace9 통과. 노트는 빠른 build/view 전환에서도 원래 owner의 expected XML note로 반영하고 rich text/CRLF/unknown XML·undo/restart를 유지한다. native range는 값 변화로 input node를 재생성하지 않아 Home→End focus를 보존한다. legacy/current host 동일 XML/numeric output·QPC 복원/계산/조립·latest queue·actual packaged Paint3profile/idle/1024 계측은 UI-REBUILD-PERFORMANCE-FINAL-20261104를 따른다. 마지막 수정 후 compact도 입력1.9~12.7ms/수치1.08~1.54초로 기준 통과. noUnusedLocals와3진입점98파일·35 IPC/2 scheme·16 Lua/5 deps 감사도 수행했다. 남은 old smoke selector 이관/최종 UI 커밋·완료 감사는 아직 필요하다.
+
+---
+
+## 원본 입력 범위·출처 검증 — 2026-11-03
+
+check213/build/pack:win 통과. source/actual packaged 생성접사3/skill7/workspace9/Calcs4/GUI import4 통과. quality101 입력과 level200의 원본 보정 안내, metadata 전체 item 복사·장착·undo를 확인했다. 중복 생성 quality/mod/roll UI는 native 대체 후 제거했고 원본 옵션1024 PNG를 직접 확인했다. current runtime059의 GUI 저장102 numeric output 일치 및 byte 동일 export도 확인했다. 선택 PoK source는 helper4/bundle 통합1/실제 checkout1537 src byte 일치·다른 commit 거부 native2로 확인했으며, 실제 모델/서버 연결은 미수행이다. 각 결과 directory/단일 harness timing 실패는 CURRENT-PLAN에 기록했다. 전체 goal은 active다.
+
+---
+
+## Calcs 상세 분리·비교/출처 이동 — 2026-11-03
+
+check207/build/pack:win 통과. actual packaged isolation3/management-compare5/source-navigation3/calcs4/gui-roundtrip4 통과. Calcs native 프로토콜을 실제로 보류해도 foreground MAIN의 새 revision 계산이 완료됐고, 해제한 옛 응답이 최신값을 덮지 않았다(단일 관측1073ms). 원본 Item/Tree 출처 클릭이 정확한 slot/item/node를 선택하며 XML·전체 수치는 불변이었다. 비교 일반 표는 공유 요약 라벨/단위를 쓰고 원본 전체 통계를 고급 옵션으로 보존한다. packaged 통계1024/Tree1024 PNG를 직접 확인했다. 현재 runtime의 GUI saved XML102 수치도 모두 일치한다. 각 디렉터리와 초기 시험 주입 실패 원인은 CURRENT-PLAN 최상단을 따른다. 전체 목표는 active이며 표시명/한도·source 호환·분리 성능 실측·정리·최종 커밋은 감사표의 미완료 항목으로 남는다.
+
+---
+
+## 세션 초안·팝업 완료 수명 — 2026-11-03
+
+check207/build/pack:win 통과. 실제 packaged item-draft5/popup6/skill-draft5/workspace9/jewel5 통과. source item-draft5/popup6/item-transition3/item-hover5를 먼저 통과했고, 소유자 격리·invalid field 유지·private pending response의 재마운트 전파·Add 잠금/명시 취소·팝업 완료 자동 계산·unknown/original XML·undo·restart·두 크기를 검증했다. invalid draft/session cache 자체는 restart 복원을 지원하지 않는다. source 성유1920/오염1024와 packaged 성유1024 PNG를 직접 확인했다. hover가 우측 편집을 가리는 실제 결함과 클릭 후 재진입을 빠뜨린 jewel harness 실패/해결은 CURRENT-PLAN에 기록했다. 최신 전체 완료 감사는 UI-REBUILD-COMPLETION-AUDIT-20261103을 따른다.
+
+---
+
+## 원본 아이템 hover 비교 — 2026-11-03
+
+CURRENT-PLAN 최상단 runtime/editor 출처로 check205/build/pack:win 통과. native5와 source Electron5, actual packaged item-hover5/workspace9/jewel5 통과. stored Item identity를 사용한 stock 장착·교체·해제/요구량, child socket/실제 passive socket, 전체 수치 오염 회귀, 두 크기 focus/Escape·비동기 크기 경계, native 편집/undo/저장·재시작을 확인했다. source1024 장비·주얼과 packaged1920 hover PNG를 직접 확인했다. 새로운 worker는 foreground summary와 분리됐으나 대표·무거운 입력의 최종 wall 단계별 성능 보장은 아직 없다. 원본 PoB/공유 PoK는 수정하지 않았다. 전체 목표는 active다.
+
+---
+
+## UI 재구축 초안·전환 추가 검증 — 2026-11-03
+
+최신 check boundary/type/205 tests, build, pack:win 통과. actual Windows executable에서 생성 초안5/아이템 전환3/스킬 초안5/Party4 통과. 생성 초안은 stock quality/socket/rune metadata·명시 Add·장착·undo·stale 차단, 일반 아이템은 제출 후 view/build 전환 소유자와 undo, 스킬은 valid flush·invalid 숫자/이름 세션 유지, Party는 지원 가져오기/비우기/진단·restart를 확인했다. 생성·Party 1920×1080/1024×768 PNG 직접 확인. 각 로그/디렉터리와 초기 실패 원인은 CURRENT-PLAN 최상단에 기록했다. 임의 개인 빌드/모델·설치 연결/전체 PoB control 동등성을 검증한 것은 아니다. goal은 active다.
+
+---
+
+# 2026-11-03 목업 재구축 중간 검증 (전체 목표 미완료)
+
+현재 실행/출처/잔여 작업은 CURRENT-PLAN 최상단과 UI-REBUILD-PROGRESS-20261103을 따른다. 이전 승인 대기/과거 검사 결과와 구분한다. 원본 PoB0.23.1/5d173cb 고정, KB/PoK/모델 비사용.
+
+source Electron workflow9·equipment5·tree-advanced5·Calcs4·jewel5·upstream GUI XML import4, native persistent7·item-controls7 통과. 실제 upstream GUI의 품질24/Fireball6/패시브 편집 후 저장 수치102개가 fresh native와 일치했다. UI 재가져오기/편집 확인/두 크기/원문 bytes 재내보내기와 원래 export 파일 보호를 확인했다. 상대/출력 경로 및 전체 결과는 `.local/ui-rebuild-review/checkpoint-results.json`과 CURRENT-PLAN에 기록한다.
+
+검사200·build 성공 후 마지막 readonly query 취소/scope 변경을 재검사 중이다. 최종 pack 후 actual exe의 workflow/jewel/GUI import smoke를 실행하는 로그/status는 `.local/ui-rebuild-review`에 남긴다. 완료 전 과거 source/packaged 성공을 최신 전체 성공으로 집계하지 않는다.
+
+실패 이력: 새 worker unit cleanup의 Windows EBUSY는 종료 직후 파일 잠금으로 재시도 정리를 추가했다. 시스템 부하 중 synthetic startup timeout을 안정된 fixture 제한으로 조정했다. 파일 감시의 초기/디렉터리 알림 오인식을 내용·identity 변화와 분리했다. native 테스트의 잘못된 Quality control ID와 정수 오류 문구 가정을 수정했다. legacy Calcs가 계산 undefined를 기대하던 검사는 자동 계산 revision/출처 확인으로 갱신했다. 접힌 inactive 소켓 role은 includeHidden+명시 펼침으로, Escape 후 hover는 pointer 재진입으로 검사했다. GUI import harness의 native root 경로 누락도 수정해 재실행했다. 이 실패를 최초 통과로 집계하지 않는다.
+
+전체 기능 동등성·설치 PoB/선택 PoK/모델·모든 입력·최종 portable 압축·#188 해결/재평가 준비 완료를 선언하지 않는다.
+
+---
+
 # 로컬 검증
 
 ## 원본 스킬 텍스트 교환 — 2026-11-03 (27차 진행)

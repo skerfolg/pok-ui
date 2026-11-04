@@ -9,7 +9,7 @@ export interface PobBreakdownSection {
 export interface PobCalcs {
   buildId:string;revision:number;xmlSha256:string;runtimeId:string;pobCommit:string;at:string;
   selectors:{group:number;mode:string;modeHelp?:string;showMinion:boolean;minionAvailable:boolean;groups:{index:number;label:string}[];modes:{value:string;label:string}[];skill?:PobSkillOptions};
-  sections:{id:string;group:number;subsections:{id:string;label:string;extra?:string;rows:{label:string;cells:PobCalcCell[]}[]}[]}[];
+  sections:{id:string;group:number;width?:number;subsections:{id:string;label:string;extra?:string;rows:{label:string;cells:PobCalcCell[]}[]}[]}[];
   diagnostics:{code:string;field?:string;message:string}[];
   breakdown?:{cellId:string;sections:PobBreakdownSection[]};
 }

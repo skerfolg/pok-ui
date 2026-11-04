@@ -1,3 +1,4 @@
+import {BuildFileStore} from './build-file-store';
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell, screen, protocol,clipboard } from 'electron';
 import { readFile, writeFile, rename, mkdir, stat } from 'node:fs/promises';
 import { existsSync, mkdirSync } from 'node:fs';
@@ -10,7 +11,7 @@ import { StateStore, validateState } from './storage';
 import { importDocument, exportDocument, validateBuild } from './pob-files';
 import { PokConnection, assertDesktopContract, assertRuntimeIdentity, effectivePokSettings } from './pok';
 import { GameDataStore, GameDataError } from './game-data';
-import type { DataBundleInfo, CatalogQuery, CatalogEntryType, ItemRenderRequest, ItemRenderResult } from '../shared/game-data';
+import type { DataBundleInfo, ItemRenderRequest } from '../shared/game-data';
 import type { BuildProposalDraft } from '../shared/contracts';
 import { parseBuild } from '../shared/pob-document';
 import { BuildProposals, xmlHash } from './build-proposals';
@@ -32,6 +33,8 @@ let connectionTask:Promise<ConnectionInfo>|undefined;
 let agent:AgentManager;
 let gameData:GameDataStore;
 let pobRuntime:PobRuntime;
+let pobDetailRuntime:PobRuntime;
+let pobSourceGeneration=0;
 let editorData:PobEditorData;
 let chatImages:ChatImageStore;
 let bundleInfo:DataBundleInfo = {status:'missing'};
@@ -97,7 +100,6 @@ function assertBuildVersion(build:BuildDocument):void {
   const active=parsed.trees.find(t=>t.active)??parsed.trees[0];
   if(!active?.version || active.version!==bundleInfo.defaultTreeVersion) throw new Error('이 빌드의 트리 버전은 현재 계산 묶음에서 지원하지 않습니다. 원본은 보존됩니다.');
 }
-function bundleResourceRoot():string{return app.isPackaged?process.resourcesPath:join(app.getAppPath(),'resources');}
 function publishConnection(info:ConnectionInfo):ConnectionInfo {
   connectionInfo={...info,managed:app.isPackaged};
   if(window&&!window.isDestroyed())window.webContents.send('pok:connection',connectionInfo);
@@ -106,12 +108,14 @@ function publishConnection(info:ConnectionInfo):ConnectionInfo {
 function connectEngine(requested:Settings['pok']):Promise<ConnectionInfo> {
   if(quitting)return Promise.resolve({connected:false,managed:app.isPackaged});
   if(connectionTask)return connectionTask;
-  const selected=effectivePokSettings(requested,app.isPackaged);
+  const selected=effectivePokSettings(requested,app.isPackaged),sourceGeneration=pobSourceGeneration;
   publishConnection({connected:false,connecting:true});
   proposals.clear();agent?.invalidateContext();
   connectionTask=(async()=>{
     try {
       const context=await verifiedContext();
+      const sourceProof=await pobRuntime.sourceProof();
+      await gameData.verifyStandalonePob(sourceProof,selected.mode==='checkout'?selected.root:undefined);
       const launch=selected.mode==='bundled'?await gameData.getLaunchDescriptor():undefined;
       if(quitting)return {connected:false,managed:app.isPackaged};
       const result=await pok.connect(selected,bundledRuntimeRoot(),join(app.getPath('userData'),'engine'),join(app.getPath('userData'),'cache','pok'),launch);
@@ -119,7 +123,7 @@ function connectEngine(requested:Settings['pok']):Promise<ConnectionInfo> {
       assertDesktopContract(result.info,pok.tools);
       assertRuntimeIdentity((result.info as Record<string,unknown>)?.identity,context.identity);
       const editor=await pobRuntime.getInfo();
-      if(editor.status==='ready'&&editor.commit!==context.identity.pob.commit)throw new Error('선택 PoK와 독립 편집기의 PoB 버전이 다릅니다. 수동 PoB 작업은 계속 사용할 수 있습니다.');
+      if(sourceGeneration!==pobSourceGeneration||editor.status!=='ready'||editor.runtimeId!==sourceProof.runtimeId||editor.commit!==context.identity.pob.commit)throw new Error('연결 확인 중 독립 PoB 출처 또는 준비 상태가 변경되었습니다. 다시 확인해 주세요.');
       pok.bindIdentity(context.identity);
       return publishConnection({...result,...context,connecting:false,compatibility:'ready'});
     } catch(error) {
@@ -131,6 +135,7 @@ function connectEngine(requested:Settings['pok']):Promise<ConnectionInfo> {
 }
 pok.onDisconnected=error=>{if(!quitting)publishConnection({connected:false,connecting:false,compatibility:'engine-unavailable',error});};
 function registerIpc():void{
+  const buildFiles=new BuildFileStore(dirname(store.path));
   handle('pok:load-state',()=>state);
   handle('pok:load-passive-tree',(version:unknown)=>{text(version,30,'트리 버전');return editorData.loadTree(version);});
   handle('pok:save-state',async(value:unknown)=>{
@@ -149,6 +154,13 @@ function registerIpc():void{
     return document;
   });
   handle('pok:copy-text',async(value:unknown)=>{text(value,65536,'복사할 텍스트');await clipboard.writeText(value);});
+  handle('pok:save-build',async(value:unknown,saveAs:unknown)=>{
+    validateBuild(value);if(saveAs!==undefined&&typeof saveAs!=='boolean')throw new Error('저장 요청이 올바르지 않습니다.');
+    return track(buildFiles.save(value,async()=>{
+      const selected=await dialog.showSaveDialog(window!,{title:saveAs?'다른 이름으로 저장':'빌드 저장',defaultPath:value.name.replace(/[<>:"/\\|?*\x00-\x1F]/g,'-')+'.xml',filters:[{name:'Path of Building XML',extensions:['xml']}]});
+      return selected.canceled?undefined:selected.filePath;
+    },Boolean(saveAs)));
+  });
   handle('pok:export-build',async(value:unknown,format:unknown)=>{
     validateBuild(value);
     if(!['xml','pob','json'].includes(String(format)))throw new Error('지원하지 않는 형식입니다.');
@@ -182,6 +194,14 @@ function registerIpc():void{
     if(request.weaponSet!==undefined&&![1,2].includes(request.weaponSet as number))throw new Error('활성 무기 세트가 올바르지 않습니다.');
     if(request.slot!==undefined)text(request.slot,128,'장비 슬롯');if(request.itemId!==undefined)text(request.itemId,128,'장비 아이템');
     return pobRuntime.equipment(request as unknown as import('../shared/pob-equipment').PobEquipmentRequest);
+  });
+  handle('pok:item-tooltip',(request:unknown)=>{
+    record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');text(request.itemId,128,'아이템 ID');text(request.runtimeId,128,'아이템 비교 런타임');
+    if(!Number.isSafeInteger(request.revision)||Number(request.revision)<0)throw new Error('아이템 비교 리비전이 올바르지 않습니다.');
+    if(request.slot!==undefined)text(request.slot,128,'아이템 비교 슬롯');
+    if(request.nodeId!==undefined&&(!Number.isSafeInteger(request.nodeId)||Number(request.nodeId)<0))throw new Error('주얼 비교 소켓이 올바르지 않습니다.');
+    if(request.nodeId!==undefined&&request.slot!==undefined)throw new Error('비교 위치를 하나만 선택해 주세요.');
+    return pobDetailRuntime.itemTooltip(request as unknown as import('../shared/pob-item-tooltip').PobItemTooltipRequest);
   });
   handle('pok:item-controls',async(request:unknown)=>{
     record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');text(request.itemId,128,'아이템 ID');
@@ -254,7 +274,7 @@ function registerIpc():void{
     if(!Number.isSafeInteger(request.revision)||Number(request.revision)<0)throw new Error('계산 상세 리비전이 올바르지 않습니다.');
     if(request.cellId!==undefined){text(request.cellId,80,'계산 셀');if(!/^\d+:\d+:\d+:\d+$/.test(String(request.cellId)))throw new Error('계산 셀 식별자가 올바르지 않습니다.');}
     if(request.runtimeId!==undefined)text(request.runtimeId,128,'계산 런타임');
-    return pobRuntime.calcs({buildId:request.buildId,revision:Number(request.revision),xml:request.xml,cellId:request.cellId as string|undefined,runtimeId:request.runtimeId as string|undefined});
+    return pobDetailRuntime.calcs({buildId:request.buildId,revision:Number(request.revision),xml:request.xml,cellId:request.cellId as string|undefined,runtimeId:request.runtimeId as string|undefined});
   });
   handle('pok:inspect-build',async(request:unknown)=>{
     record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');
@@ -272,6 +292,7 @@ function registerIpc():void{
   });
   handle('pok:get-pob-catalog-entry',async(type:unknown,id:unknown)=>{text(type,32,'카탈로그 유형');text(id,512,'카탈로그 ID');return editorData.getEntry(type as never,id);});
   handle('pok:render-pob-item',async(request:unknown)=>{
+    if(request&&typeof request==='object'&&'quality' in request)throw new Error('품질은 생성 후 원본 아이템 옵션에서 조절해 주세요.');
     record(request);text(request.kind,20,'아이템 종류');text(request.id,1000,'아이템 ID');
     if(!['base','unique','rare'].includes(String(request.kind)))throw new Error('지원하지 않는 아이템 종류입니다.');
     if(Buffer.byteLength(JSON.stringify(request))>24*1024*1024)throw new Error('아이템 요청이 너무 큽니다.');
@@ -281,7 +302,7 @@ function registerIpc():void{
     if(result.ok&&typeof result.text!=='string')throw new Error('아이템 원문이 누락되었습니다.');
     return result;
   });
-  handle('pok:compute',async(value:unknown)=>{validateBuild(value);return pobRuntime.compute(value);});
+  handle('pok:compute',async(value:unknown,scope:unknown)=>{validateBuild(value);if(scope!==undefined&&scope!=='workspace')throw new Error('계산 요청 범위가 올바르지 않습니다.');return pobRuntime.compute(value,scope as 'workspace'|undefined);});
   handle('pok:apply-build-proposal',async(id:unknown)=>{
     text(id,128,'제안 ID');
     const context=await verifiedContext();
@@ -386,7 +407,12 @@ void app.whenReady().then(async()=>{
   });
   app.setAppUserModelId('dev.pok.desktop');
   gameData=new GameDataStore(dataRoot(),{allowCheckout:!app.isPackaged});
-  pobRuntime=new PobRuntime(join(dataRoot(),'pob-runtime'));
+  pobRuntime=new PobRuntime(join(dataRoot(),'pob-runtime'),120_000,()=>{
+    pobSourceGeneration++;pobDetailRuntime?.close();proposals.clear();agent?.invalidateContext();
+    if(connectionInfo.connected||connectionInfo.connecting)void pok.close().finally(()=>{if(!quitting)publishConnection({connected:false,connecting:false,compatibility:'incompatible',error:'독립 PoB 출처가 변경되어 선택 PoK 연결을 해제했습니다. 출처를 확인한 뒤 다시 연결해 주세요.'});}).catch(()=>{});
+    if(window&&!window.isDestroyed())window.webContents.send('pok:pob-runtime-invalidated');
+  });
+  pobDetailRuntime=new PobRuntime(join(dataRoot(),'pob-runtime'),120_000);
   editorData=new PobEditorData(join(dataRoot(),'pob-editor'),pobRuntime);
   // Show the workspace while the immutable bundle is checked; editing gates await getInfo().
   void gameData.getInfo().then(info=>{bundleInfo=info;});
@@ -441,6 +467,6 @@ app.on('before-quit',event=>{
   event.preventDefault();quitting=true;
   void(async()=>{
     try{await Promise.allSettled([...writes]);await store?.flush();}
-    finally{pobRuntime?.close();agent?.close();await pok.close();app.quit();}
+    finally{pobRuntime?.close();pobDetailRuntime?.close();agent?.close();await pok.close();app.quit();}
   })();
 });

@@ -1,3 +1,19 @@
+> 선택 PoK 연결은 engine identity/KB/capability 검사와 별도로, 독립 manifest에서 검증한 release `pob/src` 전체 파일 hash를 engine의 검증된 bundle inventory 또는 선택 checkout 실제 파일과 대조한다. 같은 commit만으로 ready를 내지 않으며 누락/변조/불명확한 origin을 거부한다. sourceProof는 main 내부 계약이다. adapter/VM 바이너리 동일성이나 실제 모델 검증을 뜻하지 않는다. native source invalidation은 detail worker·제안·agent 문맥·선택 연결을 폐기하고, 연결 중 source generation/runtime ID가 바뀌어도 ready를 거부한다. 설치 PoB 전환 UI는 별도 설계 범위이며 현재 선택 PoK 묶음 교체는 재시작으로 새 context를 읽는 경로다.
+>
+> 생성의 접사·품질·범위는 별도 private item의 원본 컨트롤로 통일한다. 전역 mod/roll 사전 UI와 고정 quality 상한을 제거했다. gem의 입력 형식 검증은 게임 상한으로 해석하지 않으며, 원본에서 관측한 실제 level/quality가 XML 요청과 다르면 원문을 보존하면서 복원 차이를 명시한다.
+
+> 아이템 tooltip 비교와 Calcs/Breakdown 상세 조회는 foreground MAIN과 분리된 두 번째 지속 PobRuntime에서 실행한다. stock Item/ItemsTab/AddStatComparesToTooltip/AddRequirementsToTooltip만 관측하며 canonical XML을 변경하지 않는다. 두 인스턴스는 동일한 무결성 검증·XML 복원·변경 폐기 정책을 적용하고 앱 종료 때 함께 닫는다. renderer에서 보이는 카드만 조회를 시작하며 응답의 현재 소유자를 확인한다.
+
+## 2026-11-03 UI 재구축의 현행 실행 수명
+
+`PobRuntime`은 `PobWorker`의 LuaJIT 프로세스를 유지하되 어댑터의 요청별 `editor.load(xml)`을 유지한다. 원본 게임 계산/편집 규칙을 renderer로 옮기지 않는다. 고유 ID 응답을 검증하고 native 오류/프로토콜/종료/timeout/cancel 시 프로세스를 폐기한다. 요약 계산은 대기 중 상세 조회보다 우선하며 같은 build/revision/XML의 진행 중 계산은 병합하고 오래된 계산은 대체한다. 이미 실행 중인 읽기는 XML/revision 검사를 통과해야만 표시하며 화면 effect 정리만으로 공유 worker를 종료하지 않는다.
+
+검증은 시작 시 전체 파일 바이트/manifest identity/경로를 확인하고, recursive 파일 감시와 매 요청 manifest·실제 폴더 identity 검사를 사용한다. 변경 감시 실패/미지원은 파일 metadata+내용 해시 검사로 돌아간다. 변경 이벤트는 실행 프로세스/검증 결과를 폐기하며 요청 전후 변경 세대를 검사한다. 30초마다 전체 바이트를 재검증한다. 준비 직후 지연된 디렉터리 알림은 최대 2회 재검증하며 계속 변하면 거부한다. 아래 과거의 요청별 프로세스 설명은 이력이다.
+
+`BuildFileStore`는 최초 명시 저장에서 선택한 XML 대상만 등록한다. 가져온 원본 파일은 자동 등록하지 않는다. 대상과 저장 hash는 host의 별도 registry에 보존하고 재시작 후 재사용한다. 외부 변경/삭제를 감지하면 저장을 거부하고 다른 이름 저장을 안내한다. renderer에는 저장 hash만 workspace metadata로 보존하며 복구 자동 보존 상태와 파일 저장 상태를 구분한다.
+
+일반 수동 편집은 기존 XML 부분 패치/undo/revision 계약을 사용한다. 생성·what-if·AI 제안은 명시 추가/적용 전까지 분리한다. 전역 자동 계산의 응답은 build/revision/XML뿐 아니라 현재 runtime 출처가 일치할 때만 붙인다. `WorkspaceCharacter`/주얼 조회는 원본 metadata를 공유하며 `HoverCard`는 원본 옵션·Calcs 기여/출처를 표시한다. source ID가 있는 아이템/트리만 위치 이동을 제공한다.
+
 # 구조와 배포 경계
 
 27차: 원본 skill-text 어댑터가 각 줄과 전체 입력을 독립 원본 XML reload로 관측한다. parser를 복제하지 않고 full/line consistency를 검사해 source에 새 native Skill와 Spectre/BeastCompanion 추가만 반영한다. canonical fresh node factory를 재사용하며 input-record는 XML을 parse/serialize하지도 않고 revision/undo를 유지한다. inputEvidence는 native 응답/원문·진단/과거 trial의 독립 기록이며 현재 계산 검증으로 해석하지 않는다. 실제 skill-import-native에만 appliedRevision을 붙인다. JSON/복제는 원래 source build identity를 보존한다. NativeSkillText portal은 submit 전파를 차단하고 요청 hash/revision/runtime/generation과 부분 반영 확인을 검사한다.

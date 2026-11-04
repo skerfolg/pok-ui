@@ -6,8 +6,9 @@ const unavailable = async (): Promise<never> => { throw new Error('이 기능은
 function chooseFile(): Promise<File | null> {
   return new Promise(resolve => {
     const input = document.createElement('input'); input.type = 'file'; input.accept = '.xml';
-    input.addEventListener('change', () => resolve(input.files?.[0] ?? null), { once: true });
-    input.addEventListener('cancel', () => resolve(null), { once: true }); input.click();
+    input.hidden=true;document.body.appendChild(input);
+    input.addEventListener('change',()=>{const file=input.files?.[0]??null;input.remove();resolve(file);},{once:true});
+    input.addEventListener('cancel',()=>{input.remove();resolve(null);},{once:true});input.click();
   });
 }
 async function previewJson<T>(path:string):Promise<T> {
@@ -22,6 +23,7 @@ const browserPreview: DesktopApi = {
   async loadState() { const text = localStorage.getItem('pok-preview-v1'); return text ? JSON.parse(text) : createDefaultState(); },
   async saveState(state) { localStorage.setItem('pok-preview-v1', JSON.stringify(state)); },
   async importBuild() { const file = await chooseFile(); if (!file) return null; const xml = await file.text(); parseBuild(xml); return createBuildDocument(file.name.replace(/\.xml$/i, ''), xml, file.name); },
+  saveBuild:unavailable,
   async exportBuild(build, format) {
     if (format === 'pob') return unavailable();
     const content = format === 'xml' ? build.xml : JSON.stringify(build, null, 2);
@@ -32,10 +34,12 @@ const browserPreview: DesktopApi = {
   async getPokConnection() { return {connected:false}; },
   onPokConnection() { return ()=>{}; },
   getDataBundleInfo: () => previewJson('/info'),
+  onPobRuntimeInvalidated:()=>()=>{},
   getPobRuntimeInfo:async()=>({status:'missing',error:'원본 PoB 계산은 데스크톱 앱에서 사용할 수 있습니다.'}),
   copyText:unavailable,
   inspectBuild:unavailable,
   readCalcs:unavailable,
+  itemTooltip:unavailable,
   readParty:unavailable,
   readLoadouts:unavailable,
   editTree:unavailable,

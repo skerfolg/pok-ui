@@ -1,0 +1,16 @@
+// Retained as a quick, portable current-host stability smoke; final Windows timing criteria use pob-performance-phases/queue and performance-ui-desktop-smoke.
+// Repeatable synthetic profiles. Run alone; these are measurements, not universal budgets.
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');require('tsx/cjs');
+const {PobRuntime}=require('../src/main/pob-runtime.ts'),{createBlankXml,editBuild}=require('../src/shared/pob-document.ts'),{createBuildDocument}=require('../src/shared/state.ts');
+const blank=createBlankXml({defaultTreeVersion:'0_5',characterClass:{id:'Ranger',name:'Ranger',internalId:2,legacyId:2,ascendancies:[]}}),representative=JSON.parse(fs.readFileSync('.local/standalone-pob/equipment-fixture.json','utf8')).xml;
+let heavy=representative;
+for(let index=10;index<90;index++)heavy=editBuild(heavy,{type:'item',id:String(index),text:`Rarity: RARE\nSynthetic Load Item ${index}\nIron Ring\n--------\n+10 to Dexterity`});
+for(let index=3;index<=32;index++){heavy=editBuild(heavy,{type:'skill-add',setId:'1'});heavy=editBuild(heavy,{type:'skill-group',setId:'1',groupId:String(index),group:{id:String(index),label:'Synthetic Load Skill '+index,slot:'',enabled:true,includeInFullDPS:false,attributes:{},gems:[{name:'Fireball',level:5,quality:0,enabled:true,attributes:{}}]}});}
+for(let index=0;index<8;index++)heavy=editBuild(heavy,{type:'set-add',kind:'items',title:'Synthetic inactive '+index,copyFrom:'1'});heavy=editBuild(heavy,{type:'active-set',kind:'items',id:'1'});
+const report={at:new Date().toISOString(),profiles:[]};
+(async()=>{for(const [name,xml]of [['simple',blank],['representative',representative],['heavy inventory and skill groups',heavy]]){
+  const runtime=new PobRuntime(path.resolve('resources/pob-runtime')),record={name,xmlBytes:Buffer.byteLength(xml),operations:[]};report.profiles.push(record);
+  let stages=[];for(const key of ['manifest','run']){const original=runtime[key].bind(runtime);runtime[key]=async(...args)=>{const start=performance.now();try{return await original(...args);}finally{stages.push({stage:key,ms:Math.round(performance.now()-start)});}};}
+  async function measure(label,action){stages=[];const start=performance.now(),result=await action();record.operations.push({label,ms:Math.round(performance.now()-start),stages:[...stages]});return result;}
+  try{record.runtime=await measure('startup verification',()=>runtime.getInfo());assert.equal(record.runtime.status,'ready');const build=createBuildDocument('Synthetic Performance '+name,xml);const baseline=await measure('cold process and calculation',()=>runtime.compute(build));assert(baseline.result.stats.Life>0);for(let index=0;index<3;index++){const result=await measure('warm '+(index+1),()=>runtime.compute(build));assert.deepEqual(JSON.parse(JSON.stringify(result.result.stats)),JSON.parse(JSON.stringify(baseline.result.stats)));}console.log(JSON.stringify(record));}finally{runtime.close();}
+}})().catch(error=>{report.error=error.stack;process.exitCode=1;}).finally(()=>{fs.mkdirSync('.local/ui-rebuild-review',{recursive:true});fs.writeFileSync('.local/ui-rebuild-review/performance-result.json',JSON.stringify(report,null,2));});

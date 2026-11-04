@@ -26,7 +26,7 @@ return function(editor)
       if not group then return end
       local skill={groupId=tostring(tab.input.skill_number),activeSkill=group.mainActiveSkillCalcs or 1,skills=array(),modes=array(),parts=array(),gems=array(),selectedMode=1,selectedPart=1}
       result.selectors.skill=skill
-      for i,gem in ipairs(group.gemList) do skill.gems[#skill.gems+1]={index=i,name=gem.nameSpec,error=gem.errMsg} end
+      for i,gem in ipairs(group.gemList) do skill.gems[#skill.gems+1]={index=i,name=gem.nameSpec,error=gem.errMsg,level=gem.level,quality=gem.quality} end
       for i,entry in ipairs(controls.mainSkill.list) do skill.skills[#skill.skills+1]={index=i,label=text(entry.label)} end
       local active=group.displaySkillListCalcs and group.displaySkillListCalcs[skill.activeSkill]
       local effect=active and active.activeEffect
@@ -51,7 +51,7 @@ return function(editor)
     local selected
     for sectionIndex,section in ipairs(tab.sectionList) do
       if attempt(section.id,function()return tab:CheckFlag(section)end) then
-        local dto={id=section.id,group=section.group,subsections=array()}
+        local dto={id=section.id,group=section.group,width=section.widthCols,subsections=array()}
         for subIndex,sub in ipairs(section.subSection) do
           local subsection={id=sub.id,label=text(sub.label),extra=sub.data.extra and attempt(sub.id,function()return text(formatCalcStr(sub.data.extra,actor))end),rows=array()}
           for rowIndex,row in ipairs(sub.data) do

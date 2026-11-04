@@ -46,7 +46,6 @@ export function unwrapMcp(response: unknown): unknown {
 export class PokConnection {
   onDisconnected?:(message:string)=>void;
   private client?: Client;
-  private transport?: StdioClientTransport;
   private connectPromise?: Promise<ConnectionInfo>;
   private generation = 0;
   private expectedIdentity?: RuntimeIdentity;
@@ -78,7 +77,7 @@ export class PokConnection {
   get connected():boolean{return Boolean(this.client&&this.expectedIdentity&&!this.connectPromise);}
   private connectionLost(client:Client,message:string):void {
     if(this.client!==client)return;
-    this.generation++;this.client=undefined;this.transport=undefined;this.expectedIdentity=undefined;this.tools=[];
+    this.generation++;this.client=undefined;this.expectedIdentity=undefined;this.tools=[];
     this.infoRequest=undefined;this.operationQueue=Promise.resolve();
     this.toolsRequest=undefined;
     this.onDisconnected?.(message);
@@ -96,7 +95,6 @@ export class PokConnection {
     const client = this.client;
     this.client = undefined; this.tools = [];
     await client?.close().catch(() => undefined);
-    this.transport = undefined;
   }
   connect(settings: Settings['pok'], bundledRoot: string, dataHome?: string, cacheHome?: string, launch?: GameDataLaunchDescriptor): Promise<ConnectionInfo> {
     if (this.connectPromise) return this.connectPromise;
@@ -129,7 +127,7 @@ export class PokConnection {
       transport.stderr?.on('data', () => undefined);
       const client = new Client({ name: 'pok-ui', version: '0.1.0' });
       client.onclose=()=>this.connectionLost(client,'POK 엔진 연결이 종료되었습니다. 다시 연결해 주세요.');
-      this.transport = transport; this.client = client; this.root = root;
+      this.client = client; this.root = root;
       await client.connect(transport, { timeout: 15_000 });
       await this.refreshTools();
       assertDesktopTools(this.tools);

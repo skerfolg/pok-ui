@@ -4,6 +4,8 @@ export interface PobTreeRequest extends PobInspectionRequest {runtimeId?:string;
 export interface PobTreeResult {
   buildId:string;revision:number;xmlSha256:string;runtimeId:string;pobCommit:string;treeVersion:string;
   patch:PobTreePatch;added:number[];removed:number[];modified:number[];path:number[];
+  pointDisplay?:{text:string;help:string};
+  jewelSockets?:{nodeId:number;name:string;allocated:boolean;itemId:number}[];
   counts:{normal:number;ascendancy:number;secondaryAscendancy:number;sockets:number;weapon1:number;weapon2:number};
   node?:{id:number;name:string;stats:string[];allocated:boolean;mode:number;isAttribute:boolean;attributeOptions:{index:number;label:string}[];socket?:{itemId:number;choices:{id:number;label:string}[]}};
   nodes?:{id:number;name:string;allocated:boolean;mode:number;pathLength:number;type:string;isAttribute:boolean}[];

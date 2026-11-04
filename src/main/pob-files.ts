@@ -21,6 +21,7 @@ export function validateBuild(value: unknown): asserts value is BuildDocument {
       !Number.isSafeInteger(b.revision) || b.revision < 0 || !Array.isArray(b.undo)) throw new Error('빌드 문서 형식이 올바르지 않습니다.');
   if (Buffer.byteLength(b.xml) > MAX_XML || Buffer.byteLength(b.originalXml) > MAX_XML) throw new Error('XML은 24 MB를 넘을 수 없습니다.');
   parseBuild(b.xml);
+  if(b.fileSavedXmlSha256!==undefined&&(typeof b.fileSavedXmlSha256!=='string'||!/^[a-f0-9]{64}$/.test(b.fileSavedXmlSha256)))throw new Error('파일 저장 기록이 올바르지 않습니다.');
   if(b.inputEvidence!==undefined){if(!Array.isArray(b.inputEvidence))throw new Error('가져오기 원문 기록이 올바르지 않습니다.');for(const input of b.inputEvidence)validateSkillTextEvidence(input);}
 }
 export function importDocument(fileName: string, contents: string): BuildDocument {

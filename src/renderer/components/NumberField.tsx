@@ -1,0 +1,15 @@
+import {useEffect,useRef,useState} from 'react';
+export function NumberField({label,value,min,max,step=1,integer=false,commitUnchanged=false,disabled,onCommit,onDraftChange,textValue,flushOnUnmount=false}:{label:string;value:number;min?:number;max?:number;step?:number;integer?:boolean;commitUnchanged?:boolean;disabled?:boolean;onCommit:(value:number)=>void;onDraftChange?:(text:string)=>void;textValue?:string;flushOnUnmount?:boolean}){
+  const [text,setText]=useState(textValue??String(value)),[error,setError]=useState('');
+  const dirty=useRef(false),last=useRef(value),commit=useRef(onCommit);commit.current=onCommit;
+  const controlled=useRef(textValue!==undefined);
+  useEffect(()=>{if(textValue!==undefined)setText(textValue);else if(controlled.current||!dirty.current){setText(String(value));setError('');dirty.current=false;}controlled.current=textValue!==undefined;last.current=value;},[value,textValue]);
+  const number=Number(text),valid=text.trim()!==''&&Number.isFinite(number)&&(!integer||Number.isSafeInteger(number))&&(min===undefined||number>=min)&&(max===undefined||number<=max);
+  function submit(next:number){try{commit.current(next);last.current=next;dirty.current=false;setError('');}catch(reason){dirty.current=false;setError(reason instanceof Error?reason.message:String(reason));}}
+  function flush(){if(!valid||!dirty.current)return;if(number!==last.current||commitUnchanged&&dirty.current)submit(number);else{dirty.current=false;setText(String(last.current));}}
+  useEffect(()=>{if(!valid||!dirty.current||number===last.current&&!commitUnchanged)return;const timer=setTimeout(()=>{if(dirty.current&&(number!==last.current||commitUnchanged))submit(number);},350);return()=>clearTimeout(timer);},[text,valid,number,commitUnchanged]);
+  const flushLatest=useRef(flush);flushLatest.current=flush;
+  useEffect(()=>()=>{if(flushOnUnmount&&dirty.current)flushLatest.current();},[flushOnUnmount]);
+  function change(delta:number){const next=(valid?number:last.current)+delta;if(min!==undefined&&next<min||max!==undefined&&next>max)return;setText(String(next));dirty.current=true;onDraftChange?.(String(next));submit(next);}
+  return <span className="number-field"><input aria-label={label} aria-invalid={!valid||Boolean(error)} type="text" inputMode={integer?'numeric':'decimal'} value={text} disabled={disabled} onChange={e=>{dirty.current=true;setError('');setText(e.target.value);onDraftChange?.(e.target.value);}} onBlur={flush} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();dirty.current=true;flush();}}}/><button type="button" aria-label={`${label} 증가`} disabled={disabled||!valid||max!==undefined&&number+step>max} onClick={()=>change(step)}>+</button><button type="button" aria-label={`${label} 감소`} disabled={disabled||!valid||min!==undefined&&number-step<min} onClick={()=>change(-step)}>−</button>{(!valid||error)&&<span className="field-error" role="status">{error||`${integer?'정수':'유효한 값'}${min!==undefined?` ≥ ${min}`:''}${max!==undefined?` ≤ ${max}`:''}`}</span>}</span>;
+}

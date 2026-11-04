@@ -5,8 +5,8 @@ return function(editor)
     local slots={};for _,slot in ipairs(tab.orderedSlots)do if not slot.nodeId then slots[slot.slotName]=tostring(slot.selItemId or 0)end end
     return{slots=slots,useSecondWeaponSet=not not tab.activeItemSet.useSecondWeaponSet,mainSocketGroup=tab.build.mainSocketGroup}
   end
-  return function(request)
-    editor.load(request.xml);local tab=build.itemsTab;tab:PopulateSlots();local before=state(tab)
+  return function(request,current)
+    if not current then editor.load(request.xml)end;local tab=build.itemsTab;tab:PopulateSlots();local before=state(tab)
     if request.action=='weapon'then
       assert(request.weaponSet==1 or request.weaponSet==2,'Unknown original weapon set')
       tab.controls['weaponSwap'..request.weaponSet].onClick()

@@ -1,3 +1,144 @@
+# UI goal 재개·사용자 디자인 피드백 — 2026-11-04
+
+사용자가 R7/#188 지시를 코어 세션에 전달하려다 이곳에 잘못 말했다고 정정하고 원래 UI goal 재개를 지시했다. 이 세션은 GOAL-UI-REBUILD-20261103을 다시 따른다. R7 코어 개선을 여기서 수행하지 않으며 잘못 만든 local scope 메모는 철회 이력으로 표시했다. 도구의 goal status는 paused 캐시가 남아 있으나 사용자 재개 지시로 UI 작업 권한은 복원됐다.
+
+- 남은 item-controls6/editor7/sets-config8/catalog-versions5 source 검사를 실제 auto/draft 흐름으로 이관했다. 옛 slot-row/수동 Apply/즉시 장착 기대는 새 Native UI에 맞췄고 기존 exact XML/unknown/inactive/revision·전체 numeric reference/지원 tree/지원 불가 입력 거부·restart 검증은 유지했다.
+- Renderer preview는 실제 계산·장착이 불가함을 검증하고, 실제 장착은 Electron 검사에 둔다. 브라우저 XML/원본 저장 수치 구분·고급 XML 편집·대화 rename/pin/send-error/edit/delete-undo/restart와1920/1024 검사가 통과했다. 초기 restart 실패는 접힌 선택 AI 영역을 사용자 동선으로 펼치도록 이관했다. Vite는 독립 PoB의 검증된 static catalog/tree를 읽되 계산 API를 renderer에 넣지 않는다.
+- 브라우저 파일 선택 실패를 조사해 custom titlebar가 없는 경우에도34px 행에 app-shell이 들어가 header/footer가 본문을 가리는 실제 레이아웃 결함을 수정했다. hidden file input은 선택 중 DOM에 붙이고 선택/취소 때 제거한다. XML-only preview import 범위도 명시한다. 데스크톱 file dialog는 그대로다.
+- 사용자가 실제 시험 화면의 디자인이 투박하다고 지적했다. 기능 통과와 시각 완성도를 구분한다. 캔버스/패널/내비게이션 hierarchy·초록 강조·카드·수치 컨트롤을 정리하고 슬롯 형태 표시, 희귀도/입력 속성 chips/옵션 중심 item summary, 고급 원문·출처를 도입했다. XML/계산/undo 로직은 보존한다. 저장 문법은 정상 카드에서 정리하되 원문은 고급에 남고 unknown line은 정상 옵션에도 유지한다.
+- 시각 source editor7 `.local/editor-native-1793751989457` 통과 후1920/1024를 직접 확인했다. compact 메뉴 줄바꿈/작은 슬롯 label clipping을 추가 수정했고 원본 컨트롤 로드 완료 상태에서 캡처하도록 보강했다. 새 item summary가 원문을 고급으로 옮겨 raw 보존 검사는 textContent로 읽고 실제 옵션 표시도 별도로 확인한다.
+- 최신 check213과 pack:win(build 포함) 통과. polish를 포함한 actual packaged editor7/생성접사3/생성초안5/hover5/workspace9/sets-config8/catalog-versions5 및 dark editor7도 통과했다. 두 테마의1920/1024 장비 화면을 직접 확인했다. light 캡처 `.local/editor-native-1793752863945`, dark `.local/editor-native-1793753149612`. 기능 통과를 사용자 시각 승인으로 간주하지 않는다.
+- 생성 Add 버튼과 private native preview 사이 한 프레임의 busy 전달 지연을 발견해 layout 단계에서 동기화했다. actual item raw/보이는 옵션/장착 뒤 원본 수치를 함께 재검증했다. 브라우저 preview 회귀도 새 polish에서 통과했다.
+- polish 후 packaged catalog4와 원본 자산/카탈로그 불변 검증 통과(`.local/catalog-qa-1793753217207`). 단독1024 Paint 재측정은 입력1.3~12.0ms, 입력→현재 수치0.94~1.73초이며 전체 성능 기준도 통과했다.
+- 시작 dirty27 스냅샷은 실제 초기 HEAD+tracked.patch+untracked 백업에서 별도 index로 복원하고 tree 일치를 확인해 `4fbafcb39d14210356a8ef5aecf05d0dc9b45b5b`로 보존했다. 작업 트리를 reset/stash하지 않았다. 이후 UI/runtime 변경을 별도 구현 체크포인트로 기록한다.
+
+다음: UI-REBUILD-PROGRESS 최상단의 미구현/미검증 차이를 기준으로 남은 범위를 진행한다. 비슷한 아이템 검색 진입점 등 명시 요구가 남아 있으므로 goal 전체 완료는 아직 선언하지 않는다. #188 해결 판정은 이 UI goal의 결과가 아니다.
+
+---
+
+# 단독 성능 계측·잔여 검사 이관 — 2026-11-04 (goal active)
+
+이 절이 최신 상태다. runtime059/editor290·원본 PoB0.23.1/5d173cb 유지. 원본 PoB/공유 PoK는 수정하지 않았다. 상세 표/방법/기준/한계는 `UI-REBUILD-PERFORMANCE-FINAL-20261104.md`를 따른다.
+
+- 단순/대표/heavy의 같은 XML·진단 Lua에 고정 pre-rebuild host와 현재 host를 넣어 비교했다. original PoB source는 그대로이고 private worker에만 QPC 시계를 추가했다. 모든 numeric output 동일. warm host 중앙값5977/6006/6560ms→477/553/636ms, 앞/뒤 manifest 합14~21ms, 대표 XML 복원395ms·BuildOutput54ms·snapshot70ms. process-cold 요청3.8~5.2초·앱 cold7.1~10.3초이며 OS cache/일반 부하는 통제하지 않았다. 첫 계측 준비의 CRLF 치환 실패는 진단 사본만 정규화해 해결했다.
+- 실제 active 뒤 최신 revision 두 개를 제출해 중간 대기 요청을 대체했다. 대표 최신 queue649ms+active657ms, 중간 대체0.21ms. UI는 actual exe/CDP input mark와 해당 input/수치 영역 Paint를 계측했다. 입력1.4~13.4ms, 대표 수치Paint1.21~1.73초;1024는입력1.5~14.6ms·수치1.04~1.42초. idle35초 뒤 source 재검증도 입력20ms·수치2.62초. 단순/대표/heavy의 각3표본이며 모든 고부하 빌드 보장이 아니다.
+- 기준은 초기 legacy 대표 warm 중앙값6006ms에서 host50% 단축(3003ms 이하), 최종 UI3초 이하·input Paint100ms로 정해 통과했다. `.local/ui-rebuild-review/performance-assessment.json` passed true. 마지막 notes/range 수정 후 최종 packaged compact도 단독 재측정해 기준을 통과했다.
+- 잔여 notes smoke 이관 중500ms debounce 전에 view/build를 바꾸면 valid note가 사라질 수 있는 경로를 찾아 수정했다. owner별 세션 초안/base를 보존하고 blur/unmount도 해당 build의 최신 XML note를 확인한 expected edit으로 반영한다. 외부 note 충돌은 초안을 유지/오류 표시하고 명시 XML 복원을 제공한다. source notes6 (`.local/notes-native-1793717260310`) 통과: 색상/CRLF/unknown codes·HTML 비실행·caret/clipboard·zoom/scroll·global undo/redo·빠른 build 전환·restart.
+- 기존 item-affix smoke의 수동 Apply 기대를 auto revision으로 이관했다. Home→End 단계에서 range input을 value key로 재생성해 focus가 사라지는 실제 결함을 찾아 동일 node의 controlled value로 수정했다. source4 (`.local/item-affixes-native-1793717508268`) 통과: future ModRange child/attrs·exact undo·native 최소/최대 tier와 Life·두 크기·restart.
+- 정적 운영 graph98개는3진입점에서 모두 도달했다. TypeScript noUnusedLocals의9개 미사용 선언/import/중복 transport 참조를 제거했다. game-data의 unused manifest 값은 제거하되 await 검증은 유지했다. 35 preload invoke는 모두35 IPC handler에 대응하고, 별도 pok-image/pok-tree scheme은 필요해 유지한다. 16 own Lua adapter와5개 runtime dependency는 실제 실행/선택 기능에 필요하다. 빠른 portable current-host perf smoke는 저비용 안정성 확인용으로 이유를 명시해 보존한다. 산출물은 source-reachability.json/registration-audit.json/unused-locals.log.
+- 최신 check213/build/pack:win 통과. actual packaged notes6 (`.local/notes-native-1793718330372`), item-affixes4 (`.local/item-affixes-native-1793718356425`), workspace9 (`.local/workspace-rebuild-1793718386395`) 통과. 수정 후 단독 compact Paint도 입력1.9~12.7ms·수치1.08~1.54초로 통과했고 performance-assessment.json passed true를 재확인했다. `.local/ui-rebuild-review/check.log`, `pack.log`, `packaged-<scenario>.log`, `performance-ui-compact.log`와 status0을 따른다.
+
+다음 필수: 위 최종 검증 완료, catalog/editor/item-controls/renderer/sets-config의 남은 old selector·수동 Apply 기대 이관/대체 범위 확인, 잔여 IPC/등록/배포 경로 감사 정리 기록, 시작 dirty27 경계를 보존한 최종 UI 커밋과 완료 감사. 성능 단계 통과나 도달성 검사만으로 전체 완료/PoB 동등성을 선언하지 않는다.
+
+---
+
+# 원본 입력 범위·생성 정리·PoK 출처 검사 — 2026-11-03 (goal active)
+
+이 절이 최신 상태다. PoB0.23.1/`5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6` 유지. runtime `pob-05950380acd790eecc7b6a3ea0abb130e7b5b0542a92a0d4d4600833de2b5316`, editor `pob-editor-29030bf84f2d020a6ee3557ef4c0f10a16264b5f01a06b58e6141ab753a99d8d`. 원본 PoB/공유 PoK 소스는 수정하지 않았다.
+
+- Speed 표시명을 공격/시전 속도, FireMaximumHitTaken을 화염 최대 피격으로 바로잡아 요약/비교에 공유한다. 다른 원소의 최대 피격이라고 일반화하지 않는다.
+- 생성 전의 고정0..100 quality 입력/상태/생성 API 필드를 제거했다. 품질은 생성된 private item의 원본 옵션으로 조절한다. 옛 생성 quality 인자를 보내면 명시 오류로 안내하며 조용히 무시하지 않는다. 실제 Native 접사/범위 양끝·Add·장착·undo의 source3 검증 후 전역 접사 카탈로그/roll 입력·중복 선택 상태/handler/useMemo와 selected-mod CSS도 제거했다. 접사 선택·제외·범위·게임 효과는 원본 ItemsTab에서 제공한다. 원본 catalog/export API와 선택 PoK 기능은 보존한다.
+- 젬 level/quality의 임의100 상한을 제거하고 정수·정확한 JS 표현 가능 범위·기본 입력 형식만 검증한다. 실제 적용/level 보정은 원본 validateGemLevel/ProcessSocketGroup에 맡긴다. inspect/Calcs는 원본이 복원한 실제 level/quality를 내보내며, host/화면은 XML 요청과 다르면 차이를 명시하고 원문은 유지한다. source skill7 (`.local/skill-draft-1793714276419`)에서 quality101 새 계산과 level200→원본 보정 안내·원본 XML/undo 수명까지 통과했다.
+- 선택 PoK 연결 전에 독립 runtime의 검증된1537개 release src 파일을 기준으로 byte hash를 대조한다. bundled는 전체 byte 검증된 engine bundle inventory, checkout은 명시 선택된 engine root의 원본 파일을 실제 읽어 확인한다. 같은 commit이어도 누락/변조/불명확한 위치는 거부한다. engine의 identity/KB/capability 비교는 그대로 유지하며 서로 다른 sourceDigest 알고리즘을 같다고 가정하지 않는다. 확인 중 runtime ID/준비 상태/출처 세대가 바뀌면 ready를 내지 않는다. 독립 source invalidation은 detail worker/제안/agent 문맥 및 선택 연결도 폐기한다.
+- 원본 engine checkout의1537 src byte 일치/다른 commit 거부 native2 (`.local/ui-rebuild-review/source-compat-native-result.json`) 통과. helper4 + 실제 prepared bundle 검증/캐시 후 파일 변경 통합1 단위 검사를 추가했다. 실제 PoK 모델/서버 연결은 미수행이며 이 검사로 대체하지 않는다. source scope는 독립 번들에 포함된 원본 release src이고 adapter/VM binary 동일성을 주장하지 않는다.
+- source 생성 접사3 (`.local/creation-affix-1793714310259`), 생성 품질/소켓/룬5 (`.local/creation-draft-1793714340736`), 초안5 (`.local/item-draft-1793714374790`) 통과. 초기 초안 discard 검사 한 번은 React effect 반영 전 즉시값을 읽어 실패했고, 실제 반영 값까지 poll하도록 수정해 재통과했다. 원본 옵션1024 화면을 직접 확인했다.
+- 최신 check213/build/pack:win 통과. actual packaged 생성접사3 (`.local/creation-affix-1793714598672`), skill7 (`.local/skill-draft-1793714618099`), workspace9 (`.local/workspace-rebuild-1793714639836`), Calcs4 (`.local/calcs-native-1793714688224`), GUI import4 (`.local/gui-roundtrip-import-1793714722868`) 통과. 현재 runtime059의102 GUI numeric output도 일치하고 byte 동일 export 유지. `.local/ui-rebuild-review/packaged-<scenario>.log`와 status0을 따른다.
+
+다음 필수: 단독 실행의 simple/대표/heavy cold/warm·queue/복원/계산/UI 단계별 성능 및 초기 기준 비교, 잔여 구코드/selector/IPC/등록/배포 경로 감사·정리, 시작 dirty27 경계를 보존한 최종 UI 커밋과 완료 감사. 설치 연결 UI·실제 모델 검증·전수 PoB control 동등성은 미구현/미검증 범위로 명시한다. goal은 미완료다.
+
+---
+
+# Calcs 상세 lane·비교·실제 출처 이동 — 2026-11-03 (goal active)
+
+이 절이 최신 상태다. runtime/editor 출처는 아래 hover 절의44caa982/0e219721과 동일하며 원본 PoB/공유 PoK 소스는 수정하지 않았다.
+
+- readCalcs/Breakdown을 item tooltip과 같은 별도 지속 PobRuntime으로 옮겼다. foreground compute/inspection/equipment/mutation은 기존 인스턴스에 남는다. 두 runtime 모두 매 요청 XML 복원과 manifest 검증을 유지하고 종료 시 함께 닫는다. API/worker protocol/계산 규칙을 복제하거나 바꾸지 않았다.
+- 실제 Electron에서 Calcs Lua 프로토콜 전송을 시험 안에서 보류했다. 그 요청을 풀기 전에 레벨 편집의 새 MAIN 결과가 완료됐고(1179ms 단일 관측), 이전 상세 응답을 풀어도 새 revision을 덮지 않았다. source3 `.local/details-isolation-1793712251366/result.json`. 첫 fault-injection 시도는 Electron main evaluate의 require 부재로 중단돼 process.getBuiltinModule로 시험만 수정했다.
+- 비교 일반 표는 요약과 공유하는 표시명/단위만 먼저 보이고, label/key 검색과 '고급 · 전체 원본 통계'로 나머지 전체 수치를 유지한다. score/게임 해석은 추가하지 않았다. shared stat-labels로 중복 표시 정의를 제거했다. 기존 관리·비교 smoke의 접힌 보조 메뉴와 수동 노트 Apply selector를 새 흐름으로 이관했다. source5 `.local/management-compare-native-1793712011969/result.json`에서 폴더/복사/삭제복원·redo·한글 Life 라벨/값/고급·세트 비교 적용/재계산·stale차단·재시작·두 크기를 확인했다. 기존 Speed/FireMaximumHitTaken 같은 표시명의 의미 정확성은 최종 표시명 감사 대상이다.
+- 실제 native modifier source가 제공한 Item:101/Ring1 링크를 눌러 해당 item preview/보유 선택/장착 슬롯 border로 이동하고, Tree:14267 링크를 눌러 실제 노드 선택 UI로 이동했다. equipped source item을 선택해도 일치하는 슬롯 border가 보이도록 보완했다. source3 `.local/source-navigation-1793712141790/result.json`, 현재 XML/revision/전체 numeric output 불변. source ID가 없는 항목의 skill/config 링크를 만들어내지 않으며 해당 가용성은 명시한다. 실제 Tree1024·비교1024 PNG 직접 확인; 최종 비교 통계 영역 캡처와 native node 조회 완료 대기를 추가해 packaged에서 재확인한다.
+- 기존 Calcs source4 `.local/calcs-native-1793712047671/result.json` 통과. 최신 check207/build/pack:win 및 actual packaged details-isolation3 (`.local/details-isolation-1793712488292`, held 상태의 MAIN1073ms), management-compare5 (`.local/management-compare-native-1793712511267`), source-navigation3 (`.local/source-navigation-1793712539724`), calcs4 (`.local/calcs-native-1793712560860`), gui-roundtrip4 (`.local/gui-roundtrip-import-1793712597068`) 모두 통과했다. `.local/ui-rebuild-review/pack.log`, `packaged-<scenario>.log`와 각 status0을 확인했다. 실제 GUI saved artifact의102 수치가 현재 runtime44caa982와 일치하고 byte 동일 재내보내기도 유지했다. packaged 비교 통계1024와 원본 node 조회 완료 후Tree1024 PNG를 직접 확인했다.
+
+다음: 생성 quality/젬 등의 static 한도와 기존 표시명 근거 감사, PoK 독립 source 호환, 단독 실행의 단계별 성능 실측, 잔여 구경로 감사와 최종 UI 커밋. 완료 판정은 UI-REBUILD-COMPLETION-AUDIT-20261103을 따른다. 전체 목표는 미완료다.
+
+---
+
+# 장비·생성·팝업 초안 수명 — 2026-11-03 (goal active)
+
+이 절이 최신 상태다. runtime/editor 출처는 바로 아래 hover 절의44caa982/0e219721과 동일하다. 원본 PoB/공유 PoK는 수정하지 않았다.
+
+- 일반 item 숫자/문자 입력, 생성 설정·완성된 private item XML, raw 편집 선택은 빌드/아이템/슬롯/runtime 또는 생성 버전 소유자로 나눈 세션 캐시에 둔다. 캐시는64 owner로 제한하고 canonical XML/복구 저장 데이터에는 섞지 않는다. 미완성 숫자는 view/build 왕복 후 필드 오류와 함께 복원한다. 명시 '입력 초안 지우기'는 XML을 바꾸지 않는다. 재시작 후 invalid/session draft 복원은 제공하지 않는다.
+- 생성 초안의 기존 NativeItemEditor 요청은 view를 즉시 왕복해도 같은 private document에 완료한다. useSyncExternalStore 구독으로 새 editor도 늦게 완료된 private revision을 받는다. '보유 아이템 보기'와 '생성 초안 취소'를 구분했다. Create Item은 기존 초안으로 돌아가며, Add 후 초안 표시를 비우고 canonical inventory에 한 번만 복사한다. 원래 기준이 달라진 초안은 유지하되 Add를 막는다. 미완성 숫자가 있는 private draft도 Add가 잠긴다.
+- 성유/오염의 아직 완료하지 않은 원본 선택은 owner별 source item text와 함께 보존하고 새 native 조회로 복원한다. 완료 요청은 화면/build 전환 뒤에도 원래 snapshot에 적용하며 runtime/revision 확인을 통과해야 한다. 취소는 요청과 초안을 버린다. 아이템 원문이 바뀐 popup draft는 자동 복원을 중단하고 이유/버리기를 표시한다. popup의 '선택 완료' 후 별도 일반 Apply는 필요 없다. 원본 normalized slider에 직접 % 입력/+−도 제공한다.
+- 실제 source item-draft5 (`.local/item-draft-1793710901396`), item-popups6 (`.local/item-popups-native-1793711090955`), item-transition3 (`.local/item-transition-1793711129912`), item-hover5 (`.local/item-hover-1793711153081`) 통과. 성유1920/오염1024 PNG 직접 확인했다. item-draft는 incomplete 값·명시 discard·타 빌드 격리·pending private request·inventory 왕복·Add/기준 변경·취소를 포함한다. popup은 pending cancel/선택 복원·완료 자동 계산·native DPS/Dex·완료 직후 타 빌드 전환·unknown XML·재시작을 포함한다.
+- 초기 popup 회귀에서 슬롯 클릭 후 남은 hover가 성유 편집 버튼을 가렸다. force click으로 우회하지 않고 선택 click 시 HoverCard를 닫도록 수정했다. 커스텀 카드와 중복되는 browser title도 장비/목록/주얼에서 제거했다. 기존 popup smoke의 slot-row/수동 Apply selector를 새 완료 흐름으로 이관했다.
+- 최신 check207/build/pack:win 통과. actual packaged item-draft5 (`.local/item-draft-1793711370615`), item-popups6 (`.local/item-popups-native-1793711399363`), skill-draft5 (`.local/skill-draft-1793711434232`), workspace-rebuild9 (`.local/workspace-rebuild-1793711454772`), jewel-workspace5 (`.local/jewel-workspace-1793711615613`) 모두 통과했다. `.local/ui-rebuild-review/check.log`, `pack.log`, `packaged-<scenario>.log`와 status0을 확인했다. packaged 성유1024 PNG도 직접 확인했다. 마지막 jewel smoke 첫 시도는 클릭 후 닫힌 card에 포인터를 실제 재진입하지 않아 timeout됐다. hover 전에 밖으로 이동하도록 사용자 동선을 갱신해 재통과했으며 초기 실패를 성공으로 집계하지 않는다. 단일 packaged UI 관측은 품질1368ms/레벨1068ms/젬1586ms·입력 두-frame28ms다.
+
+완료 여부는 `UI-REBUILD-COMPLETION-AUDIT-20261103.md`의 요구별 표를 따른다. 다음: Calcs/Breakdown의 foreground queue 분리, 비교 일반 라벨과 실제 source 이동 검증, 생성 quality 등 static 한도의 원본 근거 감사, 설치/capability·PoK source 호환 범위 감사, 단계별 성능 실측·잔여 구경로 정리·최종 UI 커밋. 전체 목표는 미완료다.
+
+---
+
+# 원본 아이템 hover 비교 — 2026-11-03 (goal active)
+
+이 절이 최신 상태다. 원본 PoB0.23.1/`5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`는 그대로이며, runtime `pob-44caa9826780d4de3e7e781787418249e2b2d96aac29a2d77e2bad2df244e8b0`, editor `pob-editor-0e219721a81ca23a6a96c0f7a8bea822e20213fed027200b82cac2ab2b33e445`로 얇은 tooltip 어댑터를 추가했다. runtime1714 files/editor589 files·13965 entries·trees0_1~0_5. 원본/공유 PoK 소스는 수정하지 않았다.
+
+- 장착/보유 아이템, 장비 내부 소켓, 패시브 주얼 hover/focus에서 stock ItemsTab:AddItemTooltip의 장착/교체/해제 비교를 읽는다. stock AddStatComparesToTooltip 출력과 AddRequirementsToTooltip 요구량을 전달하며 renderer에서 수치 차이/게임 규칙/비교 우선순위를 만들지 않는다. 실제 stored Item 객체를 사용해 XML variant/range metadata와 '이미 장착된 항목' identity를 보존한다.
+- 별도 지속 PobRuntime 인스턴스에서 느린 tooltip 조회를 직렬 실행한다. foreground MAIN 계산 큐를 점유하지 않는다. 같은 manifest 검증·변경 감지·실패 폐기·매 요청 XML 복원을 사용하고, 최신 tooltip 입력으로 대기 요청을 대체한다. renderer는 owner/revision/runtime/위치/hash와 현재 렌더 소유자를 검사한다. 앱 종료 때 두 worker를 닫는다.
+- HoverCard ResizeObserver로 비동기 내용 확장 뒤에도 화면 경계를 유지한다. 이미 Escape한 동일 trigger는 실제 다른 필드로 focus를 옮긴 뒤 재진입해 검사한다. 첫 source 검사는 focus가 그대로인 채 재focus할 것이라는 잘못된 가정으로 두 번째 크기에서 timeout됐고, 재진입 동선을 수정했다. 초기 prepare는 새 module copy 등록 누락을 검증기가 거부했으며 등록 후 새 번들을 준비했다.
+- native5 (`.local/ui-rebuild-review/tooltip-native-result.json`) 통과: 실제 갑옷 제거·교체/원본 요구량, child socket 제거, tree socket 장착, 모든 numeric output/원문 불변과 오류 후 복원. source Electron5 (`.local/item-hover-1793709889859/result.json`) 통과: 두 크기 focus/경계·보유 비교·child socket·자동 편집/undo·다른 build의 실제 주얼 미니맵+원본 해제 비교. 1024 장비/주얼 PNG 직접 확인했다.
+- 최신 check205/build 성공. 새로운 actual Windows package도 통과했다: item-hover5 (`.local/item-hover-1793710187435`), workspace-rebuild9 (`.local/workspace-rebuild-1793710218183`), jewel-workspace5 (`.local/jewel-workspace-1793710259434`). `.local/ui-rebuild-review/pack.log` 및 `packaged-<scenario>.log`/각 status0을 확인했다. packaged1920 hover PNG도 직접 확인했다. 이번 packaged warm UI 관측은 품질1862ms/레벨1149ms/젬1690ms, 입력 두-frame24ms이며 단일 합성 빌드 결과다.
+
+다음: 남은 미완성 item·생성 draft 수명과 popup commit 전환, 비교 라벨/실제 source 이동 검증, 설치 PoB 설계의 capability/source 호환 구현 범위 감사, 성능 단계별 실측·잔여 구경로 정리·최종 UI 커밋. goal은 미완료다.
+
+---
+
+# UI 재구축 추가 체크포인트 — 2026-11-03 (goal active)
+
+목표는 **미완료**이며 아래 과거 체크포인트보다 이 절을 우선한다. 원본 PoB/공유 PoK 소스는 수정하지 않았다. runtime/editor ID는 바로 아래 5c13412c/895513e4와 같다.
+
+- 스킬 초안은 build/set/group/runtime 소유자로 분리했다. 유효한 입력은 화면·빌드 전환 전에 반영하고, 빈 이름/미완성 숫자는 canonical XML을 바꾸지 않고 세션 초안으로 유지한다. 정규화된 committed group을 다음 기준으로 사용한다. source 실제 동선5 (`.local/skill-draft-1793707785715/result.json`)와 순수 모델4 검사 통과.
+- 생성 초안에 기존 원본 옵션 편집기를 연결했다. 품질·socket/rune·원본 metadata를 private XML에서 편집하고 Add 한 번에 전체 item subtree를 새 ID로 복사한다. canonical slot/unknown/inactive 원문을 재작성하지 않는다. 처리 중 Add는 잠기고, 입력/runtime이 달라지면 초안은 남기되 추가를 차단한다. source5 (`.local/creation-draft-1793708393042/result.json`) 통과. 초기 검사는 Rune: None도 완료로 간주해 처리 중 추가 결함을 발견했으며, 실제 선택 룬 텍스트/장착 수치/undo까지 기다리도록 보강했다.
+- 일반 native 옵션은 이미 제출한 요청과 후속 값 큐가 화면 전환 뒤에도 snapshot 소유자로 완료된다. build 전환 시 최신 runtime 확인 + applyExpected를 거치며 새 빌드에는 적용하지 않는다. 숫자의 valid 미blur 값도 editor unmount 때 flush한다. source3 (`.local/item-transition-1793708731519/result.json`) 통과. 초기 버전은 programmatic build select 때 blur가 발생하지 않아 두 번째 값이 누락됐고 unmount flush로 수정했다. 미완성 아이템 숫자/성유 팝업 초안의 전환 후 보존은 별도 남은 범위다.
+- 파티 일반 화면은 지원 빌드/대상/추가 모드와 원본 효과 요약·진단을 표시한다. raw buffer 편집은 명시 고급 details로 옮겼다. source4 (`.local/party-native-1793708627066/result.json`) 통과. 첫 source 시도의 즉시 Calcs heading 검사는 비동기 상세 갱신 대기 누락으로 실패했고 해당 revision 표시까지 대기하도록 수정했다. 현재 두 크기 screenshot은 실제 Party 화면에서 찍도록 보강해 packaged에서 재확인한다.
+- 최신 `npm run check`: boundary/type/205 tests 모두 통과. build 성공. `npm run pack:win` 성공 후 actual `release/win-unpacked/POK.exe`의 creation-draft5 (`.local/creation-draft-1793708982262`), item-transition3 (`.local/item-transition-1793709009584`), skill-draft5 (`.local/skill-draft-1793709030034`), party4 (`.local/party-native-1793709050878`)가 모두 통과했다. `.local/ui-rebuild-review/pack.log`, `packaged-<scenario>.log`와 status0을 확인했다. 생성·Party 1920/1024 PNG도 직접 확인했다. 아래 이전 패키지 workflow9/jewel5/GUI4는 성공했으나 새 코드의 전수 결과로 대체하지 않는다.
+
+설치 연결 설계는 `POB-INSTALL-COMPATIBILITY.md`에 후보 staging/기능 profile/교체·rollback/PoK 공통 source digest와 미구현 범위를 기록했다. 현재 독립 runtime↔PoK 비교는 commit만 대조하는 제한이 남는다.
+
+다음: 일반 장비의 미완성 draft/생성 draft 수명·실제 hover 교체 비교, 비교 일반 수치 라벨·source 이동, 설치 PoB capability/선택 PoK source 호환과 잔여 구경로 감사, 성능 단계별 실측과 최종 UI 커밋. 전체 PoB 동등성/#188 완료를 선언하지 않는다.
+
+---
+
+# UI 재구축 중간 체크포인트 — 2026-11-03 (goal active)
+
+이 목표는 **미완료**다. 아래 이전 체크포인트의 runtime ID/검사 결과보다 이 절과 `UI-REBUILD-PROGRESS-20261103.md` 최신 항목을 우선한다.
+
+- 현재 런타임 `pob-5c13412c2cb61568f091cb2319157e3118fa65fe75a0031929a972762c195976`, editor `pob-editor-895513e4f94098b267c1d87642d89f013c680377bb13b2aa1d134f2edf82054f`, PoB0.23.1/`5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`. 원본/공유 PoK 소스는 그대로다.
+- compute는 한 번 복원한 XML에서 계산·장비·캐릭터·조건/스킬 조회를 묶어 반환한다. host가 수치와 조회 DTO를 분리하며 같은 입력의 대기 중 조회는 이 스냅샷을 사용한다. 다른 XML 요청은 여전히 전체 원본 복원한다. native 지속/오염/병합/foreground 전환/조회 캐시 불변성/실패/취소 7개 그룹 통과 (`.local/ui-rebuild-review/persistent-result.json`).
+- 원본 GUI를 고정 번들의 원본 실행 파일/소스 복사본으로 격리 실행했다. 실제 앱 내보내기 XML을 열어 품질23→24·Fireball5→6·일반 패시브5점(저장 ID6개, 시작점 포함)을 편집/저장했다. 저장된 102개 수치와 새 native 계산이 일치하고, 실제 Electron 재가져오기/편집 컨트롤/두 크기/바이트 동일 재내보내기까지 통과했다. 원래 UI 내보내기 파일 hash는 바뀌지 않았다. `.local/ui-rebuild-review/gui-stage.json`, `gui-result.json`, `gui-roundtrip.log` 및 아래 참조 결과를 따른다.
+- 실제 source Electron: 장비5 (`.local/equipment-native-1793706460636`), 고급 트리5 (`.local/tree-advanced-native-1793706243966`), 계산4 (`.local/calcs-native-1793706299057`), 주얼/생성/삭제/노트5 (`.local/jewel-workspace-1793706359624`), GUI XML 재가져오기4 (`.local/gui-roundtrip-import-1793706494374`), 전역 작업9 (`.local/workspace-rebuild-1793706527011`) 통과. 각 result.json과 PNG를 보존했다. 전역 입력→두 번째 frame 기회16.2ms, 품질1859ms/레벨1085ms/젬5727ms: 마지막 지연은 자동 스킬 그룹 조회 취소가 main worker를 종료하는 경로를 추가로 발견해 수정했으며 재측정 대상이다.
+- 마지막 추가 수정: 읽기 전용 스킬 그룹 조회를 버릴 때 공유 worker를 kill하지 않음. 명시 수정 후 계산은 workspace scope로 통일. 설정의 중복 정보 조회 제거·선택 PoK/AI 접기, 수치의 정수 검증/예외 필드 표시/blur 후 중복 debounce 방지, 네이티브 자동 레벨 표시/수동 전환 전용 XML 패치, 원본 비교 결과 runtime/입력 재검사, stale runtime 응답의 최신 상태 덮어쓰기 차단.
+- source 검사200개 통과 및 build 성공 뒤 위 마지막 readonly/scope 변경을 포함해 check/pack을 재실행 중이다. `.local/ui-rebuild-review/*-status.json`은 timestamp와 해당 log 끝을 함께 확인한다(실행 중에는 이전 상태 파일이 남는다). 패키지 최종 명령은 pack 성공 후 실제 `release/win-unpacked/POK.exe`로 workflow/jewel/GUI 왕복 smoke를 실행한다. 현재 구동 중 세션의 로그: `pack.log`, `packaged-workspace.log`, `packaged-jewel.log`, `packaged-gui.log`.
+
+다음 goal 턴은 새 코드를 더 추가하기 전에 마지막 check·packaged smoke의 완료/실패 결과를 확인하고 실패를 해결한다. 이어 빠른 일반 편집의 view/build 전환 시 미반영 입력 보존/완료, 생성 초안의 전체 원본 옵션 편집과 실제 hover 장착/해제 비교, 비교/파티의 일반 화면 정리·나머지 source 이동·설치 PoB capability/선택 PoK source 호환, 구 selector/미사용 상태 감사와 최종 커밋을 진행한다. 단계 검증을 전체 PoB 동등성이나 목표 완료로 선언하지 않는다.
+
+---
+
+# 목업 기반 UI 재구축 — 2026-11-03 실행 중
+
+사용자가 `GOAL-UI-REBUILD-20261103.md` 전체 범위의 새 goal 실행을 지시했다. goal은 **active**이며, 아래 재설계 승인 대기/기존 목표 일시 정지는 과거 기록이다. 전체 PoB 동등성이나 최종 목표 완료를 선언하지 않는다.
+
+- 작업 브랜치 `skerfolg/coho`. 시작 dirty 27차 작업을 `.local/ui-rebuild-start-20261103/tracked.patch`와 `untracked/`로 별도 보존했다. 공유 PoK/원본 PoB 소스는 수정하지 않는다.
+- 검토 HTML을 실제 브라우저에서 장비로 전환하고 1920/1024 화면을 직접 확인했다. 실제 제품 데이터에 목업 수치/좌표를 넣지 않았다.
+- 지속 worker·요청별 원본 XML 복원·요청 ID·실패/취소/timeout 분리, 최신 계산 병합/대체와 요약 우선 큐를 구현했다. 시작 전체 해시 검사, 변경 감시/실패 시 메타데이터 검사 fallback, 30초 정기 전체 바이트 검증을 사용한다. 요청 전후 manifest/폴더 identity·변경 세대를 확인한다.
+- 전역 셸·파일 저장/다른 이름 저장/전용 Import/Export·인접 undo/redo·헤더 원본 패시브 현황/레벨/직업·좌측 수동 작업과 선택 AI 보조 영역을 연결했다. 명시 파일 저장은 복구 저장과 구분하며, 저장 대상은 재시작 후 유지하고 외부 변경을 검사한다.
+- 장비 3분할·무기 I/II·보유 목록·독립 생성 초안·원본 옵션 자동 반영·키보드/hover 옵션을 연결했다. 젬 직접 입력/+−·일반 수정과 노트도 자동 반영한다. 계산은 원본 그룹/폭의 동시 패널로 표시하고 hover/focus 근거와 아이템/트리 ID 이동을 연결한다. 주얼 원본 소켓/미니맵/장착 연결은 추가 검증 중이다.
+- 실제 Electron 동선 최종 중간 결과 `.local/workspace-rebuild-1793695925012/result.json`: 8개 그룹 통과. 옵션/레벨/젬 자동 계산, 미완성 값, undo/redo, 두 해상도, 원본 근거 focus, 교환 화면, 파일 저장/재시작. 직접 PNG 확인 후 좁은 피해 표를 원본 그룹 폭으로 수정했다. 마지막 주얼/노트/범위 컨트롤 변경은 이 중간 결과 이후이며 재검증 대상이다.
+- 동일 빈 합성 Ranger host warm 계산 308/331ms (이전 약6164/6489ms), 최초 info1281ms/첫 계산3123ms. Electron 옵션1322ms/레벨1151ms/젬1380ms. 단일 관측이며 대표/무거운 입력/입력 paint100ms 목표와 최종 패키지 성능은 별도 검증한다.
+- 현재 runtime `pob-68ce5a9fe64c31b399eb4f03aabc85e7efa4c63e6f0188b6edf217c6dd583a4a`, editor `pob-editor-42f836b679b4be46ab42c13ec45e7e8adfa9b93ecf3c21fbe73df88e3b131f66`, 원본 PoB0.23.1 / `5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6`. 출처 검사를 유지해 새 어댑터 묶음과 카탈로그를 재준비했다.
+
+다음: 최신 전체 check/build, 지속 runtime의 실제 오염/취소/실패 회귀, 최신 source/Windows packaged 두 크기, 장비 생성/주얼/삭제·노트/트리/비교/파티/출처 이동, 불필요 경로 정리, 설치 PoB capability/선택 PoK 호환과 원본 GUI XML 왕복. 세부 기능 연결표와 남은 항목은 `UI-REBUILD-PROGRESS-20261103.md`를 따른다. 장비 1단계 검증으로 전체 완료를 선언하지 않는다.
+
+---
+
 # 현재 작업
 
 새 세션 목표·실행 지시안: [목업 기반 UI 재구축](GOAL-UI-REBUILD-20261103.md). 기존 목업/후속 요구를 화면 기준으로 명시하고 지속 PoB runtime·자동 반영/계산·검증된 기반 보존·교체 후 구코드 정리·전체 완료 기준을 통합했다. 지금은 목표 문서화만 수행하며 기존 paused goal/27차 구현을 자동 재개하지 않는다.

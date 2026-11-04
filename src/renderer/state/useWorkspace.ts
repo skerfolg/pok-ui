@@ -27,6 +27,7 @@ export function useWorkspace() {
     changeBuild(snapshot.id,current=>{result=applyExpectedEdit(current,snapshot,edit,label);return result;});
     if(!result)throw new Error('대상 빌드가 없어졌습니다.');return result;
   },[changeBuild]);
+  const getBuild=useCallback((id:string)=>latest.current.builds.find(build=>build.id===id),[]);
   const flush = useCallback(() => queue.current, []);
-  return { state, loaded, update, changeBuild, applyEdit, undo,redo,applyExpected, saveStatus, error, setError, flush };
+  return { state, loaded, getBuild, update, changeBuild, applyEdit, undo,redo,applyExpected, saveStatus, error, setError, flush };
 }

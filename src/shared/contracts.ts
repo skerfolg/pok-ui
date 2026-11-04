@@ -1,3 +1,4 @@
+import type {PobItemTooltipRequest,PobItemTooltip} from './pob-item-tooltip';
 import type { CalculationProvenance } from './calculation-context';
 import type { PobRuntimeInfo } from './pob-runtime';
 import type {PobInspection,PobInspectionRequest} from './pob-inspection';
@@ -16,7 +17,7 @@ import type { PassiveTreeData } from './passive-tree';
 export type { CatalogEntry, CatalogEntryType, CatalogQuery, CatalogQueryResult, DataBundleInfo, ItemRenderRequest, ItemRenderResult } from './game-data';
 export type { PassiveTreeData } from './passive-tree';
 
-export type View = 'chat' | 'equipment' | 'skills' | 'tree' | 'config' | 'settings' | 'calculations' | 'notes' | 'builds' | 'compare' | 'party' | 'loadouts';
+export type View = 'chat' | 'equipment' | 'skills' | 'tree' | 'config' | 'settings' | 'calculations' | 'notes' | 'builds' | 'compare' | 'party' | 'loadouts' | 'exchange';
 export type Attributes = Record<string, string>;
 export type BuildSetKind='items'|'skills'|'tree'|'config';
 export interface Item { id: string; name: string; base: string; rarity: string; text: string }
@@ -27,6 +28,7 @@ export interface SkillSet { id: string; title: string; groups: SkillGroup[]; act
 export interface TreeSpec { weaponSets?:Record<string,number[]>; id: string; title: string; version: string; nodes: number[]; sockets: { nodeId: string; itemId: string }[]; active: boolean; attributes: Attributes }
 export interface ConfigSet { id: string; title: string; inputs: Record<string, string | number | boolean>; placeholders: Attributes[]; active: boolean }
 export interface ParsedBuild {
+  levelAuto?:boolean;
   className: string; ascendancy: string; level: number; mainSocketGroup: number;
   items: Item[]; itemSets: ItemSet[]; skillSets: SkillSet[]; trees: TreeSpec[]; configs: ConfigSet[];
   stats: Record<string, string>;
@@ -34,6 +36,9 @@ export interface ParsedBuild {
   party?:{buffers:Partial<Record<PartyName,string>>;exportEnabled:boolean};
 }
 export type BuildAtomicEdit =
+  | {type:'item-copy';sourceXml:string;sourceId:string;id:string}
+  | {type:'character-level';level:number}
+  | {type:'item-remove';ids:string[]}
   | {type:'input-record';input:SkillTextInput}
   | {type:'skill-import-native';setId:string;node:PobSetNode;companions:{tag:'Spectre'|'BeastCompanion';id:string}[];input?:SkillTextInput}
   | {type:'skill-copy-native';setId:string;groupId:string;targetSetId:string}
@@ -69,6 +74,7 @@ export type BuildAtomicEdit =
 export type BuildEdit = BuildAtomicEdit | { type: 'batch'; edits: BuildAtomicEdit[] };
 export interface Calculation { provenance?: CalculationProvenance; revision: number; at: string; result: Record<string, unknown>; restoreNotes: unknown[] }
 export interface BuildDocument {
+  fileSavedXmlSha256?:string;
   inputEvidence?:SkillTextEvidence[];
   id: string; name: string; revision: number; createdAt: string; updatedAt: string;
   xml: string; originalXml: string; sourceName: string;
@@ -103,6 +109,7 @@ export interface DesktopApi {
   loadState(): Promise<AppState>;
   saveState(state: AppState): Promise<void>;
   importBuild(): Promise<BuildDocument | null>;
+  saveBuild(build: BuildDocument, saveAs?:boolean): Promise<{path:string;xmlSha256:string;name:string}|null>;
   exportBuild(build: BuildDocument, format: 'xml' | 'pob' | 'json'): Promise<string | null>;
   copyText(text:string):Promise<void>;
   connectPok(settings: Settings['pok']): Promise<ConnectionInfo>;
@@ -110,12 +117,14 @@ export interface DesktopApi {
   onPokConnection(listener: (connection: ConnectionInfo) => void): () => void;
   callPok(name: string, args: Record<string, unknown>): Promise<unknown>;
   getDataBundleInfo(): Promise<DataBundleInfo>;
+  onPobRuntimeInvalidated(listener:()=>void):()=>void;
   getPobRuntimeInfo(): Promise<PobRuntimeInfo>;
   inspectBuild(request:PobInspectionRequest):Promise<PobInspection>;
   readCalcs(request:PobCalcsRequest):Promise<PobCalcs>;
   readParty(request:PobPartyRequest):Promise<PobParty>;
   readLoadouts(request:PobLoadoutsRequest):Promise<PobLoadouts>;
   editTree(request:PobTreeRequest):Promise<PobTreeResult>;
+  itemTooltip(request:PobItemTooltipRequest):Promise<PobItemTooltip>;
   itemControls(request:PobItemControlsRequest):Promise<PobItemControls>;
   cancelPobRequest(requestId:string):Promise<boolean>;
   equipment(request:PobEquipmentRequest):Promise<PobEquipment>;
@@ -123,7 +132,7 @@ export interface DesktopApi {
   getPobCatalogEntry(type: CatalogEntryType, id: string): Promise<CatalogEntry>;
   renderPobItem(request: ItemRenderRequest): Promise<ItemRenderResult>;
   loadPassiveTree(version: string): Promise<PassiveTreeData>;
-  computeBuild(build: BuildDocument): Promise<Calculation>;
+  computeBuild(build: BuildDocument,scope?:'workspace'): Promise<Calculation>;
   applyBuildProposal(proposalId: string): Promise<BuildDocument>;
   sendChat(request: AgentRequest): Promise<void>;
   listAgentModels():Promise<AgentModel[]>;

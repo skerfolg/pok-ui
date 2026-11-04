@@ -243,8 +243,8 @@ function editGems(group: Element, gems: Gem[]): void {
   const old = children(group, 'Gem');
   const used = new Set<Element>();
   const updated = gems.map(gem => {
-    requireInteger(gem.level, '젬 레벨', 1, 100);
-    requireInteger(gem.quality, '젬 퀄리티', 0, 100);
+    requireInteger(gem.level, '젬 레벨', 1, Number.MAX_SAFE_INTEGER);
+    requireInteger(gem.quality, '젬 퀄리티', 0, Number.MAX_SAFE_INTEGER);
     const sourceIndex = gem.sourceIndex;
     let source = sourceIndex === undefined ? undefined : old[sourceIndex - 1];
     if (source && used.has(source)) source = undefined;
@@ -417,6 +417,25 @@ export function editBuild(xml: string, edit: BuildEdit): string {
       parent.removeChild(removed);const remaining=sets(root,edit.kind);
       selectElement(root,edit.kind,removed===selected?remaining[Math.min(index,remaining.length-1)]:selected);break;
     }
+    case 'item-remove': {
+      const ids=new Set(edit.ids),items=child(root,'Items');
+      if(!ids.size||edit.ids.some(id=>!/^\d+$/.test(id)||id==='0'||!children(items,'Item').some(item=>attr(item,'id')===id)))throw new Error('삭제할 보유 아이템을 찾지 못했습니다.');
+      for(const item of children(items,'Item'))if(ids.has(attr(item,'id')))items!.removeChild(item);
+      // Clear only known references; inactive sets, socket metadata and unknown XML survive.
+      const containers=items?[items,...children(items,'ItemSet')]:[];
+      for(const container of containers)for(const slot of children(container,'Slot'))if(ids.has(attr(slot,'itemId')))slot.setAttribute('itemId','0');
+      for(const spec of [...children(child(root,'Tree'),'Spec'),...children(root,'Spec')])for(const socket of children(child(spec,'Sockets'),'Socket'))if(ids.has(attr(socket,'itemId')))socket.setAttribute('itemId','0');
+      break;
+    }
+    case 'item-copy': {
+      requireInteger(Number(edit.id),'아이템 ID',1);
+      if(!/^\d+$/.test(edit.id))throw new Error('새 아이템 ID가 올바르지 않습니다.');
+      const source=children(child(readXml(edit.sourceXml).documentElement!,'Items'),'Item').filter(item=>attr(item,'id')===edit.sourceId);
+      if(source.length!==1)throw new Error('복사할 원본 아이템을 하나로 식별할 수 없습니다.');
+      let items=child(root,'Items');if(!items){items=document.createElement('Items');root.appendChild(items);}
+      if(children(items,'Item').some(item=>attr(item,'id')===edit.id))throw new Error('기존 아이템 ID를 덮어쓸 수 없습니다.');
+      const copy=document.importNode(source[0],true) as Element;copy.setAttribute('id',edit.id);items.insertBefore(copy,child(items,'ItemSet')??null);break;
+    }
     case 'item': {
       if (!/^\d+$/.test(edit.id)) throw new Error('아이템 ID는 음수가 아닌 정수여야 합니다.');
       requireInteger(Number(edit.id), '아이템 ID');
@@ -530,6 +549,10 @@ export function editBuild(xml: string, edit: BuildEdit): string {
     }
     case 'config-remove': {
       const set=getSet(root,'config',edit.setId);for(const input of children(set,'Input'))if(attr(input,'name')===edit.key)set.removeChild(input);break;
+    }
+    case 'character-level': {
+      requireInteger(edit.level,'캐릭터 레벨',1,100);
+      putAttributes(build,{level:String(edit.level),characterLevelAutoMode:'false'});break;
     }
     case 'character': {
       requireInteger(edit.level, '캐릭터 레벨', 1, 100);

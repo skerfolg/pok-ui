@@ -1,3 +1,4 @@
+import {assertBundledPobSource,assertCheckoutPobSource,type PobSourceProof} from './pob-source-compatibility';
 import { sha256File } from '../../scripts/file-integrity.mjs';
 import { lstat, readFile, realpath } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -218,7 +219,7 @@ export class GameDataStore {
   }
 
   async query(request: CatalogQuery): Promise<CatalogQueryResult> {
-    const manifest = await this.loadManifest();
+    await this.loadManifest();
     const loaded = await this.loadCatalog();
     const limit = Math.max(1, Math.min(100, Number.isInteger(request.limit) ? Number(request.limit) : 50));
     const offset = Math.max(0, Math.min(1_000_000, Number.isInteger(request.offset) ? Number(request.offset) : 0));
@@ -260,6 +261,14 @@ export class GameDataStore {
     return { ok: !reason, ...(reason ? { reason, actual } : { actual }), expected };
   }
 
+  async verifyStandalonePob(proof:PobSourceProof,checkoutRoot?:string):Promise<void>{
+    const manifest=await this.loadManifest();
+    if(checkoutRoot){await assertCheckoutPobSource(proof,manifest.identity.pob.commit,checkoutRoot);return;}
+    if(this.runtimeMode(manifest)!=='bundled')throw new GameDataError('선택 PoK 원본 경로를 확인할 수 없습니다.');
+    await this.verifyBundleFiles(manifest);const runtime=await this.readRuntimeManifest(manifest);this.verifyRuntimeAnchors(manifest,runtime);
+    const prefix=manifest.runtime.path.replace(/\\/g,'/')+'/',files=Object.fromEntries(manifest.files.filter(file=>file.path.startsWith(prefix)).map(file=>[file.path.slice(prefix.length),file.sha256]));
+    assertBundledPobSource(proof,manifest.identity.pob.commit,files);
+  }
   async getLaunchDescriptor(): Promise<GameDataLaunchDescriptor> {
     const manifest = await this.loadManifest();
     if (this.runtimeMode(manifest) === 'checkout') throw new GameDataError('개발용 checkout 데이터 묶음은 실행 descriptor를 제공하지 않습니다.');

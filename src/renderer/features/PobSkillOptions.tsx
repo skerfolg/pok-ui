@@ -15,6 +15,7 @@ export function PobSkillOptions({options,group,setId,edit,disabled,pending,diagn
       {options.minesAvailable&&<label>활성 지뢰 수<input key={options.mines??'automatic'} aria-label="PoB 활성 지뢰 수" type="number" min={0} defaultValue={options.mines??''} disabled={disabled||partial||!gem} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}} onBlur={e=>{if(e.target.value!==String(options.mines??''))value('skillMineCount',e.target.value);}}/></label>}
     </div>
     {!gem&&options.skills.length>0&&<p className="warning">이 효과는 원본에서 확인했으나 젬 외부에서 부여된 효과의 세부 편집은 아직 지원하지 않습니다.</p>}
+    {!disabled&&options.gems.map(native=>{const input=group.gems[native.index-1];if(!input||input.name!==native.name)return null;return (['level','quality'] as const).filter(field=>native[field]!==undefined&&native[field]!==Number(input.attributes[field]??input[field])).map(field=><p className="warning" key={native.index+field}>젬 {native.index} {field==='level'?'레벨':'퀄리티'} · XML 입력 {input.attributes[field]??input[field]} / 원본 PoB 적용 {native[field]}</p>);})}
     {options.gems.filter(g=>g.error).map(g=><p className="warning" key={g.index}>젬 {g.index} · {g.name}: {g.error}</p>)}
   </div></div>;
 }

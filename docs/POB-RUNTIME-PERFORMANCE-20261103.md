@@ -1,3 +1,7 @@
+> 최신3profile/legacy host/queue/QPC/actual packaged Paint 결과는 `UI-REBUILD-PERFORMANCE-FINAL-20261104.md`를 따른다. 아래 감사는 재구축 전 이력이다.
+
+> 아래 최초 감사는 재구축 전 이력이다. 현재 구현은 지속 worker·manifest 변경 감지/검증 재사용·최신 요청 큐와 compute/read snapshot 결합을 사용한다. 최신 상태는 CURRENT-PLAN과 UI-REBUILD-PROGRESS를 따른다. 이전 actual packaged workflow 관측은 품질1603ms/레벨1044ms/젬1937ms, 입력 후 두 frame 기회29.7ms였다 (`.local/workspace-rebuild-1793707037945/result.json`). 이는 단일 합성 실행이며 대표/무거운 입력·queue/복원/계산/UI 단계별 최종 보장은 아니다.
+
 # PoB 실행 방식·반응 속도 비교 — 2026-11-03
 
 현재 작업 트리의 소스 감사와 합성 입력 측정이다. 제품/공유 엔진/원본 PoB 소스는 수정하지 않았다. 기존 미커밋 작업과 UI 재설계 승인 대기를 유지한다.

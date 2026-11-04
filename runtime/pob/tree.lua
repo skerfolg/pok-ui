@@ -2,8 +2,8 @@
 return function(editor,states)
   local function array()return setmetatable({},{__jsontype='array'})end
   local state,differences=states.read,states.differences
-  return function(request)
-    editor.load(request.xml)
+  return function(request,current)
+    if not current then editor.load(request.xml)end
     local spec=build.spec;spec.allocMode=request.allocMode or 0;spec:BuildAllDependsAndPaths()
     local before,old=state(spec),{}
     for id in pairs(spec.allocNodes)do old[id]=true end
@@ -91,6 +91,13 @@ return function(editor,states)
     for id in pairs(old)do if not spec.allocNodes[id]then result.removed[#result.removed+1]=id end end
     table.sort(result.added);table.sort(result.removed)
     if request.nodeId and (next(result.patch.attributeOverrides) or next(result.patch.sockets))then result.modified[#result.modified+1]=request.nodeId end
+    result.pointDisplay={text=StripEscapes(build.controls.pointDisplay.str or ''),help=StripEscapes(build.controls.pointDisplay.req or '')}
+    result.jewelSockets=array()
+    for id,slot in pairs(build.itemsTab.sockets)do
+      local node=spec.nodes[id]
+      if node then result.jewelSockets[#result.jewelSockets+1]={nodeId=id,name=StripEscapes(node.dn or ''),allocated=not not node.alloc,itemId=slot.selItemId or 0}end
+    end
+    table.sort(result.jewelSockets,function(a,b)return a.nodeId<b.nodeId end)
     local normal,asc,secondary,sockets,weapon1,weapon2=spec:CountAllocNodes()
     result.counts={normal=normal,ascendancy=asc,secondaryAscendancy=secondary,sockets=sockets,weapon1=weapon1,weapon2=weapon2}
     return result

@@ -29,6 +29,7 @@ export function validateState(value: unknown): asserts value is AppState {
         !Number.isSafeInteger(b.revision) || b.revision < 0 || typeof b.xml !== 'string' ||
         typeof b.originalXml !== 'string' || !Array.isArray(b.undo)) throw new Error('빌드 문서 형식이 올바르지 않습니다.');
     ids.add(b.id);
+  if(b.fileSavedXmlSha256!==undefined&&(typeof b.fileSavedXmlSha256!=='string'||!/^[a-f0-9]{64}$/.test(b.fileSavedXmlSha256)))throw new Error('파일 저장 기록이 올바르지 않습니다.');
     if(b.inputEvidence!==undefined){if(!Array.isArray(b.inputEvidence))throw new Error('가져오기 원문 기록이 올바르지 않습니다.');for(const input of b.inputEvidence)validateSkillTextEvidence(input);}
     if(b.folder!==undefined&&typeof b.folder!=='string')throw new Error('빌드 폴더가 올바르지 않습니다.');
     for(const history of [b.undo,b.redo])if(history!==undefined&&(!Array.isArray(history)||history.some(h=>!h||typeof h.xml!=='string'||typeof h.label!=='string')))throw new Error('편집 기록이 올바르지 않습니다.');

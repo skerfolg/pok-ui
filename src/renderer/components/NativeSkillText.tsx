@@ -30,7 +30,7 @@ export function NativeSkillText({build,setId,groupId,runtimeId,enabled,select,ap
     try{const info=await api.getPobRuntimeInfo();if(info.status!=='ready'||info.runtimeId!==current.result.runtimeId)throw new Error('검토 후 PoB가 바뀌었습니다. 다시 확인해 주세요.');
       const edit=skillGroupEdit(current.snapshot.xml,current.result.skillGroups!);if(edit.type!=='batch')throw new Error('원본 텍스트 편집 형식이 다릅니다.');const receipt=input();const edits=edit.edits.map(value=>value.type==='skill-import-native'?{...value,input:receipt}:value);
       committed=applyExpected(current.snapshot,{type:'batch',edits},'원본 스킬 텍스트 가져오기');close();select(text.groupId!);
-      const result=await api.computeBuild(committed),attached=calculated(committed,{...result,result:{...result.result,workspace_operation:{kind:'skill-text',input:receipt,groupId:text.groupId,companions:text.companions}}});
+      const result=await api.computeBuild(committed,'workspace'),attached=calculated(committed,{...result,result:{...result.result,workspace_operation:{kind:'skill-text',input:receipt,groupId:text.groupId,companions:text.companions}}});
       if(latest.current.id===committed.id)setNotice(`${text.partial?'부분 가져오기 · ':''}리비전 ${committed.revision} ${result.result.ok===false?'계산 진단 확인 필요':'새 계산 수신'}${attached?'':' · 입력 변경으로 최신 결과에 반영하지 않음'}`);
     }catch(reason){const owner=committed||current.snapshot;if(latest.current.id===owner.id&&latest.current.revision===owner.revision&&latest.current.xml===owner.xml)setError(String(reason));}finally{setApplying(false);}
   }

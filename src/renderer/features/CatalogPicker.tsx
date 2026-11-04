@@ -2,15 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CatalogEntry, CatalogEntryType } from '../../shared/contracts';
 import { api } from '../services/api';
 
-function compactRaw(raw: CatalogEntry['raw']) {
-  const stats = raw.stats;
-  const text = raw.text;
-  return {
-    ...(Array.isArray(stats) ? { stats: stats.slice(0, 8) } : {}),
-    ...(typeof text === 'string' ? { text: text.split(/\r?\n/).slice(0, 8).join('\n') } : {}),
-  };
-}
-
 export function CatalogPicker({ type, title, onSelect, category, selectedId, disabled = false }: {
   type: CatalogEntryType;
   title: string;
@@ -60,15 +51,15 @@ export function CatalogPicker({ type, title, onSelect, category, selectedId, dis
     <div className="catalog-results scroll">
       {entries.map(entry => <button key={`${entry.type}:${entry.id}`} type="button" aria-pressed={entry.id === selectedId} disabled={disabled} onClick={() => { if (disabled) return; setSelected(entry); onSelect(entry); }}>
         <span>{entry.name}</span>
-        <small>{[entry.category, entry.subType, entry.variants?.length ? `${entry.variants.length}개 변형` : ''].filter(Boolean).join(' | ') || entry.id}</small>
+        <small>{[entry.category, entry.subType, entry.variants?.length ? `${entry.variants.length}개 변형` : ''].filter(Boolean).join(' · ')}</small>
       </button>)}
     </div>
     {visibleSelected && <div className="catalog-detail">
       <strong>{visibleSelected.name}</strong>
-      <small>{[visibleSelected.type, visibleSelected.category, visibleSelected.subType, visibleSelected.id].filter(Boolean).join(' | ')}</small>
+      <small>{[visibleSelected.category, visibleSelected.subType].filter(Boolean).join(' | ')}</small>
       {visibleSelected.variants?.length ? <p>{visibleSelected.variants.length}개 변형: {visibleSelected.variants.map(variant => variant.name || variant.id).join(', ')}</p> : null}
       {visibleSelected.levels?.length ? <p>레벨: {Math.min(...visibleSelected.levels)}-{Math.max(...visibleSelected.levels)}</p> : null}
-      {Object.keys(compactRaw(visibleSelected.raw)).length ? <pre>{JSON.stringify(compactRaw(visibleSelected.raw), null, 2)}</pre> : null}
+      {Array.isArray(visibleSelected.raw.stats)&&<ul>{visibleSelected.raw.stats.filter((line):line is string=>typeof line==='string').slice(0,8).map((line,index)=><li key={index}>{line}</li>)}</ul>}{typeof visibleSelected.raw.text==='string'&&<p className="calcs-line">{visibleSelected.raw.text.split(/\r?\n/).slice(0,8).join('\n')}</p>}
       <details><summary>원본 세부 정보</summary><pre>{JSON.stringify(visibleSelected.raw, null, 2)}</pre></details>
     </div>}
   </div>;

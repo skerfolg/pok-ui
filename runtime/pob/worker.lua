@@ -36,6 +36,7 @@ local treeState=dofile(adapter..'tree-state.lua')
 local tree=dofile(adapter..'tree.lua')(editor,treeState)
 local equipment=dofile(adapter..'equipment.lua')(editor)
 local loadouts=dofile(adapter..'loadouts.lua')(editor,dofile(adapter..'loadout-management.lua'),dofile(adapter..'tree-workspace.lua')(treeState),dofile(adapter..'skill-groups.lua')(editor,dofile(adapter..'skill-text.lua')))
+local itemTooltip=dofile(adapter..'item-tooltip.lua')(editor)
 local itemControls=dofile(adapter..'item-controls.lua')(editor,dofile(adapter..'item-popups.lua'))
 reply({id=0,ok=true,result={version=launch.versionNumber,treeVersions=treeVersionList}})
 for line in io.stdin:lines() do
@@ -53,6 +54,7 @@ for line in io.stdin:lines() do
       if request.op=='tree' then return tree(request) end
       if request.op=='equipment' then return equipment(request) end
       if request.op=='loadouts' then return loadouts(request) end
+      if request.op=='item-tooltip' then return itemTooltip(request) end
       if request.op=='item-controls' then return itemControls(request) end
       if request.op~='compute' then error('Unsupported operation: '..tostring(request.op)) end
       assert(type(request.xml)=='string','XML is required')
@@ -65,9 +67,28 @@ for line in io.stdin:lines() do
       end
       local warnings={}
       for _,value in ipairs(build.controls.warnings and build.controls.warnings.lines or {}) do
-        if type(value)=='string' then warnings[#warnings+1]=value end
+        if type(value)=='string' then warnings[#warnings+1]=StripEscapes(value)end
       end
-      return {ok=true,stats=stats,warnings=warnings,version=launch.versionNumber,treeVersion=build.spec.treeVersion}
+      local actor=build.calcsTab.mainEnv and build.calcsTab.mainEnv.player
+      local skill=actor and actor.mainSkill;local effect=skill and skill.activeEffect
+      local granted=effect and effect.grantedEffect
+      local group=build.skillsTab.socketGroupList[build.mainSocketGroup]
+      local target={group=build.mainSocketGroup,groupLabel=StripEscapes(group and group.label or ''),effectId=granted and granted.id,effectName=granted and StripEscapes(granted.name or ''),slot=group and group.slot,mode='MAIN'}
+      local diagnostics=setmetatable({},{__jsontype='array'})
+      for slot,item in pairs(actor and actor.itemList or {})do
+        local lines=setmetatable({},{__jsontype='array'})
+        for _,list in ipairs({item.implicitModLines or {},item.explicitModLines or {},item.runeModLines or {},item.enchantModLines or {}})do
+          for _,line in ipairs(list)do if line.extra then lines[#lines+1]=StripEscapes(line.line)end end
+        end
+        if #lines>0 then
+          local itemId;for id,known in pairs(build.itemsTab.items)do if known==item then itemId=tostring(id);break end end
+          diagnostics[#diagnostics+1]={code='item-unparsed-lines',kind='item',itemId=itemId,slot=slot,label=StripEscapes(item.name or ''),lines=lines,message='Original PoB does not model these item lines.'}
+        end
+      end
+      table.sort(diagnostics,function(a,b)return a.slot<b.slot end)
+      -- These reads share only this freshly restored request, never another XML.
+      local snapshot={equipment=equipment({},true),character=tree({action='character'},true),inspection=inspect(nil,true)}
+      return {ok=true,stats=stats,warnings=warnings,target=target,inputDiagnostics=diagnostics,workspaceSnapshot=snapshot,version=launch.versionNumber,treeVersion=build.spec.treeVersion}
     end)
     if worked then reply({id=request.id,ok=true,result=result})
     else reply({id=request.id,ok=false,error={code=request.op=='compute' and 'POB_COMPUTE' or 'POB_EDITOR',message=tostring(result)}}) end

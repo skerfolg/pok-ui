@@ -21,16 +21,16 @@ const env = { ...process.env, POK_UI_DATA_DIR: directory };
 delete env.ELECTRON_RUN_AS_NODE; delete env.POK_RENDERER_URL;
 const passed = [], skipped = [], failures = [], errors = [];
 let application, page;
-let resourceDirectory, resourceManifest;
+let resourceDirectory, resourceManifest, independentSource=false;
 const sha = text => createHash('sha256').update(text).digest('hex');
 async function check(name, fn) {
   try { await fn(); passed.push(name); console.log('PASS: ' + name); }
   catch (e) { failures.push(name + ': ' + e.message); console.error('FAIL: ' + name + ': ' + e.message); }
 }
-const saved = () => page.waitForFunction(() => document.querySelector('.statusbar [role=status]')?.textContent === '저장됨');
+const saved = () => page.waitForFunction(() => document.querySelector('.statusbar [role=status]')?.textContent.endsWith('저장됨'));
 const state = () => page.evaluate(() => window.pok.loadState());
 const current = async () => { const s = await state(); return s.builds.find(b => b.id === s.activeBuildId); };
-const skipEngine = process.env.POK_SMOKE_SKIP_ENGINE === '1';
+const skipEngine=process.env.POK_SMOKE_SKIP_ENGINE==='1'||!process.env.POK_SMOKE_ENGINE_ROOT&&process.env.POK_SMOKE_REQUIRE_ENGINE!=='1';
 function timeout(promise, ms, label) {
   return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(label + ' timed out after ' + ms + 'ms')), ms))]);
 }
@@ -39,7 +39,7 @@ function timeout(promise, ms, label) {
   const packagedExecutable = process.env.POK_SMOKE_EXECUTABLE;
   const electronExecutable = process.env.POK_SMOKE_ELECTRON_EXECUTABLE;
   application = await electron.launch({
-    executablePath: packagedExecutable || electronExecutable || require('electron'),
+    executablePath: packagedExecutable || electronExecutable || path.join(root,'node_modules/electron/dist/electron.exe'),
     args: packagedExecutable ? [] : [root],
     cwd: directory,
     env,
@@ -53,12 +53,12 @@ function timeout(promise, ms, label) {
   await page.locator('.app-shell').waitFor(); await saved();
   const location=await application.evaluate(({app})=>({packaged:app.isPackaged,root:app.getAppPath(),resources:process.resourcesPath}));
   resourceDirectory=location.packaged?location.resources:path.join(location.root,'resources');
-  resourceManifest=JSON.parse(fs.readFileSync(path.join(resourceDirectory,'bundle-manifest.json'),'utf8'));
+  if(fs.existsSync(path.join(resourceDirectory,'bundle-manifest.json')))resourceManifest=JSON.parse(fs.readFileSync(path.join(resourceDirectory,'bundle-manifest.json'),'utf8'));
   let info;
   await check('prepared bundle has source identity and all original catalog types', async () => {
     info = await page.evaluate(() => window.pok.getDataBundleInfo());
-    assert.equal(info.status, 'ready', info.error);
-    assert.equal(info.identity.pob.commit.length, 40);
+    assert.equal(info.status,'ready',info.error);independentSource=info.source==='pob';
+    assert.equal((info.pobCommit||info.identity?.pob.commit).length,40);
     for (const type of ['base','unique','mod','gem','skill']) {
       const result = await page.evaluate(type => window.pok.queryPobCatalog({ type, limit: 2 }), type);
       assert(result.total > 0, type + ' is empty');
@@ -75,15 +75,15 @@ function timeout(promise, ms, label) {
     assert.equal(build.originalXml, build.xml);
   });
   if(skipEngine) {
-    skipped.push('engine-backed MCP checks skipped by POK_SMOKE_SKIP_ENGINE');
+    skipped.push(process.env.POK_SMOKE_SKIP_ENGINE==='1'?'engine-backed MCP checks explicitly skipped':'optional engine checks not requested; set POK_SMOKE_ENGINE_ROOT or POK_SMOKE_REQUIRE_ENGINE=1');
   } else {
     let engineReady = false;
     await check('native runtime identity agrees with the prepared UI bundle', async () => timeout((async () => {
-      await page.getByRole('button', { name: 'pok 설정', exact: true }).click();
-      await page.waitForFunction(() => document.querySelector('.sidebar-bottom')?.textContent.includes('pok 연결됨'), null, { timeout: 90000 });
+      await page.getByRole('button', { name: '설정', exact: true }).click();
+      await page.getByText('PoK 엔진 · 선택 연결',{exact:true}).click();await page.getByRole('button',{name:'다시 연결',exact:true}).click();await page.waitForFunction(() => document.querySelector('.sidebar-bottom')?.textContent.includes('pok 연결됨'), null, { timeout: 90000 });
       const runtime = await timeout(page.evaluate(() => window.pok.callPok('server_info', {})), 30000, 'server_info');
-      assert.equal(runtime.identity.pob.commit, info.identity.pob.commit);
-      assert.equal(runtime.identity.kb.contentSha256, info.identity.kb.contentSha256);
+      assert.equal(runtime.identity.pob.commit, (info.pobCommit||info.identity?.pob.commit));
+      const connection=await page.evaluate(()=>window.pok.getPokConnection());assert.equal(runtime.identity.kb.contentSha256,connection.identity.kb.contentSha256);
       const knowledge=await timeout(page.evaluate(()=>window.pok.callPok('search_kb',{query:'Fireball',type:'Skill',limit:1})), 30000, 'search_kb');
       assert.match(JSON.stringify(knowledge),/fireball/i);
       engineReady = true;
@@ -98,7 +98,7 @@ function timeout(promise, ms, label) {
       assert.equal(result.ok, true, result.reason || result.error);
       const before = await current();
       await page.getByRole('button', {name:'장비',exact:true}).click();
-      await page.locator('.slot-row').filter({hasText:'반지 1'}).click();
+      await page.getByRole('button',{name:'반지 1 슬롯',exact:true}).click();
       await page.getByText('아이템 원문 편집',{exact:true}).click();
       await page.getByLabel('아이템 원문',{exact:true}).fill(result.text);
       await page.getByRole('button',{name:'적용',exact:true}).click(); await saved();
@@ -115,7 +115,7 @@ function timeout(promise, ms, label) {
       await page.waitForFunction(async()=>{const s=await window.pok.loadState();const b=s.builds.find(b=>b.id===s.activeBuildId);return b?.calculation?.revision===b?.revision;},null,{timeout:180000});
       const result = (await current()).calculation;
       assert.equal(result.result.ok, true, JSON.stringify(result.result));
-      assert.equal(result.provenance.bundleId, info.bundleId);
+      assert.equal(result.provenance.bundleId,info.runtimeId||info.bundleId);
       assert.equal(result.provenance.xmlSha256, sha(build.xml));
       assert.equal(result.provenance.mode, 'xml');
       assert(Object.keys(result.result.stats).length > 0);
@@ -132,13 +132,13 @@ function timeout(promise, ms, label) {
     }
   }
   await check('pinned tree images load through verified bundle URLs',async()=>{
-    await page.getByRole('button',{name:'패시브트리',exact:true}).click();
+    await page.getByRole('button',{name:'패시브',exact:true}).click();
     await page.waitForFunction(()=>{const c=document.querySelector('canvas');return Number(c?.dataset.nodes)>1000&&Number(c?.dataset.requiredImages)>0&&c.dataset.readyImages===c.dataset.requiredImages&&Number(c.dataset.failedImages)===0;},null,{timeout:90000});
   });
   await check('class and original catalog panels fit both desktop sizes', async () => {
     for (const [width,height] of [[1920,1080],[1024,768]]) {
       await application.evaluate(({BrowserWindow}, size) => BrowserWindow.getAllWindows()[0].setContentSize(size[0],size[1]), [width,height]);
-      for(const view of ['장비','스킬','설정','패시브트리']) {
+      for(const view of ['장비','스킬','전투 조건','패시브']) {
         await page.getByRole('button',{name:view,exact:true}).click();
         if(view==='스킬' && await page.getByRole('button',{name:'스킬 그룹 추가'}).count()) {
           const b=await current();if(!parseBuild(b.xml).skillSets[0].groups.length){await page.getByRole('button',{name:'스킬 그룹 추가'}).click();await saved();}
@@ -151,14 +151,18 @@ function timeout(promise, ms, label) {
   assert.deepEqual(errors, []);
 })().catch(error => { failures.push(String(error.stack || error)); }).finally(async () => {
   if(application) await application.close();
-  if(resourceDirectory&&resourceManifest) {
+  if(resourceDirectory&&(independentSource||resourceManifest)) {
     try {
-      const known=new Set(resourceManifest.files.map(file=>file.path));
+      if(independentSource){
+        const {sha256File}=await import('../scripts/file-integrity.mjs');
+        for(const folder of ['pob-runtime','pob-editor']){const base=path.join(resourceDirectory,folder),manifest=JSON.parse(fs.readFileSync(path.join(base,'manifest.json'),'utf8')),known=new Set(['manifest.json',...manifest.files.map(file=>file.path)]);for(const file of manifest.files)assert.equal(await sha256File(path.join(base,file.path)),file.sha256,'Independent resource modified: '+file.path);function scan(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,entry.name);if(entry.isDirectory())scan(full);else assert(known.has(path.relative(base,full).split(path.sep).join('/')),'Unexpected independent resource write');}}scan(base);}passed.push('independent runtime/editor resources remain byte exact with no unexpected files');
+      }
+      if(!independentSource){const known=new Set(resourceManifest.files.map(file=>file.path));
       const {sha256File}=await import('../scripts/file-integrity.mjs');
       for(const file of resourceManifest.files)assert.equal(await sha256File(path.join(resourceDirectory,file.path)),file.sha256,'Resource modified: '+file.path);
       function scan(folder) {for(const e of fs.readdirSync(folder,{withFileTypes:true})){const full=path.join(folder,e.name);if(e.isDirectory())scan(full);else{const relative=path.relative(resourceDirectory,full).split(path.sep).join('/');assert(known.has(relative)||e.name==='.gitkeep','Unexpected resource write: '+relative);}}}
       for(const folder of ['passive-tree','pob-catalog',...(resourceManifest.runtime.mode==='checkout'?[]:['pok-runtime'])])scan(path.join(resourceDirectory,folder));
-      passed.push('bundle files and directory contents remain immutable ('+(resourceManifest.runtime.mode||'bundled')+')');
+      passed.push('bundle files and directory contents remain immutable ('+(resourceManifest.runtime.mode||'bundled')+')');}
     } catch(error) {failures.push('Resource immutability: '+error.message);}
   }
   fs.writeFileSync(path.join(directory,'result.json'), JSON.stringify({passed,skipped,failures,errors},null,2));

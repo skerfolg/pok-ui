@@ -1,30 +1,38 @@
+import {summaryStatGroups as groups} from '../design/stat-labels';
+import {isPobSummaryTarget,isPobInputDiagnostic} from '../../shared/pob-runtime';
+import type {WorkspaceLocation} from '../state/workspace-location';
+import {projectNote} from '../../shared/pob-notes';
 import { isCalculationCurrent } from '../../shared/calculation-context';
 import { useEffect, useState } from 'react';
 import type { BuildDocument, ParsedBuild } from '../../shared/contracts';
-const groups: { title: string; rows: [string, string, number?, number?, string?][] }[] = [
-  { title: '공격', rows: [['평균 적중', 'AverageHit', 1], ['시전 속도', 'Speed', 2], ['치명타 확률', 'CritChance', 2, 1, '%'], ['치명타 배율', 'CritMultiplier', 0, 100, '%'], ['적중 DPS', 'TotalDPS', 1], ['점화 포함 DPS', 'WithIgniteDPS', 1]] },
-  { title: '자원', rows: [['총 생명력', 'Life'], ['미점유 생명력', 'LifeUnreserved'], ['마나', 'Mana'], ['마나 재생', 'ManaRegenRecovery', 1], ['총 정신력', 'Spirit'], ['미점유 정신력', 'SpiritUnreserved']] },
-  { title: '방어', rows: [['유효 생명력', 'TotalEHP'], ['에너지 보호막', 'EnergyShield'], ['방어도', 'Armour'], ['회피', 'Evasion'], ['회피 확률', 'EvadeChance', 0, 1, '%'], ['물리 최대 피격', 'PhysicalMaximumHitTaken'], ['원소 최대 피격', 'FireMaximumHitTaken']] },
-  { title: '저항', rows: [['화염', 'FireResist', 0, 1, '%'], ['냉기', 'ColdResist', 0, 1, '%'], ['번개', 'LightningResist', 0, 1, '%'], ['카오스', 'ChaosResist', 0, 1, '%']] },
-  { title: '능력치', rows: [['힘', 'Str'], ['민첩', 'Dex'], ['지능', 'Int']] },
-];
 export function calculationStats(build: BuildDocument): Record<string, unknown> {
   return (build.calculation?.result.stats ?? {}) as Record<string, unknown>;
 }
-export function StatsRail({ build, parsed, onDetails, bundleId, xmlSha256 }: { build: BuildDocument; parsed: ParsedBuild; bundleId?: string; xmlSha256?: string; onDetails: () => void }) {
-  const [source, setSource] = useState(build.revision === 0 && !build.calculation ? 'original' : 'current');
-  useEffect(() => { setSource(build.revision === 0 && !build.calculation ? 'original' : 'current'); }, [build.id, build.revision, build.calculation?.at]);
+export function StatsRail({ build, parsed, onDetails, bundleId, xmlSha256,status,navigate }: { build: BuildDocument; parsed: ParsedBuild; bundleId?: string; xmlSha256?: string;status?:string;navigate?:(target:WorkspaceLocation)=>void; onDetails: () => void }) {
+  const [source, setSource] = useState('current');
+  useEffect(() => { setSource('current'); }, [build.id, build.revision, build.calculation?.at]);
   const failed = build.calculation?.revision === build.revision && build.calculation.result.ok === false;
   const fresh = isCalculationCurrent(build,bundleId,xmlSha256);
-  const stats = source === 'original' ? parsed.stats : fresh ? calculationStats(build) : {};
+  const rawWarnings=build.calculation?.result.warnings,warnings=Array.isArray(rawWarnings)?rawWarnings.filter((value:unknown):value is string=>typeof value==='string'):[];
+  const rawTarget=build.calculation?.result.target,target=isPobSummaryTarget(rawTarget)?rawTarget:undefined;
+  const rawDiagnostics=build.calculation?.result.inputDiagnostics,diagnostics=Array.isArray(rawDiagnostics)?rawDiagnostics.filter(isPobInputDiagnostic):[];
+  const restoreNotes=build.calculation?.restoreNotes.filter((note):note is {message:string;field?:string}=>Boolean(note&&typeof note==='object'&&'message' in note&&typeof note.message==='string'))||[];
+  const targetGroup=target?.group!==undefined?parsed.skillSets.find(set=>set.active)?.groups.find(group=>group.id===String(target.group)):undefined;
+  const stats = source === 'original' ? parsed.stats : calculationStats(build);
   return <aside className="stats-rail" aria-label="빌드 능력치 요약">
     <header className="section-heading"><h2>능력치 요약</h2><span className="muted">PoB</span></header>
     <select aria-label="능력치 출처" value={source} onChange={e => setSource(e.target.value)}><option value="current">현재 편집본{fresh ? '' : ' · 재계산 필요'}</option><option value="original">XML 저장 시점 수치</option></select>
-    <p className="stat-note">{source === 'original' ? '가져온 파일에 저장된 과거 계산값' : failed ? '계산이 완료되지 않았습니다. 진단을 확인하세요.' : fresh ? `리비전 ${build.revision} · ${new Date(build.calculation!.at).toLocaleTimeString()}` : '계산 버튼을 누르면 새 수치가 표시됩니다.'}</p>
+    {source==='current'&&target&&<p className="summary-target">주력 대상 · {fresh&&targetGroup&&navigate?<button className="text-button" onClick={()=>navigate({view:'skills',groupId:targetGroup.id})}>{target.effectName||target.groupLabel||'대상 없음'}</button>:<span>{target.effectName||target.groupLabel||'대상 없음'}</span>}</p>}
+    <p className="stat-note">{source === 'original' ? '가져온 파일에 저장된 과거 계산값' : failed ? '계산이 완료되지 않았습니다. 진단을 확인하세요.' : fresh ? `리비전 ${build.revision} · ${new Date(build.calculation!.at).toLocaleTimeString()}` : build.calculation?`이전 계산 r${build.calculation.revision} · ${status||'갱신 대기'}`:status||'새 계산 대기'}</p>
+    {source==='current'&&(diagnostics.length>0||restoreNotes.length>0)&&<p className="warning">{fresh?'현재 입력':'이전 계산'} · 해석/복원 확인 {diagnostics.length+restoreNotes.length}개</p>}
+    {source==='current'&&fresh&&build.calculation?.result.inputDiagnosticsAvailable===false&&<p className="muted">현재 런타임은 입력 줄 해석 진단을 제공하지 않습니다.</p>}
     {groups.map(group => <details key={group.title} open><summary>{group.title}</summary>{group.rows.map(([label, key, digits = 0, scale = 1, suffix = '']) => {
       const n = Number(stats[key]); const present = stats[key] !== undefined && Number.isFinite(n);
-      return <div className="stat-row" key={key}><span>{label}</span><strong className={key === 'SpiritUnreserved' && n < 0 ? 'warning' : ''}>{present ? (n * scale).toLocaleString('en-US', { maximumFractionDigits: digits, minimumFractionDigits: digits }) + suffix : '—'}</strong></div>;
+      return <div className="stat-row" key={key}><span>{label}</span><button className="stat-value" onClick={onDetails} title="원본 PoB 계산 상세로 이동" aria-label={`${label} 계산 상세`}><strong className={key === 'SpiritUnreserved' && n < 0 ? 'warning' : ''}>{present ? (n * scale).toLocaleString('en-US', { maximumFractionDigits: digits, minimumFractionDigits: digits }) + suffix : '—'}</strong></button></div>;
     })}</details>)}
+    {source==='current'&&diagnostics.length>0&&<section className="summary-warnings"><h3>원본 PoB가 해석하지 않은 줄</h3>{diagnostics.map((diagnostic,index)=><div key={index}>{fresh&&diagnostic.itemId&&parsed.items.some(item=>item.id===diagnostic.itemId)&&navigate?<button className="warning" onClick={()=>navigate({view:'equipment',itemId:diagnostic.itemId})}>{diagnostic.label||diagnostic.slot} · 확인</button>:<strong>{diagnostic.label||diagnostic.slot}</strong>}{diagnostic.lines.map((line,index)=><p key={index}>{line}</p>)}</div>)}</section>}
+    {source==='current'&&restoreNotes.length>0&&<section className="summary-warnings"><h3>원본 복원 진단</h3>{restoreNotes.map((note,index)=><p key={index}>{note.message}</p>)}</section>}
+    {source==='current'&&warnings.length>0&&<section className="summary-warnings"><h3>{fresh?'원본 PoB 경고':'이전 계산 경고'}</h3>{warnings.map((warning,index)=><button className="warning" key={index} onClick={onDetails}>{projectNote(warning,false).text}</button>)}</section>}
     <button className="text-button" onClick={onDetails}>전체 통계·계산 진단 →</button>
   </aside>;
 }

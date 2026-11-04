@@ -4,8 +4,8 @@ return function(editor)
   local function array() return setmetatable({},{__jsontype='array'}) end
   local function scalar(v) local t=type(v);if t=='string' or t=='number' or t=='boolean' then return v end end
   local function label(v) return StripEscapes(v==nil and '' or tostring(v)) end
-  return function(xml)
-    editor.load(xml);build.calcsTab:BuildOutput();build.viewMode='CONFIG';build.configTab:UpdateControls()
+  return function(xml,current)
+    if not current then editor.load(xml);build.calcsTab:BuildOutput()end;build.viewMode='CONFIG';build.configTab:UpdateControls()
     local sections,diagnostics,skills=array(),array(),array()
     local function attempt(field,fn,fallback)
       local ok,value=pcall(fn)
@@ -44,7 +44,7 @@ return function(editor)
     build.viewMode='SKILLS'
     for index,group in ipairs(build.skillsTab.socketGroupList) do
       local result={groupId=tostring(index),activeSkill=group.mainActiveSkill or 1,skills=array(),modes=array(),parts=array(),gems=array(),selectedMode=1,selectedPart=1}
-      for gemIndex,gem in ipairs(group.gemList) do result.gems[#result.gems+1]={index=gemIndex,name=gem.nameSpec,error=gem.errMsg} end
+      for gemIndex,gem in ipairs(group.gemList) do result.gems[#result.gems+1]={index=gemIndex,name=gem.nameSpec,error=gem.errMsg,level=gem.level,quality=gem.quality} end
       attempt('skill-group:'..index,function()
         build:RefreshSkillSelectControls(build.controls,index,'')
         local controls=build.controls
@@ -67,6 +67,6 @@ return function(editor)
       end,false)
       skills[#skills+1]=result
     end
-    return{character={className=build.spec.curClassName,ascendancy=build.spec.curAscendClassName or '',level=build.characterLevel},config=sections,skills=skills,diagnostics=diagnostics}
+    return{character={className=build.spec.curClassName,ascendancy=build.spec.curAscendClassName or '',level=build.characterLevel,levelAuto=not not build.characterLevelAutoMode},config=sections,skills=skills,diagnostics=diagnostics}
   end
 end

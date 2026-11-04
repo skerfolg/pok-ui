@@ -1,3 +1,5 @@
+import {PobRuntime} from './src/main/pob-runtime';
+import {PobEditorData} from './src/main/pob-editor-data';
 import { defineConfig } from 'vite';
 import path from 'node:path';
 import { GameDataStore } from './src/main/game-data';
@@ -6,12 +8,13 @@ import type { CatalogEntryType } from './src/shared/game-data';
 export default defineConfig({
   root: 'src/renderer', base: './',
   plugins: [{ name: 'verified-pob-preview', configureServer(server) {
-    const data = new GameDataStore(path.resolve('resources'),{allowCheckout:true});
+    const legacy = new GameDataStore(path.resolve('resources'),{allowCheckout:true}),runtime=new PobRuntime(path.resolve('resources/pob-runtime')),editor=new PobEditorData(path.resolve('resources/pob-editor'),runtime);
+    server.httpServer?.once('close',()=>runtime.close());
     server.middlewares.use('/__pok-data', async (request, response) => {
       if (request.method !== 'GET') { response.statusCode = 405; response.end(); return; }
       try {
         const url = new URL(request.url || '/', 'http://127.0.0.1');
-        let result: unknown;
+        let result: unknown;const data=(await editor.getInfo()).status==='ready'?editor:legacy;
         if (url.pathname === '/info') result = await data.getInfo();
         else if (url.pathname === '/catalog') result = await data.query({
           type: url.searchParams.get('type') as CatalogEntryType || undefined,

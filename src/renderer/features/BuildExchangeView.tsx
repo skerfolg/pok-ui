@@ -1,0 +1,7 @@
+import {useState} from 'react';
+import type {BuildDocument} from '../../shared/contracts';
+import {api} from '../services/api';
+export function BuildExchangeView({build,importFile,onError,onExport}:{build?:BuildDocument;importFile:()=>void;onError:(error:string)=>void;onExport:(path:string)=>void}){
+  const [tab,setTab]=useState<'import'|'export'>('import');
+  return <section className="feature scroll"><div className="page-heading"><h1>Import/Export Build</h1></div><div className="actions" role="group" aria-label="빌드 교환"><button aria-pressed={tab==='import'} onClick={()=>setTab('import')}>Import Build</button><button aria-pressed={tab==='export'} onClick={()=>setTab('export')}>Export Build</button></div><div className="panel spaced panel-body">{tab==='import'?<><h2>빌드 가져오기</h2><p>{api.platform==='browser'?'브라우저 미리보기에서는 PoB XML 파일을 가져옵니다. 공유 코드·POK 편집 문서는 데스크톱 앱에서 가져올 수 있습니다.':'PoB XML·공유 코드 파일 또는 POK 편집 문서를 작업 공간에 가져옵니다.'}</p><button className="primary" onClick={importFile}>파일 선택</button></>:<><h2>{build?.name||'빌드를 선택하세요'}</h2><p>현재 편집본을 새 파일로 내보냅니다. 비활성 세트와 알 수 없는 XML 필드를 보존합니다.</p><div className="actions">{(['xml','pob','json'] as const).map(format=><button key={format} disabled={!build} onClick={()=>{if(build)void api.exportBuild(build,format).then(path=>{if(path)onExport(path);}).catch(reason=>onError(String(reason)));}}>{format==='json'?'POK 편집 문서':`PoB ${format.toUpperCase()}`}</button>)}</div></>}</div></section>;
+}

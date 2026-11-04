@@ -95,7 +95,6 @@ export interface ItemRenderRequest {
   variants?: string[];
   mods?: string[];
   rolls?: Record<string, number>;
-  quality?: number;
   slot?:string;
   buildXml?:string;
 }
