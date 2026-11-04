@@ -1,3 +1,4 @@
+import {ItemArtStore} from './item-art';
 import {tradeSearchUrl} from './trade-search';
 import {BuildFileStore} from './build-file-store';
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell, screen, protocol,clipboard } from 'electron';
@@ -23,9 +24,11 @@ import { applyWindowChrome, windowChromeOptions } from './window-chrome';
 import { PobRuntime } from './pob-runtime';
 import { PobEditorData } from './pob-editor-data';
 
-protocol.registerSchemesAsPrivileged(['pok-tree','pok-image'].map(scheme=>({scheme,privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true}})));
+protocol.registerSchemesAsPrivileged(['pok-tree','pok-image','pok-item'].map(scheme=>({scheme,privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true}})));
 
 let window:BrowserWindow|undefined;
+let itemArtStore:ItemArtStore|undefined;
+const artwork=()=>itemArtStore??=new ItemArtStore(join(dataRoot(),'item-art'));
 let store:StateStore;
 let state:AppState;
 const pok=new PokConnection();
@@ -155,6 +158,7 @@ function registerIpc():void{
     return document;
   });
   handle('pok:open-trade-search',async(value:unknown)=>{await shell.openExternal(tradeSearchUrl(value));});
+  handle('pok:item-art-index',()=>artwork().index());
   handle('pok:copy-text',async(value:unknown)=>{text(value,65536,'복사할 텍스트');await clipboard.writeText(value);});
   handle('pok:save-build',async(value:unknown,saveAs:unknown)=>{
     validateBuild(value);if(saveAs!==undefined&&typeof saveAs!=='boolean')throw new Error('저장 요청이 올바르지 않습니다.');
@@ -395,7 +399,7 @@ function createWindow():void{
     "default-src 'self'",
     "script-src 'self'"+(developmentUrl?" 'unsafe-inline'":''),
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: pok-tree: pok-image:",
+    "img-src 'self' data: pok-tree: pok-image: pok-item:",
     "font-src 'self' data:",
     developmentUrl?"connect-src 'self' ws://127.0.0.1:* ws://localhost:*":"connect-src 'none'",
     "object-src 'none'","base-uri 'none'","frame-ancestors 'none'","form-action 'none'"
@@ -407,6 +411,10 @@ function createWindow():void{
 }
 void app.whenReady().then(async()=>{
   chatImages=new ChatImageStore(join(app.getPath('userData'),'chat-images'));
+  protocol.handle('pok-item',async request=>{
+    if(request.method!=='GET')return new Response(null,{status:405});const match=/^pok-item:\/\/artwork\/([a-f0-9]{64})$/.exec(request.url);
+    if(!match)return new Response(null,{status:400});try{const asset=await artwork().asset(match[1]);return new Response(new Uint8Array(asset.bytes),{headers:{'Content-Type':asset.mime,'Cache-Control':'public, max-age=31536000, immutable','X-Content-Type-Options':'nosniff'}});}catch{return new Response(null,{status:404});}
+  });
   protocol.handle('pok-image',async request=>{
     if(request.method!=='GET')return new Response(null,{status:405});
     const match=/^pok-image:\/\/attachment\/([a-f0-9]{64})$/.exec(request.url);

@@ -1,0 +1,16 @@
+// Public stock items and synthetic names only; original PoB chooses paths and sockets.
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');require('tsx/cjs');
+const {PobRuntime}=require('../src/main/pob-runtime.ts'),{createBlankXml,editBuild,parseBuild}=require('../src/shared/pob-document.ts');
+const runtime=new PobRuntime(path.resolve('resources/pob-runtime')),catalog=JSON.parse(fs.readFileSync('resources/pob-editor/catalog.json','utf8'));
+(async()=>{
+ let xml=createBlankXml({defaultTreeVersion:'0_5',characterClass:{id:'Ranger',name:'Ranger',internalId:2,legacyId:2,ascendancies:[]}});xml=editBuild(xml,{type:'character-level',level:90});let id=1;
+ const chosen=[['Weapon 1','Ironbound'],['Weapon 2',"Asphyxia's Wrath"],['Helmet',"Atziri's Disdain"],['Body Armour','Belly of the Beast'],['Gloves','Lochtonial Caress'],['Boots','Wanderlust'],['Belt','Headhunter'],['Ring 1','Dream Fragments'],['Ring 2','Thief\'s Torment'],['Flask 1',"Olroth's Resolve"],['Flask 2','Melting Maelstrom'],['Charm 1',"Arakaali's Gift"],['Charm 2',"Beira's Anguish"],['Charm 3','Breath of the Mountains']];
+ for(const [slot,name]of chosen){let entries=catalog.entries.filter(entry=>entry.type==='unique'&&entry.name===name);if(!entries.length){console.log('missing fixture',name);continue;}const entry=entries[0],variant=entry.variants?.find(v=>v.name==='Current')||entry.variants?.[0];try{const result=await runtime.renderItem({kind:'unique',id:entry.id,variants:variant?[variant.id]:undefined,slot,buildXml:xml});assert(result.ok);xml=editBuild(xml,{type:'item-equip',setId:'1',slot,id:String(id++),text:result.text});}catch(error){console.log('unavailable fixture',slot,name,error.message);}}
+ for(const [slot,base]of [['Arm 1','Deflective Arm'],['Arm 2','Combat Arm'],['Leg 1','Sprinters Leg'],['Leg 2','Evasive Leg']]){const result=await runtime.renderItem({kind:'base',id:base,slot,buildXml:xml});assert(result.ok);xml=editBuild(xml,{type:'item-equip',setId:'1',slot,id:String(id++),text:result.text});}
+ let info=await runtime.tree({buildId:'synthetic-equipment-art',revision:0,xml,action:'character'});const sockets=info.jewelSockets.slice(0,15).map(socket=>socket.nodeId),bases=['Ruby','Emerald','Sapphire'];
+ for(const [index,nodeId]of sockets.entries()){
+  let result=await runtime.tree({buildId:'synthetic-equipment-art',revision:0,xml,nodeId,action:'allocate'});if(result.diagnostics.length)continue;xml=editBuild(xml,{type:'tree-native-patch',specId:'1',patch:result.patch});
+  const base=catalog.entries.find(entry=>entry.type==='base'&&entry.name===bases[index%3]),item=await runtime.renderItem({kind:'rare',id:base.id,name:'Synthetic Jewel '+(index+1),buildXml:xml});const itemId=String(id++);xml=editBuild(xml,{type:'item',id:itemId,text:item.text});result=await runtime.tree({buildId:'synthetic-equipment-art',revision:0,xml,nodeId,action:'jewel',jewelItemId:Number(itemId)});if(!result.diagnostics.length)xml=editBuild(xml,{type:'tree-native-patch',specId:'1',patch:result.patch});
+ }
+ fs.writeFileSync('.local/ui-rebuild-review/equipment-art-fixture.json',JSON.stringify({xml,items:parseBuild(xml).items.length,sockets},null,2));console.log('fixture ready',id-1,'items',sockets.length,'socket targets');
+})().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>runtime.close());

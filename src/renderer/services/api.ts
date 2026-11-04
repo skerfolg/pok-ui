@@ -33,6 +33,7 @@ const browserPreview: DesktopApi = {
   async connectPok() { return { connected: false, error: '브라우저 미리보기입니다. 엔진 연결은 데스크톱 앱에서 가능합니다.' }; },
   async getPokConnection() { return {connected:false}; },
   onPokConnection() { return ()=>{}; },
+  getItemArtIndex:()=>previewJson('/item-art'),
   getDataBundleInfo: () => previewJson('/info'),
   onPobRuntimeInvalidated:()=>()=>{},
   getPobRuntimeInfo:async()=>({status:'missing',error:'원본 PoB 계산은 데스크톱 앱에서 사용할 수 있습니다.'}),

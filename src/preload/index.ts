@@ -18,6 +18,7 @@ const api:DesktopApi={
     return()=>ipcRenderer.removeListener('pok:connection',handler);
   },
   callPok:(name,args)=>ipcRenderer.invoke('pok:call',name,args),
+  getItemArtIndex:()=>ipcRenderer.invoke('pok:item-art-index'),
   getDataBundleInfo:()=>ipcRenderer.invoke('pok:data-bundle-info'),
   onPobRuntimeInvalidated:listener=>{const handler=()=>listener();ipcRenderer.on('pok:pob-runtime-invalidated',handler);return()=>ipcRenderer.removeListener('pok:pob-runtime-invalidated',handler);},
   getPobRuntimeInfo:()=>ipcRenderer.invoke('pok:pob-runtime-info'),

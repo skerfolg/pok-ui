@@ -1,3 +1,4 @@
+import {ItemArtStore} from './src/main/item-art';
 import {PobRuntime} from './src/main/pob-runtime';
 import {PobEditorData} from './src/main/pob-editor-data';
 import { defineConfig } from 'vite';
@@ -8,6 +9,7 @@ import type { CatalogEntryType } from './src/shared/game-data';
 export default defineConfig({
   root: 'src/renderer', base: './',
   plugins: [{ name: 'verified-pob-preview', configureServer(server) {
+    const art=new ItemArtStore(path.resolve('resources/item-art'));
     const legacy = new GameDataStore(path.resolve('resources'),{allowCheckout:true}),runtime=new PobRuntime(path.resolve('resources/pob-runtime')),editor=new PobEditorData(path.resolve('resources/pob-editor'),runtime);
     server.httpServer?.once('close',()=>runtime.close());
     server.middlewares.use('/__pok-data', async (request, response) => {
@@ -15,7 +17,9 @@ export default defineConfig({
       try {
         const url = new URL(request.url || '/', 'http://127.0.0.1');
         let result: unknown;const data=(await editor.getInfo()).status==='ready'?editor:legacy;
-        if (url.pathname === '/info') result = await data.getInfo();
+        if(url.pathname==='/item-art'){const index=await art.index();result={...index,files:Object.fromEntries(Object.entries(index.files).map(([id,value])=>[id,{...value,url:'/__pok-data/item-art/'+id}]))};}
+        else if(url.pathname.startsWith('/item-art/')){const asset=await art.asset(url.pathname.slice('/item-art/'.length));response.setHeader('Content-Type',asset.mime);response.end(asset.bytes);return;}
+        else if (url.pathname === '/info') result = await data.getInfo();
         else if (url.pathname === '/catalog') result = await data.query({
           type: url.searchParams.get('type') as CatalogEntryType || undefined,
           query: url.searchParams.get('query') || undefined,

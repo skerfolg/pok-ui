@@ -22,26 +22,6 @@ body { font-family:var(--font-ui); font-size:var(--font-size); line-height:1.45;
 .equipment-slots,.equipment-workbench .item-library,.equipment-workbench .item-detail { display:flex; flex-direction:column; min-height:0; }
 .equipment-slots .panel-heading button { padding:3px 6px; }
 .equipment-workbench .item-detail>.scroll { flex:1; }
-.gear-slots { flex:1; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); grid-template-rows:repeat(8,minmax(24px,1fr)); gap:4px; padding:12px; }
-.gear-slot { min-height:0; padding:4px; display:flex; flex-direction:column; font-size:11px; overflow:hidden; background:var(--color-soft); border-color:var(--color-line); }
-.gear-slot small { color:var(--color-muted); font-size:10px; }
-.gear-slot span { overflow:hidden; max-width:100%; text-overflow:ellipsis; white-space:nowrap; }
-.gear-slot[aria-pressed=true] { outline:2px solid var(--color-positive); outline-offset:1px; background:var(--color-soft); }
-.gear-slots>.hover-anchor[data-slot='Weapon 1'] { grid-area:1 / 1 / 5 / 3; }
-.gear-slots>.hover-anchor[data-slot='Helmet'] { grid-area:1 / 4 / 3 / 5; }
-.gear-slots>.hover-anchor[data-slot='Weapon 2'] { grid-area:1 / 6 / 5 / 8; }
-.gear-slots>.hover-anchor[data-slot='Body Armour'] { grid-area:3 / 4 / 6 / 5; }
-.gear-slots>.hover-anchor[data-slot='Amulet'] { grid-area:3 / 5 / 4 / 6; }
-.gear-slots>.hover-anchor[data-slot='Ring 1'] { grid-area:4 / 3 / 5 / 4; }
-.gear-slots>.hover-anchor[data-slot='Ring 2'] { grid-area:4 / 5 / 5 / 6; }
-.gear-slots>.hover-anchor[data-slot='Gloves'] { grid-area:5 / 2 / 7 / 4; }
-.gear-slots>.hover-anchor[data-slot='Boots'] { grid-area:5 / 5 / 7 / 7; }
-.gear-slots>.hover-anchor[data-slot='Belt'] { grid-area:6 / 4 / 7 / 5; }
-.gear-slots>.hover-anchor[data-slot='Flask 1'] { grid-area:7 / 3 / 9 / 4; }
-.gear-slots>.hover-anchor[data-slot='Charm 1'] { grid-area:7 / 4 / 8 / 5; }
-.gear-slots>.hover-anchor[data-slot='Charm 2'] { grid-area:7 / 5 / 8 / 6; }
-.gear-slots>.hover-anchor[data-slot='Charm 3'] { grid-area:7 / 6 / 8 / 7; }
-.gear-slots>.hover-anchor[data-slot='Flask 2'] { grid-area:7 / 7 / 9 / 8; }
 .gear-sockets { display:flex; gap:4px; flex-wrap:wrap; padding:0 6px 6px; }
 .gear-sockets button { font-size:10px; padding:2px 4px; }
 .inventory-tools { flex-wrap:wrap; margin-top:4px; gap:3px; }
@@ -66,7 +46,6 @@ body { font-family:var(--font-ui); font-size:var(--font-size); line-height:1.45;
   .workspace-character select { width:96px; }
   .equipment-workbench { gap:6px; }
   .equipment-left { gap:6px; }
-  .gear-slots { padding:8px; gap:3px; }
 }
 .sidebar { display:flex; flex-direction:column; min-height:0; gap:var(--space-4); padding:12px 8px 10px; background:var(--color-side); border-right:1px solid var(--color-line); }
 .main { min-height:0; min-width:0; display:flex; flex-direction:column; }
@@ -128,8 +107,6 @@ body { font-family:var(--font-ui); font-size:var(--font-size); line-height:1.45;
 }
 
 .hover-anchor { display:block; min-width:0; }
-.gear-slots>.hover-anchor { display:flex; min-height:0; }
-.gear-slots .gear-slot { width:100%; height:100%; }
 .library-row>.hover-anchor { flex:1; }
 .library-row .inventory-item { width:100%; }
 .hover-card { position:fixed; z-index:1000; width:340px; max-width:calc(100vw - 16px); max-height:calc(100vh - 16px); padding:12px; border:1px solid var(--color-line); border-radius:6px; background:var(--color-bg); box-shadow:0 8px 30px #0004; }

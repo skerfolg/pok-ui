@@ -1,0 +1,63 @@
+/* Inventory-sized artwork arranged like the in-game equipment overview. */
+.equipment-left { grid-template-rows:minmax(0,1fr) 160px; }
+.equipment-overview { min-height:0; flex:1; padding:12px; }
+.equipment-figure { width:min(100%,380px); margin:0 auto; }
+.weapon-switches { display:flex; justify-content:space-between; margin-bottom:7px; }
+.weapon-switch { display:flex; gap:3px; width:calc((100% - 42px) / 4 + 6px); justify-content:center; }
+.weapon-switch button { padding:3px 8px; min-height:25px; font-size:11px; border-radius:2px; background:var(--color-soft); }
+.weapon-switch button[aria-pressed=true] { color:var(--color-text); border-color:var(--color-muted); opacity:1; }
+.gear-slots { flex:none; width:100%; aspect-ratio:1; display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); grid-template-rows:repeat(8,minmax(0,1fr)); gap:6px; padding:0; }
+.equipment-position,.equipment-thumbnail { min-height:0; min-width:0; }
+.equipment-position>.hover-anchor { display:flex; width:100%; height:100%; }
+.gear-slot { display:flex; align-items:center; justify-content:center; position:relative; width:100%; height:100%; min-height:0; padding:3px; border:1px solid var(--color-line); border-radius:0; overflow:hidden; background:var(--color-soft); }
+.gear-slot[data-filled=true] { border-color:light-dark(#82744c,#74643e); background:light-dark(#e7e9df,#2e3735); }
+.gear-slot[data-rarity=unique] { border-color:var(--color-unique); background:light-dark(#ece7dc,#353b32); }
+.gear-slot[data-rarity=rare] { border-color:var(--color-rare); }
+.gear-slot[data-rarity=magic] { border-color:var(--color-magic); }
+.gear-slot[data-corrupted=true] { border-color:light-dark(#a24f49,#85403e); background:light-dark(#f1e4e1,#3a2f31); }
+.gear-slot:hover:not(:disabled) { filter:brightness(1.1); }
+.gear-slot[aria-pressed=true] { outline:2px solid var(--color-accent); outline-offset:2px; z-index:1; }
+.item-artwork { display:block; width:100%; height:100%; object-fit:contain; pointer-events:none; user-select:none; }
+.item-artwork-fallback { display:flex; width:100%; height:100%; align-items:center; justify-content:center; }
+.slot-kind { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; min-width:0; width:100%; color:var(--color-muted); }
+.slot-kind svg { width:25px; height:25px; stroke-width:1.2; opacity:.4; flex-shrink:0; }
+.slot-kind small { font-size:9px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.equipment-position[data-slot='Weapon 1'] { grid-area:1 / 1 / 5 / 3; }
+.equipment-position[data-slot='Helmet'] { grid-area:1 / 4 / 3 / 6; }
+.equipment-position[data-slot='Weapon 2'] { grid-area:1 / 7 / 5 / 9; }
+.equipment-position[data-slot='Body Armour'] { grid-area:3 / 4 / 6 / 6; }
+.equipment-position[data-slot='Amulet'] { grid-area:3 / 6 / 4 / 7; }
+.equipment-position[data-slot='Ring 1'] { grid-area:4 / 3 / 5 / 4; }
+.equipment-position[data-slot='Ring 2'] { grid-area:4 / 6 / 5 / 7; }
+.equipment-position[data-slot='Gloves'] { grid-area:5 / 2 / 7 / 4; }
+.equipment-position[data-slot='Boots'] { grid-area:5 / 6 / 7 / 8; }
+.equipment-position[data-slot='Belt'] { grid-area:6 / 4 / 7 / 6; }
+.equipment-position[data-slot='Flask 1'] { grid-area:7 / 2 / 9 / 3; }
+.equipment-position[data-slot='Flask 2'] { grid-area:7 / 7 / 9 / 8; }
+.charm-slots { grid-area:7 / 3 / 9 / 7; display:flex; align-items:center; justify-content:center; gap:6px; }
+.charm-slots .equipment-position { width:calc((100% - 18px) / 4); aspect-ratio:1; }
+.equipment-collection { margin-top:16px; }
+.equipment-collection h3 { margin:0 0 8px; font-size:11px; color:var(--color-muted); font-weight:650; letter-spacing:.3px; }
+.equipment-thumbnails { display:grid; grid-template-columns:repeat(auto-fill,52px); gap:8px 7px; align-items:start; }
+.equipment-thumbnail>.hover-anchor { display:flex; width:52px; height:52px; }
+.equipment-thumbnail-name { display:block; font-size:9px; line-height:1.4; margin-top:3px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.equipment-thumbnail .gear-slot { width:52px; height:52px; }
+.inventory-item { flex-direction:row; align-items:center; gap:8px; }
+.inventory-art { width:32px; height:36px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:var(--color-soft); border-radius:3px; }
+.inventory-item-text { min-width:0; display:flex; flex-direction:column; gap:2px; }
+.inventory-item-text>span { max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+.equipment-workspace .item-library .item-list { min-height:0; }
+.equipment-workspace .jewel-socket-row { gap:8px; align-items:center; }
+@media(max-width:1279px){
+ .equipment-left { grid-template-rows:minmax(0,1fr) 150px; }
+ .equipment-overview { padding:10px; }
+ .gear-slots { gap:4px; }
+ .charm-slots { gap:4px; }
+ .weapon-switch { width:calc((100% - 28px) / 4 + 4px); }
+ .weapon-switch button { padding:2px 7px; min-height:23px; }
+ .slot-kind svg { width:19px; height:19px; }
+ .slot-kind small { font-size:8px; }
+ .equipment-thumbnails { grid-template-columns:repeat(auto-fill,44px); gap:7px 5px; }
+ .equipment-thumbnail>.hover-anchor,.equipment-thumbnail .gear-slot { width:44px; height:44px; }
+ .equipment-collection { margin-top:13px; }
+}

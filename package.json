@@ -60,6 +60,7 @@
       "package.json"
     ],
     "extraResources": [
+      { "from": "resources/item-art", "to": "item-art", "filter": ["**/*"] },
       { "from": "resources/pob-runtime", "to": "pob-runtime", "filter": ["**/*"] },
       { "from": "resources/pob-editor", "to": "pob-editor", "filter": ["**/*"] }
     ],

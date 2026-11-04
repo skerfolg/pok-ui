@@ -118,6 +118,7 @@ export interface DesktopApi {
   onPokConnection(listener: (connection: ConnectionInfo) => void): () => void;
   callPok(name: string, args: Record<string, unknown>): Promise<unknown>;
   getDataBundleInfo(): Promise<DataBundleInfo>;
+  getItemArtIndex():Promise<import('./item-art').ItemArtIndex>;
   onPobRuntimeInvalidated(listener:()=>void):()=>void;
   getPobRuntimeInfo(): Promise<PobRuntimeInfo>;
   inspectBuild(request:PobInspectionRequest):Promise<PobInspection>;

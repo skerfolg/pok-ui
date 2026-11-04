@@ -5,3 +5,5 @@ import './design/layout.css';
 import './design/components.css';
 import './design/workspace-polish.css';
 createRoot(document.getElementById('root')!).render(<App />);
+
+import './design/equipment-figure.css';

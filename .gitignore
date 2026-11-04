@@ -15,3 +15,5 @@ resources/engine-identity.json
 .local/
 /%SystemDrive%/
 test-results/
+
+resources/item-art/

@@ -51,19 +51,6 @@ input:focus,select:focus,textarea:focus { border-color:var(--color-accent); }
 .equipment-slots>.panel-heading>.actions:first-child button[aria-pressed=true] { background:var(--color-bg); box-shadow:0 1px 3px #18312412; color:var(--color-accent); font-weight:600; }
 .equipment-slots .panel-heading button[aria-pressed=true]:disabled { opacity:1; color:var(--color-accent); }
 .equipment-slots .panel-heading small { font-size:10px; color:var(--color-muted); }
-.gear-slots { padding:14px; gap:5px; background:radial-gradient(ellipse at 50% 48%,var(--color-soft),transparent 72%); }
-.gear-slot { position:relative; border:1px solid var(--color-line); border-radius:7px; gap:5px; background:var(--color-bg); }
-.gear-slot:hover:not(:disabled) { border-color:var(--color-muted); background:var(--color-bg); }
-.gear-slot[aria-pressed=true] { outline:2px solid var(--color-accent); outline-offset:1px; background:var(--color-bg); }
-.gear-slot .slot-kind { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; max-width:100%; }
-.gear-slot .slot-kind svg { width:29px; height:29px; color:var(--color-muted); opacity:.33; flex-shrink:0; }
-.gear-slot[data-filled=true] .slot-kind svg { opacity:.7; }
-.gear-slot[data-rarity=rare] .slot-kind svg { color:var(--color-rare); }
-.gear-slot[data-rarity=unique] .slot-kind svg { color:var(--color-unique); }
-.gear-slot small { font-size:10px; letter-spacing:.1px; }
-.gear-slot .slot-item-name { font-size:11px; font-weight:500; }
-.gear-slot:is([data-slot='Amulet'],[data-slot^='Ring'],[data-slot='Belt'],[data-slot^='Charm']) .slot-kind { flex-direction:row; gap:4px; }
-.gear-slot:is([data-slot='Amulet'],[data-slot^='Ring'],[data-slot='Belt'],[data-slot^='Charm']) .slot-kind svg { width:13px; height:13px; }
 .gear-sockets { padding-inline:12px; }
 .inactive-gear-sockets { padding:0 12px 9px; color:var(--color-muted); }
 .library-body { padding:10px 12px; }
@@ -133,13 +120,6 @@ input:focus,select:focus,textarea:focus { border-color:var(--color-accent); }
   .workspace-topbar .top-actions>button { min-height:27px; padding:4px 6px; font-size:10px; }
   .equipment-workbench,.equipment-left { gap:6px; }
   .panel-heading { padding:6px 8px; min-height:35px; }
-  .gear-slots { padding:8px; gap:4px; }
-  .gear-slot { padding:3px; gap:3px; }
-  .gear-slot .slot-kind { gap:3px; }
-  .gear-slot .slot-kind svg { width:22px; height:22px; }
-  .gear-slot:is([data-slot='Amulet'],[data-slot^='Ring'],[data-slot='Belt'],[data-slot^='Charm']) .slot-kind svg { width:11px; height:11px; }
-  .gear-slot:is([data-slot='Amulet'],[data-slot^='Ring'],[data-slot='Belt'],[data-slot^='Charm']) .slot-item-name { display:none; }
-  .gear-slot[data-filled=true]::after { content:''; position:absolute; top:4px; right:4px; width:4px; height:4px; background:var(--color-muted); border-radius:50%; }
   .library-body,.item-detail>.scroll.panel-body { padding:8px; }
   .item-summary { padding:10px; }
   .item-summary h3 { font-size:15px; }
@@ -161,14 +141,7 @@ input:focus,select:focus,textarea:focus { border-color:var(--color-accent); }
 @media(max-width:1279px) {
   .sidebar .nav-item { padding:7px 6px; gap:6px; font-size:12px; }
   .sidebar .nav-item span { white-space:nowrap; }
-  .gear-slot .slot-label-full { display:none; }
-  .gear-slot .slot-label-compact { display:inline; }
-  .gear-slot:is([data-slot='Amulet'],[data-slot^='Ring'],[data-slot='Belt'],[data-slot^='Charm']) .slot-kind svg { display:none; }
-  .gear-slot .slot-kind small { white-space:nowrap; }
 }
 
-.gear-slot:is([data-slot^='Arm'],[data-slot^='Leg']) .slot-kind { flex-direction:row; gap:4px; }
-.gear-slot:is([data-slot^='Arm'],[data-slot^='Leg']) .slot-kind svg { width:13px; height:13px; }
-@media(max-width:1279px) { .gear-slot:is([data-slot^='Arm'],[data-slot^='Leg']) .slot-kind svg { display:none; } }
 
 .native-item-popup[data-kind=add] .pob-config-grid { grid-template-columns:minmax(0,1fr); }

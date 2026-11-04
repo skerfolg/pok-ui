@@ -1,3 +1,14 @@
+# 후속 수정: 이미지 중심 장비 개요 — 2026-11-04
+
+사용자 제공 poe.ninja 이미지를 최신 장비 배치 기준으로 반영했다. 실제 장비 그림을 사용하는 길쭉한 양쪽 무기, 상단 투구·중앙 갑옷·측면 액세서리·하단 장갑/허리띠/장화와 플라스크/호신부 구성을 적용했다. 양쪽 무기 위의 I/II는 같은 원본 무기 세트에 연동된다. 바알 신체 부위4칸은 장비판에서 분리했고 active tree의 장착 주얼을 아래 썸네일로 표시한다. 보유 목록·상세 주얼 탭·장비 소켓·편집/hover/미니맵/자동 계산은 유지했다.
+
+- 원본 PoB에는 장비 일러스트가 없으므로 별도 cosmetic resources를 준비했다. native catalog의 베이스 이름과 공개 visual identity/고유 icon 메타데이터를 정확히 매칭해997개 이미지를 로컬 포함했다. 실행 중 외부 이미지/API 요청이 없고, main은 index의 hash 경로와 실제 bytes만 허용한다. 이미지 미존재 시 슬롯 아이콘/이름으로 fallback한다. 출처·준비·경계는 `ITEM-ARTWORK.md` 참조. 게임 계산/원본 PoB/공유 엔진 소스는 수정하지 않았다.
+- check217/build/pack 및 noUnused 통과. 다크 실제 장비3 `.local/equipment-art-1793776892231`, 라이트3 `.local/equipment-art-1793777874976`의1920/1024를 캡처·직접 검토했다. 큰 무기/갑옷 비율과 부위 위치, 분리 collection, 이미지 완전 로드, 가로 잘림 없음, 슬롯 선택/연동 무기 전환 뒤 exact XML 복원을 확인했다.
+- 원문5/workspace9/장비 소켓·무기/재시작5, hover6 회귀 통과. 장비 검사에 남아 있던 원문 아코디언 펼치기 기대는 별도 장착 해제 버튼 동선으로 이관했다. 원문 검사의 recovery 단계는 이전 상태의 성공 계산을 잡지 않도록 적용 후 새 revision을 기다리고, 카드 bounds는 독립적인 슬롯 동기화가 끝난 뒤 비교하도록 보정했다. 첫 이미지 실패는 HTML meta CSP 외에 main header CSP에도 로컬 scheme을 허용해 해결했다.
+- 최신 실행 파일: `release/equipment-overview-20261104/win-unpacked/POK.exe`. runtime3ed/editor621 및 원본 PoB0.23.1/5d173cb는 그대로다. 이미지 index는 계산 source/호환성 판정에 사용하지 않는다.
+
+---
+
 # 후속 수정: 상세 조회 재사용·hover 지연 — 2026-11-04
 
 사용자가 원본 비교/계산 근거를 열 때의 체감 지연을 제보했다. 동일 XML의250ms 대기와 매회 복원/BuildOutput·완료 결과 폐기를 확인해 제거했다. 상세 worker의 Calcs/tooltip만 읽기 전용 컨텍스트를 공유하고, 편집/다른 XML/실패는 이를 무효화한다. 주 계산/편집의 요청별 XML 복원·상세 lane 격리와 source 검증은 유지한다.
