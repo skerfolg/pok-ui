@@ -37,6 +37,7 @@ const browserPreview: DesktopApi = {
   onPobRuntimeInvalidated:()=>()=>{},
   getPobRuntimeInfo:async()=>({status:'missing',error:'원본 PoB 계산은 데스크톱 앱에서 사용할 수 있습니다.'}),
   copyText:unavailable,
+  openTradeSearch:unavailable,
   inspectBuild:unavailable,
   readCalcs:unavailable,
   itemTooltip:unavailable,

@@ -4,7 +4,7 @@ import type { BuildEdit } from '../../shared/contracts';
 import { CharacterEditor,type CharacterEditorProps } from './CharacterEditor';
 import {PobConfigFields} from './PobConfigFields';
 import type {PobInspection} from '../../shared/pob-inspection';
-export function ConfigView({ focusField,parsed, edit, catalogEnabled = true,inspection,inspectionCurrent=false,inspectionPending=false,inspectionError='',build,runtimeId,applyExpected,calculated }: CharacterEditorProps & {edit:(edit:BuildEdit,label:string)=>void;focusField?:string;catalogEnabled?: boolean;inspection?:PobInspection;inspectionCurrent?:boolean;inspectionPending?:boolean;inspectionError?:string }) {
+export function ConfigView({ focusField,parsed, edit,inspection,inspectionCurrent=false,inspectionPending=false,inspectionError='',build,runtimeId,applyExpected,calculated }: CharacterEditorProps & {edit:(edit:BuildEdit,label:string)=>void;focusField?:string;inspection?:PobInspection;inspectionCurrent?:boolean;inspectionPending?:boolean;inspectionError?:string }) {
   const set = parsed.configs.find(s => s.active) ?? parsed.configs[0];
   const root=useRef<HTMLElement>(null);
   useEffect(()=>{if(!focusField)return;const target=[...(root.current?.querySelectorAll<HTMLElement>('[data-config-key]')||[])].find(node=>node.dataset.configKey===focusField);if(target){target.dataset.sourceHighlight='true';target.scrollIntoView({block:'center'});return()=>{delete target.dataset.sourceHighlight;};}},[focusField,inspectionCurrent,inspection]);

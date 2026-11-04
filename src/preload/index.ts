@@ -28,6 +28,7 @@ const api:DesktopApi={
   readLoadouts:request=>ipcRenderer.invoke('pok:read-loadouts',request),
   copyText:text=>ipcRenderer.invoke('pok:copy-text',text),
   editTree:request=>ipcRenderer.invoke('pok:edit-tree',request),
+  openTradeSearch:url=>ipcRenderer.invoke('pok:open-trade-search',url),
   itemControls:request=>ipcRenderer.invoke('pok:item-controls',request),
   cancelPobRequest:id=>ipcRenderer.invoke('pok:cancel-pob-request',id),
   equipment:request=>ipcRenderer.invoke('pok:equipment',request),

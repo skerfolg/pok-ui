@@ -241,11 +241,13 @@ export class PobRuntime {
   async itemControls(input:PobItemControlsRequest):Promise<PobItemControls>{
     const snapshot=structuredClone(input),item=parseBuild(snapshot.xml).items.find(i=>i.id===snapshot.itemId);
     if(!item)throw new PobRuntimeError('POB_ITEM','편집할 원본 아이템을 찾지 못했습니다.');
-    const text=snapshot.draftText??item.text,key=JSON.stringify([snapshot.revision,xmlHash(snapshot.xml),snapshot.runtimeId,snapshot.itemId,snapshot.slot]),reading=!snapshot.field&&!snapshot.popup;
+    if(snapshot.similar&&(snapshot.field||snapshot.popup))throw new PobRuntimeError('POB_REQUEST','검색과 아이템 변경을 함께 요청할 수 없습니다.');
+    const text=snapshot.draftText??item.text,key=JSON.stringify([snapshot.revision,xmlHash(snapshot.xml),snapshot.runtimeId,snapshot.itemId,snapshot.slot]),reading=!snapshot.field&&!snapshot.popup&&!snapshot.similar;
     if(reading){this.itemReadKeys.set(snapshot.buildId,key);if(this.itemReadKeys.size>64)this.itemReadKeys.delete(this.itemReadKeys.keys().next().value!);}
-    const {result,manifest}=await this.request({op:'item-controls',xml:projectActiveXml(snapshot.xml),itemId:snapshot.itemId,text,sourceText:item.text,field:snapshot.field,value:snapshot.value,slot:snapshot.slot,popup:snapshot.popup},snapshot.runtimeId,reading?()=>this.itemReadKeys.get(snapshot.buildId)!==key:undefined,snapshot.requestId);
+    const {result,manifest}=await this.request({op:'item-controls',xml:projectActiveXml(snapshot.xml),itemId:snapshot.itemId,text,sourceText:item.text,field:snapshot.field,value:snapshot.value,slot:snapshot.slot,popup:snapshot.popup,similar:snapshot.similar},snapshot.runtimeId,reading?()=>this.itemReadKeys.get(snapshot.buildId)!==key:undefined,snapshot.requestId);
     if(snapshot.slot&&result.validatedSlot!==snapshot.slot)throw new PobRuntimeError('POB_PROTOCOL','원본 슬롯 검증이 누락되었습니다. 런타임을 다시 준비해 주세요.');
     if(typeof result.text!=='string'||typeof result.sourcePreserved!=='boolean'||!result.metadata||!Array.isArray(result.fields)||!Array.isArray(result.diagnostics))throw new PobRuntimeError('POB_PROTOCOL','원본 아이템 편집 응답이 올바르지 않습니다.');
+    if(snapshot.similar&&(!result.similar||typeof result.similar!=='object'||typeof (result.similar as Record<string,unknown>).url!=='string'||!Array.isArray((result.similar as Record<string,unknown>).rows)))this.invalidResponse('원본 검색 조건 응답이 올바르지 않습니다.');
     return{...result,buildId:snapshot.buildId,revision:snapshot.revision,xmlSha256:xmlHash(snapshot.xml),runtimeId:manifest.runtimeId,pobCommit:manifest.commit,itemId:snapshot.itemId,inputTextSha256:xmlHash(text)} as unknown as PobItemControls;
   }
   async tree(input:PobTreeRequest):Promise<PobTreeResult>{
@@ -365,7 +367,7 @@ export class PobRuntime {
         if(unsupported.length)throw new PobRuntimeError('POB_TREE_VERSION',`${label}의 미지원 트리 ${unsupported.map(tree=>`${tree.id}:${tree.version}`).join(', ')}를 현재 고정 PoB에 로드할 수 없습니다. 원문을 보존합니다.`);
       }
       if(generation!==this.generation)throw new PobRuntimeError('POB_CANCELLED','PoB 계산이 취소되었습니다.');
-      const sourceEpoch=this.fileEpoch,result=await this.run(manifest,submitted,generation,requestId);
+      const sourceEpoch=this.fileEpoch,result=await this.run(manifest,submitted,requestId);
       const after=await this.manifest();
       requireCurrent();
       if(generation!==this.generation)throw new PobRuntimeError('POB_CANCELLED','PoB 계산이 취소되었습니다.');
@@ -377,7 +379,7 @@ export class PobRuntime {
     const cleanup=()=>{if(requestId){this.requestIds.delete(requestId);this.cancelledIds.delete(requestId);}};void pending.then(cleanup,cleanup);
     return pending;
   }
-  private async run(manifest:Manifest,payload:Record<string,unknown>,generation:number,requestId?:string):Promise<Record<string,unknown>>{
+  private async run(manifest:Manifest,payload:Record<string,unknown>,requestId?:string):Promise<Record<string,unknown>>{
     if(this.workerRuntimeId!==manifest.runtimeId){
       this.worker?.close(new PobRuntimeError('POB_CHANGED','PoB runtime 출처가 변경되었습니다.'));
       this.worker=new PobWorker(this.root,manifest.executable,manifest.version,this.timeoutMs,(code,message)=>new PobRuntimeError(code,message));

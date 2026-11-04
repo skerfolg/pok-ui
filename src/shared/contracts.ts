@@ -112,6 +112,7 @@ export interface DesktopApi {
   saveBuild(build: BuildDocument, saveAs?:boolean): Promise<{path:string;xmlSha256:string;name:string}|null>;
   exportBuild(build: BuildDocument, format: 'xml' | 'pob' | 'json'): Promise<string | null>;
   copyText(text:string):Promise<void>;
+  openTradeSearch(url:string):Promise<void>;
   connectPok(settings: Settings['pok']): Promise<ConnectionInfo>;
   getPokConnection(): Promise<ConnectionInfo>;
   onPokConnection(listener: (connection: ConnectionInfo) => void): () => void;

@@ -1,4 +1,12 @@
 /* Surface hierarchy for the manual workspace. Layout and game behavior stay in their existing layers. */
+.similar-search { width:min(780px,95vw); max-height:88vh; display:flex; flex-direction:column; padding:0; }
+.similar-search>.panel-body { min-height:0; }
+.similar-search-heading { display:grid; grid-template-columns:minmax(0,1fr) 90px 90px; gap:8px; padding:12px 0 6px; color:var(--color-muted); font-size:11px; border-bottom:1px solid var(--color-line); }
+.similar-search-row { display:grid; grid-template-columns:20px minmax(0,1fr) 90px 90px; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--color-line); }
+.similar-search-row input:not([type=checkbox]) { width:100%; min-width:0; text-align:right; }
+.similar-search-label { white-space:pre-line; overflow-wrap:anywhere; font-size:12px; }
+.similar-search-select { grid-column:3 / -1; min-width:0; width:100%; }
+.similar-search-url { display:block; overflow-wrap:anywhere; font-size:10px; margin-top:8px; }
 .workspace-shell { background:var(--color-canvas); }
 .workspace-topbar { background:var(--color-bg); padding-inline:16px; gap:12px; }
 .workspace-brand { color:var(--color-accent); font-size:20px; font-weight:750; }

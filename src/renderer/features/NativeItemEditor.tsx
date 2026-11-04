@@ -1,3 +1,4 @@
+import {ItemSimilarSearch} from './ItemSimilarSearch';
 import {useSessionDraft} from '../state/useSessionDraft';
 import {NumberField} from '../components/NumberField';
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
@@ -97,7 +98,7 @@ export function NativeItemEditor({build,item,slot,runtimeId,getRuntimeId,applyEx
     {popupDraft&&popupDraft.sourceText!==item.text&&<p className="warning">이전 성유·오염 초안의 아이템 원문이 변경되어 자동 복원을 중단했습니다. <button onClick={()=>setPopupDraft(undefined)}>팝업 초안 지우기</button></p>}
     {Object.keys(numberDrafts).length>0&&<button onClick={()=>setNumberDrafts({})}>입력 초안 지우기</button>}
     <p role="status" className="muted">{pending?'원본 옵션 처리 중…':current?'자동 반영 준비됨':''}</p>{error&&<p className="warning" role="alert">{error}</p>}
-    <div className="actions spaced">{current?.data.actions?.map(action=><button key={action.kind+':'+action.slot} disabled={pending||Boolean(popup)||!action.enabled||!current.data.sourcePreserved} onClick={()=>void runPopup({kind:action.kind,slot:action.slot||1})}>{action.kind==='anoint'?`성유 ${action.slot||1} 편집`:'오염 편집'}</button>)}</div><div className="native-option-list">{rows.map(({field,range})=><div className="native-option-row" data-field={field.id} data-paired={Boolean(range)} data-affix={/^displayItemAffix\d+$/.test(field.id)} key={runtimeId+':'+field.id}>
+    <div className="actions spaced"><ItemSimilarSearch build={build} item={item} slot={slot} runtimeId={runtimeId} disabled={busy||!current?.data.sourcePreserved}/>{current?.data.actions?.map(action=><button key={action.kind+':'+action.slot} disabled={pending||Boolean(popup)||!action.enabled||!current.data.sourcePreserved} onClick={()=>void runPopup({kind:action.kind,slot:action.slot||1})}>{action.kind==='anoint'?`성유 ${action.slot||1} 편집`:'오염 편집'}</button>)}</div><div className="native-option-list">{rows.map(({field,range})=><div className="native-option-row" data-field={field.id} data-paired={Boolean(range)} data-affix={/^displayItemAffix\d+$/.test(field.id)} key={runtimeId+':'+field.id}>
       <span className="native-option-label">{displayFieldLabel(field,fields)}</span>
       <div className="native-option-value">{renderControl(field)}{fieldErrors[field.id]&&<small className="warning" role="alert">{fieldErrors[field.id]}</small>}</div>
       {range&&<div className="native-option-range">{renderControl(range)}{fieldErrors[range.id]&&<small className="warning" role="alert">{fieldErrors[range.id]}</small>}</div>}

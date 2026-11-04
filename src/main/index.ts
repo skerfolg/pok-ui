@@ -1,3 +1,4 @@
+import {tradeSearchUrl} from './trade-search';
 import {BuildFileStore} from './build-file-store';
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell, screen, protocol,clipboard } from 'electron';
 import { readFile, writeFile, rename, mkdir, stat } from 'node:fs/promises';
@@ -153,6 +154,7 @@ function registerIpc():void{
     const document=importDocument(path,await readFile(path,'utf8'));
     return document;
   });
+  handle('pok:open-trade-search',async(value:unknown)=>{await shell.openExternal(tradeSearchUrl(value));});
   handle('pok:copy-text',async(value:unknown)=>{text(value,65536,'복사할 텍스트');await clipboard.writeText(value);});
   handle('pok:save-build',async(value:unknown,saveAs:unknown)=>{
     validateBuild(value);if(saveAs!==undefined&&typeof saveAs!=='boolean')throw new Error('저장 요청이 올바르지 않습니다.');
@@ -185,7 +187,7 @@ function registerIpc():void{
   });
   handle('pok:data-bundle-info',()=>editorData.getInfo());
   handle('pok:pob-runtime-info',()=>pobRuntime.getInfo());
-  handle('pok:cancel-pob-request',(id:unknown)=>{text(id,128,'PoB 요청 ID');return pobRuntime.cancel(id);});
+  handle('pok:cancel-pob-request',(id:unknown)=>{text(id,128,'PoB 요청 ID');return pobRuntime.cancel(id)||pobDetailRuntime.cancel(id);});
   handle('pok:equipment',(request:unknown)=>{
     record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');
     if(!Number.isSafeInteger(request.revision)||Number(request.revision)<0)throw new Error('장비 리비전이 올바르지 않습니다.');
@@ -211,6 +213,11 @@ function registerIpc():void{
     if(request.field!==undefined)text(request.field,100,'원본 아이템 컨트롤');
     if(request.slot!==undefined)text(request.slot,128,'장착 슬롯');
     if(request.requestId!==undefined)text(request.requestId,128,'PoB 요청 ID');
+    if(request.similar!==undefined){
+      record(request.similar);if(request.field!==undefined||request.popup!==undefined)throw new Error('검색과 아이템 변경을 함께 요청할 수 없습니다.');
+      if(request.similar.league!==undefined){text(request.similar.league,256,'리그 이름');if(!String(request.similar.league).trim()||/[\r\n\x00]/.test(String(request.similar.league)))throw new Error('리그 이름이 올바르지 않습니다.');}
+      if(request.similar.selections!==undefined){record(request.similar.selections);if(Object.keys(request.similar.selections).length>256)throw new Error('검색 조건이 너무 많습니다.');for(const [key,value]of Object.entries(request.similar.selections)){if(key.length>100||typeof value!=='boolean'&&!(typeof value==='string'&&value.length<=100)&&!(typeof value==='number'&&Number.isSafeInteger(value)))throw new Error('검색 조건 값이 올바르지 않습니다.');}}
+    }
     if(request.popup!==undefined){
       record(request.popup);if(!['anoint','corrupt'].includes(String(request.popup.kind)))throw new Error('아이템 팝업 종류가 올바르지 않습니다.');
       if(request.popup.slot!==undefined&&(!Number.isSafeInteger(request.popup.slot)||Number(request.popup.slot)<1||Number(request.popup.slot)>4))throw new Error('성유 위치가 올바르지 않습니다.');
@@ -223,7 +230,7 @@ function registerIpc():void{
     // Native affix series keys contain every tier ID and can exceed a text field's limit.
     // The original control applies its own text/option constraints after this transport bound.
     if(request.value!==undefined&&(typeof request.value!=='string'||request.value.length>16384)&&(typeof request.value!=='number'||!Number.isFinite(request.value)))throw new Error('아이템 컨트롤 값이 올바르지 않습니다.');
-    return pobRuntime.itemControls({...request as unknown as import('../shared/pob-item-controls').PobItemControlsRequest,buildId:request.buildId,revision:Number(request.revision),xml:request.xml,itemId:request.itemId});
+    return (request.similar?pobDetailRuntime:pobRuntime).itemControls({...request as unknown as import('../shared/pob-item-controls').PobItemControlsRequest,buildId:request.buildId,revision:Number(request.revision),xml:request.xml,itemId:request.itemId});
   });
   handle('pok:edit-tree',async(request:unknown)=>{
     record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');

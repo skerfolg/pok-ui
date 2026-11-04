@@ -37,7 +37,7 @@ local tree=dofile(adapter..'tree.lua')(editor,treeState)
 local equipment=dofile(adapter..'equipment.lua')(editor)
 local loadouts=dofile(adapter..'loadouts.lua')(editor,dofile(adapter..'loadout-management.lua'),dofile(adapter..'tree-workspace.lua')(treeState),dofile(adapter..'skill-groups.lua')(editor,dofile(adapter..'skill-text.lua')))
 local itemTooltip=dofile(adapter..'item-tooltip.lua')(editor)
-local itemControls=dofile(adapter..'item-controls.lua')(editor,dofile(adapter..'item-popups.lua'))
+local itemControls=dofile(adapter..'item-controls.lua')(editor,dofile(adapter..'item-popups.lua'),dofile(adapter..'item-similar.lua'))
 reply({id=0,ok=true,result={version=launch.versionNumber,treeVersions=treeVersionList}})
 for line in io.stdin:lines() do
   local request, _, decodeError = json.decode(line,1,json.null)

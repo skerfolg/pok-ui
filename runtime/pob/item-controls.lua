@@ -1,5 +1,5 @@
 -- Read/drive original item controls on a detached Item; canonical XML is host-owned.
-return function(editor,popups)
+return function(editor,popups,similar)
   local function array()return setmetatable({},{__jsontype='array'})end
   local function text(value)return StripEscapes(tostring(value or ''))end
   local function optionKey(entry)
@@ -138,6 +138,7 @@ return function(editor,popups)
     local id=tonumber(request.itemId);local previous=tab.items[id];tab.items[id]=item;local saved={elem='Items'};tab:Save(saved);tab.items[id]=previous
     result.metadata={variants={},modRanges={}}
     for _,node in ipairs(saved)do if node.elem=='Item' and node.attrib.id==tostring(id)then for key,value in pairs(node.attrib)do if key~='id'then result.metadata.variants[key]=value end end;for _,child in ipairs(node)do if type(child)=='table' and child.elem=='ModRange'then result.metadata.modRanges[child.attrib.id]=child.attrib.range end end end end
+    if request.similar then result.similar=similar(item,request.slot,request.similar)end
     return result
   end
 end

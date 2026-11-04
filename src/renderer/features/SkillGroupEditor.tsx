@@ -10,8 +10,8 @@ import {NativeSkillGroups} from '../components/NativeSkillGroups';
 import {NativeSkillText} from '../components/NativeSkillText';
 import {CatalogPicker} from './CatalogPicker';
 import {PobSkillOptions} from './PobSkillOptions';
-interface Props {owner:string;build:BuildDocument;getBuild:(id:string)=>BuildDocument|undefined;getRuntimeId:()=>string|undefined;set:ParsedBuild['skillSets'][number];group:SkillGroup;parsed:ParsedBuild;edit:(edit:BuildEdit,label:string)=>void;runtimeId?:string;catalogEnabled:boolean;inspection?:PobInspection;inspectionCurrent:boolean;inspectionPending:boolean;select:(id:string)=>void;applyExpected:(snapshot:BuildDocument,edit:BuildEdit,label:string)=>BuildDocument;calculated:(build:BuildDocument,result:Calculation)=>boolean}
-export function SkillGroupEditor({owner,build,getBuild,getRuntimeId,set,group,parsed,edit,runtimeId,catalogEnabled,inspection,inspectionCurrent,inspectionPending,select,applyExpected,calculated}:Props){
+interface Props {owner:string;build:BuildDocument;getBuild:(id:string)=>BuildDocument|undefined;getRuntimeId:()=>string|undefined;set:ParsedBuild['skillSets'][number];group:SkillGroup;edit:(edit:BuildEdit,label:string)=>void;runtimeId?:string;catalogEnabled:boolean;inspection?:PobInspection;inspectionCurrent:boolean;inspectionPending:boolean;select:(id:string)=>void;applyExpected:(snapshot:BuildDocument,edit:BuildEdit,label:string)=>BuildDocument;calculated:(build:BuildDocument,result:Calculation)=>boolean}
+export function SkillGroupEditor({owner,build,getBuild,getRuntimeId,set,group,edit,runtimeId,catalogEnabled,inspection,inspectionCurrent,inspectionPending,select,applyExpected,calculated}:Props){
   const current=useRef({build,set,group,applyExpected,getBuild,getRuntimeId});current.current={build,set,group,applyExpected,getBuild,getRuntimeId};
   const {draft,change:setDraft,flush,error:draftError,dirty,discard,number,numberText}=useSkillDraft(owner,group,(value,base)=>{
     const c=current.current;if(runtimeId&&c.getRuntimeId()!==runtimeId)throw new Error('PoB 출처가 변경되어 이전 초안을 유지했습니다.');const snapshot=c.getBuild(c.build.id);if(!snapshot)throw new Error('원본 빌드가 없어 초안을 유지했습니다.');
