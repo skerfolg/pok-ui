@@ -233,7 +233,7 @@ export class PobRuntime {
     const promise=(async()=>{
       if(!parseBuild(snapshot.xml).items.some(item=>item.id===snapshot.itemId))throw new PobRuntimeError('POB_ITEM','비교할 보유 아이템을 찾지 못했습니다.');
       const {result,manifest}=await this.request({op:'item-tooltip',xml:projectActiveXml(snapshot.xml),itemId:snapshot.itemId,slot:snapshot.slot,nodeId:snapshot.nodeId},snapshot.runtimeId,()=>this.tooltipKey!==key);
-      if(!Array.isArray(result.requirements)||result.requirements.some(line=>typeof line!=='string')||!Array.isArray(result.comparisons)||result.comparisons.some(section=>!section||typeof section!=='object'||typeof section.header!=='string'||!Array.isArray(section.lines)||section.lines.some((line:unknown)=>typeof line!=='string')))this.invalidResponse('원본 아이템 비교 응답이 올바르지 않습니다.');
+      if(!Array.isArray(result.displayLines)||result.displayLines.some(line=>typeof line!=='string')||!Array.isArray(result.requirements)||result.requirements.some(line=>typeof line!=='string')||!Array.isArray(result.comparisons)||result.comparisons.some(section=>!section||typeof section!=='object'||typeof section.header!=='string'||!Array.isArray(section.lines)||section.lines.some((line:unknown)=>typeof line!=='string')))this.invalidResponse('원본 아이템 비교 응답이 올바르지 않습니다.');
       return{...result,buildId:snapshot.buildId,revision:snapshot.revision,xmlSha256:xmlHash(snapshot.xml),runtimeId:manifest.runtimeId,pobCommit:manifest.commit,itemId:snapshot.itemId,slot:snapshot.slot,nodeId:snapshot.nodeId} as unknown as PobItemTooltip;
     })();
     this.tooltipPending={key,promise};void promise.finally(()=>{if(this.tooltipPending?.promise===promise)this.tooltipPending=undefined;}).catch(()=>{});return promise;
@@ -246,7 +246,7 @@ export class PobRuntime {
     if(reading){this.itemReadKeys.set(snapshot.buildId,key);if(this.itemReadKeys.size>64)this.itemReadKeys.delete(this.itemReadKeys.keys().next().value!);}
     const {result,manifest}=await this.request({op:'item-controls',xml:projectActiveXml(snapshot.xml),itemId:snapshot.itemId,text,sourceText:item.text,field:snapshot.field,value:snapshot.value,slot:snapshot.slot,popup:snapshot.popup,similar:snapshot.similar},snapshot.runtimeId,reading?()=>this.itemReadKeys.get(snapshot.buildId)!==key:undefined,snapshot.requestId);
     if(snapshot.slot&&result.validatedSlot!==snapshot.slot)throw new PobRuntimeError('POB_PROTOCOL','원본 슬롯 검증이 누락되었습니다. 런타임을 다시 준비해 주세요.');
-    if(typeof result.text!=='string'||typeof result.sourcePreserved!=='boolean'||!result.metadata||!Array.isArray(result.fields)||!Array.isArray(result.diagnostics))throw new PobRuntimeError('POB_PROTOCOL','원본 아이템 편집 응답이 올바르지 않습니다.');
+    if(!Array.isArray(result.displayLines)||result.displayLines.some(line=>typeof line!=='string')||typeof result.text!=='string'||typeof result.sourcePreserved!=='boolean'||!result.metadata||!Array.isArray(result.fields)||!Array.isArray(result.diagnostics))throw new PobRuntimeError('POB_PROTOCOL','원본 아이템 편집 응답이 올바르지 않습니다.');
     if(snapshot.similar&&(!result.similar||typeof result.similar!=='object'||typeof (result.similar as Record<string,unknown>).url!=='string'||!Array.isArray((result.similar as Record<string,unknown>).rows)))this.invalidResponse('원본 검색 조건 응답이 올바르지 않습니다.');
     return{...result,buildId:snapshot.buildId,revision:snapshot.revision,xmlSha256:xmlHash(snapshot.xml),runtimeId:manifest.runtimeId,pobCommit:manifest.commit,itemId:snapshot.itemId,inputTextSha256:xmlHash(text)} as unknown as PobItemControls;
   }

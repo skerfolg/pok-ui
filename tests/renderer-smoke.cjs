@@ -70,11 +70,11 @@ async function renameCurrent(title) {
   });
   await check('item edit/apply and undo restore', async () => {
     const initial = await state();
-    await page.locator('.raw-editor summary').click();
+    await page.getByRole('button',{name:'편집',exact:true}).click();
     const input = page.getByRole('textbox', { name: '아이템 원문', exact: true });
     const text = await input.inputValue();
     await input.fill(text + '\nUI QA temporary text');
-    await page.locator('.raw-editor').getByRole('button', { name: '적용', exact: true }).click();
+    await page.getByRole('dialog',{name:'아이템 원문 편집'}).getByRole('button', { name: '적용', exact: true }).click();
     await saved();
     assert((await parsed()).items.some(item => item.text.endsWith('UI QA temporary text')));
     assert((await page.locator('.stat-row strong').allTextContents()).every(value => value === '—'));
@@ -88,7 +88,7 @@ async function renameCurrent(title) {
     assert.equal((await state()).builds[0].xml, initial.builds[0].xml);
   });
   await check('browser preview does not impersonate native equipment or calculate saved XML statistics',async()=>{assert(await page.locator('.library-row>button').last().isDisabled());assert((await page.locator('.stat-row strong').allTextContents()).every(value=>value==='—'));});
-  await check('advanced raw insertion is an explicit XML edit and can undo exactly',async()=>{const initial=await state();await page.getByRole('button',{name:'반지 2 슬롯',exact:true}).click();if(!await page.locator('.raw-editor').evaluate(e=>e.open))await page.locator('.raw-editor summary').click();await page.getByLabel('아이템 원문',{exact:true}).fill('Rarity: NORMAL\nSynthetic UI Base');await page.locator('.raw-editor').getByRole('button',{name:'적용',exact:true}).click();await saved();const data=await parsed(),assigned=data.itemSets.find(set=>set.active).slots['Ring 2'];assert.equal(data.items.find(item=>item.id===assigned).name,'Synthetic UI Base');await undo();await saved();assert.equal((await state()).builds[0].xml,initial.builds[0].xml);});
+  await check('advanced raw insertion is an explicit XML edit and can undo exactly',async()=>{const initial=await state();await page.getByRole('button',{name:'반지 2 슬롯',exact:true}).click();await page.getByRole('button',{name:'원문으로 추가',exact:true}).click();await page.getByLabel('아이템 원문',{exact:true}).fill('Rarity: NORMAL\nSynthetic UI Base');await page.getByRole('dialog',{name:'아이템 원문 편집'}).getByRole('button',{name:'적용',exact:true}).click();await saved();const data=await parsed(),assigned=data.itemSets.find(set=>set.active).slots['Ring 2'];assert.equal(data.items.find(item=>item.id===assigned).name,'Synthetic UI Base');await undo();await saved();assert.equal((await state()).builds[0].xml,initial.builds[0].xml);});
   await check('config set selection preserves separate inputs and can undo', async () => {
     await nav('전투 조건');if(!await page.locator('details').filter({hasText:'원문 조건 · 추가/수정'}).first().evaluate(e=>e.open))await page.getByText('원문 조건 · 추가/수정',{exact:true}).click();
     await page.getByRole('combobox', { name: '전투 조건 세트' }).selectOption(alternateConfig.id);

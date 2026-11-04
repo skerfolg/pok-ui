@@ -139,6 +139,7 @@ return function(editor,popups,similar)
     result.metadata={variants={},modRanges={}}
     for _,node in ipairs(saved)do if node.elem=='Item' and node.attrib.id==tostring(id)then for key,value in pairs(node.attrib)do if key~='id'then result.metadata.variants[key]=value end end;for _,child in ipairs(node)do if type(child)=='table' and child.elem=='ModRange'then result.metadata.modRanges[child.attrib.id]=child.attrib.range end end end end
     if request.similar then result.similar=similar(item,request.slot,request.similar)end
+    result.displayLines=editor.itemLines(item)
     return result
   end
 end

@@ -1,4 +1,9 @@
 /* Surface hierarchy for the manual workspace. Layout and game behavior stay in their existing layers. */
+.item-summary .item-edit-button { flex-shrink:0; font-size:11px; padding:4px 8px; }
+.item-text-editor { display:flex; flex-direction:column; padding:0; width:min(900px,95vw); max-height:90vh; }
+.item-text-editor>.panel-body { min-height:0; overflow:auto; }
+.item-text-editor textarea { width:100%; height:min(480px,55vh); min-height:180px; font-family:var(--font-code); font-size:12px; resize:vertical; white-space:pre; }
+.item-text-editor footer { justify-content:flex-end; }
 .similar-search { width:min(780px,95vw); max-height:88vh; display:flex; flex-direction:column; padding:0; }
 .similar-search>.panel-body { min-height:0; }
 .similar-search-heading { display:grid; grid-template-columns:minmax(0,1fr) 90px 90px; gap:8px; padding:12px 0 6px; color:var(--color-muted); font-size:11px; border-bottom:1px solid var(--color-line); }
@@ -86,9 +91,6 @@ input:focus,select:focus,textarea:focus { border-color:var(--color-accent); }
 .item-summary .item-lines { color:var(--color-magic); padding-top:12px; margin-top:12px; gap:5px; font-size:12px; line-height:1.55; }
 .item-summary .item-lines:empty { display:none; }
 .item-summary .item-lines hr { border:0; height:1px; width:100%; background:var(--color-line); margin:4px 0; }
-.item-source-text { margin-top:12px; color:var(--color-muted); font-size:11px; }
-.item-source-text summary { font-size:10px; }
-.item-source-text pre { font-size:11px; margin:8px 0 0; padding:8px; background:var(--color-soft); border-radius:5px; }
 .item-summary.compact { border:0; padding:0 0 12px; box-shadow:none; }
 .item-summary.compact h3 { font-size:15px; }
 .item-summary.compact .item-summary-mark { width:32px; height:36px; font-size:24px; }

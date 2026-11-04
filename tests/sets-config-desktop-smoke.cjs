@@ -54,8 +54,8 @@ async function manage(name,action,title){
   await page.getByRole('button',{name:'노트',exact:true}).click();await page.getByLabel('PoB 노트',{exact:true}).fill('FAST OWNER TRIAL');
   await page.getByLabel('현재 빌드',{exact:true}).selectOption(second.id);await poll(()=>page.getByLabel('PoB 노트',{exact:true}).inputValue(),value=>value==='');
   assert.equal(parseBuild((await current()).xml).notes,'');report.passed.push('automatic note edits remain scoped to their original owner with identical saved notes');
-  await page.getByRole('button',{name:'장비',exact:true}).click();await page.getByText('아이템 원문 편집',{exact:true}).click();await page.getByLabel('아이템 원문',{exact:true}).fill('UNAPPLIED ITEM');
-  await page.getByLabel('현재 빌드',{exact:true}).selectOption(third.id);assert.equal(await page.getByLabel('아이템 원문',{exact:true}).inputValue(),'');
+  await page.getByRole('button',{name:'장비',exact:true}).click();await page.getByRole('button',{name:'원문으로 추가',exact:true}).click();await page.getByLabel('아이템 원문',{exact:true}).fill('UNAPPLIED ITEM');
+  await page.getByLabel('현재 빌드',{exact:true}).selectOption(third.id);assert.equal(await page.getByRole('dialog',{name:'아이템 원문 편집',exact:true}).count(),0);
   await page.getByRole('button',{name:'스킬',exact:true}).click();await page.getByRole('button',{name:'스킬 그룹 추가',exact:true}).click();await poll(current,b=>parseBuild(b.xml).skillSets.find(s=>s.active).groups.length===1);
   await page.getByLabel('현재 빌드',{exact:true}).selectOption(second.id);await page.getByRole('button',{name:'스킬 그룹 추가',exact:true}).click();await poll(current,b=>b.revision===1);
   await page.getByLabel('그룹 이름',{exact:true}).fill('UNAPPLIED GROUP');await page.getByLabel('현재 빌드',{exact:true}).selectOption(third.id);assert.equal(await page.getByLabel('그룹 이름',{exact:true}).inputValue(),'새 스킬 그룹');

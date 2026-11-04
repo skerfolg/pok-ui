@@ -15,6 +15,7 @@ export interface PobSimilarSearch {
 }
 export interface PobItemField {id:string;label:string;kind:'edit'|'select'|'slider';value:string|number;enabled:boolean;limit?:number;filter?:string;min?:number;max?:number;step?:number;description?:string[];options?:{index:number;label:string;name?:string;key?:string;description?:string[]}[]}
 export interface PobItemControls {
+  displayLines:string[];
   buildId:string;revision:number;xmlSha256:string;runtimeId:string;pobCommit:string;itemId:string;inputTextSha256:string;
   text:string;sourcePreserved:boolean;validatedSlot?:string;fields:PobItemField[];diagnostics:{code:string;message:string;lines?:string[]}[];
   actions:{kind:'anoint'|'corrupt'|'add';slot?:number;label:string;enabled:boolean}[];popup?:PobItemPopup;

@@ -80,11 +80,11 @@ async function check(name, operation) {
   });
   await check('desktop item apply and undo use durable native state', async () => {
     const before = current(await state());
-    await page.locator('.raw-editor summary').click();
+    await page.getByRole('button',{name:'편집',exact:true}).click();
     const input = page.getByRole('textbox', { name: '아이템 원문', exact: true });
     const text = await input.inputValue();
     await input.fill(text + '\nDesktop QA temporary text');
-    await page.locator('.raw-editor').getByRole('button', { name: '적용', exact: true }).click();
+    await page.getByRole('dialog',{name:'아이템 원문 편집'}).getByRole('button', { name: '적용', exact: true }).click();
     await saved();
     const edited = current(await state());
     assert(edited.xml.includes('Desktop QA temporary text'));

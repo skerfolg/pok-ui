@@ -16,7 +16,7 @@ return function(editor)
       assert(slot,'Original jewel socket was not found')
       assert(tab:IsItemValidForSlot(item,slot.slotName),'Original item is not valid for this jewel socket')
     end
-    local result={comparisons=array(),requirements=array()}
+    local result={comparisons=array(),requirements=array(),displayLines=editor.itemLines(item)}
     local original,slotOnly=build.AddStatComparesToTooltip,main.slotOnlyTooltips
     build.AddStatComparesToTooltip=function(self,tooltip,before,after,header,...)
       local start=#tooltip.lines

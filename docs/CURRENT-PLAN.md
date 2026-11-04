@@ -1,3 +1,18 @@
+# 후속 수정: 실제 옵션 표시·원문 편집·즉시 노드 반영 — 2026-11-04
+
+사용자 Ironbound 화면에서 `{range:0.5}`와 범위 원문이 일반 카드에 노출되는 문제를 수정했다. 기존 ItemSummary는 입력 원문을 걸러 표시했으므로 실제 roll 값이 아니었다. 이제 원본 PoB `GetModLineVariantCount`/`itemLib.formatModLine` 결과만 카드와 hover에 제공한다. 렌더러에서 범위 보간/반올림·게임 수식을 구현하지 않는다. Ironbound의30%/125 Armour/8% Attack Speed와 range1의35%/150 Armour를 native2에서 확인했다.
+
+- 읽기 전용 원문 아코디언과 별도 구 raw-editor를 제거했다. 카드의 `편집`은 배치에 영향을 주지 않는 별도 창을 연다. 원문은 직접 수정하고 `적용`할 수 있으며 취소/변경 없는 적용은 정본을 바꾸지 않는다. 상단 `저장`은 파일 저장이며 일반 옵션·노드 변경을 반영하는 버튼이 아니다.
+- 원문 적용은 입력 revision을 확인하고 수정 텍스트 자체는 유지하면서 원본 parser가 산출한 known metadata만 함께 갱신한다. unknown XML/원본 파일/undo를 보존한다. 동시 변경은 충돌로 차단하고 초안을 유지한다. 생성 원문은 private draft에만 반영하며 Add 전까지 정본과 분리한다. 해석 불가 원문도 `편집`으로 수정할 수 있다.
+- 일반 옵션 자동 반영을 유지했다. 트리의 별도 `경로 할당`/해제 적용 버튼을 제거하고 지도 클릭·Enter, 능력치/주얼 선택에서 원본 연산→입력 반영→자동 계산으로 연결했다. 검색은 위치 탐색이다. 빠른 클릭은 최신 정본에 순서대로 적용하며 원본 경로·종속/무기 모드 연산을 사용한다. build/spec/runtime이 바뀌거나 입력 충돌이 나면 오래된 결과를 적용하지 않는다.
+- source는 PoB0.23.1/5d173cb 유지. runtime `pob-b42693fdf190a7ebb389b9e4e2dc98b23cf2586b052c85afc3622e5b8d763fc7`, editor `pob-editor-2e199b7f02d7eb6c064390db1c7af3a91173352c81196394d38551a7715fa654`. 원본/공유 엔진은 수정하지 않았고 얇은 adapter의 표시 DTO만 확장했다.
+- check214/build/pack 통과. 최신 실행 파일 `release/item-ui-20261104/win-unpacked/POK.exe`. packaged 원문5(light `.local/item-display-1793768997900`, dark `.local/item-display-1793769217467`), 자동 트리6(`.local/tree-operations-native-1793769034508`), 고급 트리5(`.local/tree-advanced-native-1793769096827`), workspace9 통과. 편집 전후 카드 bounds 동일·범위/실제 Armour 변경·undo·stale 입력 거부·초안 보존·지원 불가 원문 복구·클릭/선택/연속3회 변경과 current 계산·inactive/원본 XML·무기2 모드를 검증했다. 두 해상도/두 테마를 실제 캡처로 검토했다.
+- 과거 `.item-preview pre`/raw-editor selector는 실제 편집창 읽기/적용 동선으로 이관했다. 첫 editor 캡처45초 timeout은 최신 package 재실행에서 editor9 통과로 확인했다. 새 자동 클릭 시나리오가 기존 inactive spec의 노드를 이미 제거한 뒤여서 남아 있다고 가정한 테스트는, 바뀌지 않아야 할 inactive 노드 배열을 실제 직전 값과 비교하도록 수정했다. 원본 추가 옵션 검사는 native 읽기 갱신을 기다리게 변경했다. 최신 package의 modifier3/draft5/sets-config8 회귀 및 noUnusedLocals/noUnusedParameters도 통과했다. 실제 캡처에서 range 표식 없는 카드와 별도 원문 적용 창을 확인했다.
+
+아래 goal 완료/실측 기록은 이 후속 변경 전 단계별 이력이다. runtime0f7 성능 수치를 새 b426 실측으로 재분류하지 않는다.
+
+---
+
 # UI 재구축 goal 완료 — 2026-11-04
 
 `GOAL-UI-REBUILD-20261103.md`의 구현/검증/보존/정리/기록 기준을 완료했다. 최종 기록은 `UI-REBUILD-FINAL-20261104.md`, 요구별 근거는 `UI-REBUILD-COMPLETION-AUDIT-20261103.md`, 실측은 `UI-REBUILD-PERFORMANCE-FINAL-20261104.md`를 따른다. 아래 절은 단계별 이력이다. 전체 원본 PoB control 동등성이나 #188/R7 해결을 선언하지 않는다.

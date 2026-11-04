@@ -1,5 +1,5 @@
 import {Sword,Shield,Shirt,Crown,Hand,Footprints,Circle,Link2,FlaskConical,Gem} from 'lucide-react';
-import {ItemSummary} from '../components/ItemSummary';
+import {ItemTextEditor} from './ItemTextEditor';
 import {useSessionDraft} from '../state/useSessionDraft';
 import {ItemHover} from './ItemHover';
 import {CreationDraftEditor} from './CreationDraftEditor';
@@ -58,8 +58,6 @@ export function EquipmentView({ focus,build,getRuntimeId,parsed, edit, catalogEn
   const [sortItems,setSortItems]=useState(false);
   const [slot, setSlot] = useSessionDraft('equipment:'+build.id,'slot','Weapon 1');
   const [query, setQuery] = useSessionDraft('equipment:'+build.id,'query','');
-  const [draft, setDraft] = useSessionDraft('equipment:'+build.id,'draft','');
-  const [rawOpen, setRawOpen] = useSessionDraft('equipment:'+build.id,'rawOpen',false);
   const [catalogStatus, setCatalogStatus] = useState('');
   const [renderDiagnostics,setRenderDiagnostics]=useState<unknown[]>([]);
   const [selectedUnique, setSelectedUnique] = useSessionDraft<CatalogEntry | undefined>('equipment:'+build.id,'selectedUnique',undefined);
@@ -72,8 +70,6 @@ export function EquipmentView({ focus,build,getRuntimeId,parsed, edit, catalogEn
   const native=useEquipmentState(buildId,buildRevision,buildXml,runtimeId);
   const nativeSlot=native.data?.slots.find(s=>s.name===slot);
 
-  const [draftSource,setDraftSource]=useSessionDraft('equipment:'+build.id,'raw-source','');
-  useEffect(()=>{const source=JSON.stringify([item?.id,item?.text,slot]);if(source!==draftSource){setDraft(item?.text??'');setRawOpen(false);setDraftSource(source);}},[item?.id,item?.text,slot]);
   const previousUnique=useRef(selectedUnique?.id);
   useEffect(()=>{if(previousUnique.current!==selectedUnique?.id){previousUnique.current=selectedUnique?.id;setUniqueVariant('');}},[selectedUnique?.id]);
   useEffect(()=>{setCatalogStatus('');},[slot,buildId]);
@@ -141,14 +137,6 @@ export function EquipmentView({ focus,build,getRuntimeId,parsed, edit, catalogEn
     }
   }
 
-  const applyRawItem = () => {
-    const id = item?.id ?? nextItemId();
-    if (item) {
-      edit({ type: 'item', id, text: draft }, '아이템 편집');
-      return;
-    }
-    edit({ type: 'item-equip', setId: set.id, slot, id, text: draft }, '아이템 생성 및 장착');
-  };
   async function equipStored(itemId:string){
     if(equipping||!runtimeReady||!runtimeId||!buildId||buildRevision===undefined||!buildXml||!applyExpected)return;
     const snapshot={id:buildId,revision:buildRevision,xml:buildXml},submitted={...renderContext.current};setEquipping(true);setCatalogStatus('원본 슬롯 장착 가능 여부 확인 중…');
@@ -210,8 +198,9 @@ export function EquipmentView({ focus,build,getRuntimeId,parsed, edit, catalogEn
         {createdText&&<button onClick={()=>{creationEpoch.current++;setCreatedText('');setCreating(false);setCatalogStatus('생성 초안을 취소했습니다.');}}>생성 초안 취소</button>}
         {createdText&&<CreationDraftEditor key={createdVersion} owner={'creation:'+build.id+':'+createdVersion} base={build} text={createdText} itemId={nextItemId()} runtimeId={runtimeId} current={createdSignature===signature} add={(draft,sourceId)=>{if(!applyExpected||createdSignature!==signature||getRuntimeId()!==runtimeId){setCatalogStatus('초안 기준이 변경되어 추가하지 않았습니다.');return;}try{const id=nextItemId();applyExpected(build,{type:'item-copy',sourceXml:draft.xml,sourceId,id},'생성 초안 보유 목록에 추가');setSelectedItemId(id);setCreating(false);setCreatedText('');}catch(reason){setCatalogStatus(String(reason));}}}/> }</>:<>
         {jewelNode!==undefined&&<label>패시브 주얼 · 소켓 {jewelNode}<select aria-label="패시브 주얼 선택" disabled={equipping||!jewelControls?.node?.allocated||!jewelControls?.node?.socket} value={jewelControls?.node?.socket?.itemId??0} onChange={e=>void assignJewel(Number(e.target.value))}>{jewelControls?.node?.socket?.choices.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select>{jewelControls&&!jewelControls.node?.allocated&&<small>패시브 작업에서 이 소켓을 할당하세요.</small>}</label>}{nativeSlot?.parentSlot&&jewelNode===undefined&&<label>원본 장비 주얼<select aria-label="원본 장비 주얼" value={nativeSlot.itemId} disabled={equipping||!nativeSlot.visible||!nativeSlot.enabled} onChange={e=>void equipStored(e.target.value)}>{nativeSlot.choices.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>}
-        {item?<><ItemSummary item={item}/>{buildId&&buildRevision!==undefined&&buildXml&&applyExpected&&<NativeItemEditor key={item.id} build={{id:buildId,revision:buildRevision,xml:buildXml}} item={item} slot={selectedItemId?undefined:slot} runtimeId={runtimeId} getRuntimeId={getRuntimeId} applyExpected={applyExpected}/>}</>:<div className="empty-small">보유 아이템을 선택하거나 새 아이템을 만드세요.</div>}
-        <details className="raw-editor" open={rawOpen} onToggle={e=>setRawOpen(e.currentTarget.open)}><summary>아이템 원문 편집</summary><label>PoB 아이템 텍스트<textarea aria-label="아이템 원문" value={draft} rows={15} spellCheck={false} onChange={e=>setDraft(e.target.value)}/></label><div className="actions"><button disabled={!equippedItem||equipping||!runtimeReady} onClick={()=>void equipStored('0')}>장착 해제</button><button className="primary" disabled={!draft.trim()} onClick={applyRawItem}>적용</button></div></details></>}
+        {item?<>{buildId&&buildRevision!==undefined&&buildXml&&applyExpected&&<NativeItemEditor key={item.id} build={{id:buildId,revision:buildRevision,xml:buildXml}} item={item} slot={selectedItemId?undefined:slot} runtimeId={runtimeId} getRuntimeId={getRuntimeId} applyExpected={applyExpected}/>}</>:<div className="empty-small">보유 아이템을 선택하거나 새 아이템을 만드세요.</div>}
+        {!item&&<ItemTextEditor key={build.id+':'+set.id+':'+slot} owner={build.id+':new:'+set.id+':'+slot} build={build} text="" label="원문으로 추가" save={(snapshot,text)=>{if(!applyExpected)throw new Error('원문 편집을 준비하지 못했습니다.');applyExpected(snapshot,{type:'item-equip',setId:set.id,slot,id:nextItemId(),text},'원문 아이템 추가');}}/>}
+        {equippedItem&&<button disabled={equipping||!runtimeReady} onClick={()=>void equipStored('0')}>장착 해제</button>}</>}
         <p className="muted library-note" role="status">{catalogStatus||'일반 옵션 변경은 자동 반영합니다. 생성 초안은 Add to build 전까지 분리됩니다.'}</p>{renderDiagnostics.length>0&&<details><summary>고급 · 생성 진단</summary><pre>{JSON.stringify(renderDiagnostics,null,2)}</pre></details>}
       </div></div>
     </div>

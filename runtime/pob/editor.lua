@@ -41,6 +41,21 @@ local function setup(xml)
   end
 end
 api.load=setup
+function api.itemLines(item)
+  local lines=array()
+  for _,list in ipairs({item.enchantModLines,item.runeModLines,item.implicitModLines,item.explicitModLines})do
+    local count=#lines
+    for _,modLine in ipairs(list or {})do
+      for i=1,item:GetModLineVariantCount(modLine)do
+        local line=itemLib.formatModLine(modLine)
+        if line then lines[#lines+1]=StripEscapes(line)end
+      end
+    end
+    if #lines>count then lines[#lines+1]='---'end
+  end
+  if lines[#lines]=='---'then table.remove(lines)end
+  return lines
+end
 function api.catalog()
   setup();delegated=0
   local classes,entries=array(),array()
