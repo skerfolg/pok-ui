@@ -245,3 +245,16 @@ pre { white-space:pre-wrap; overflow-wrap:anywhere; font:11px/1.6 var(--font-cod
 .selected-mod-row label { grid-column:2; grid-row:1 / span 2; }
 .selected-mod-row button { grid-column:3; grid-row:1 / span 2; font-size:11px; padding:4px 6px; }
 @media(max-width:1279px) { .catalog-filters { grid-template-columns:minmax(0,1fr); } .selected-mod-row { grid-template-columns:minmax(0,1fr); } .selected-mod-row small, .selected-mod-row label, .selected-mod-row button { grid-column:auto; grid-row:auto; } }
+
+.native-skill-text { max-height: calc(100vh - 48px); overflow: auto; }
+.native-skill-text textarea { width: 100%; min-height: 110px; white-space: pre-wrap; }
+.native-skill-text p, .skill-text-lines code { overflow-wrap: anywhere; white-space: pre-wrap; }
+.skill-text-lines { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 12px 0; }
+.skill-text-lines th, .skill-text-lines td { vertical-align: top; text-align: left; padding: 5px; border-bottom: 1px solid var(--color-line); overflow-wrap: anywhere; }
+.skill-text-lines th:first-child { width: 4ch; }
+.skill-text-lines th:nth-child(2) { width: 12ch; }
+.skill-text-controls small { display: block; }
+
+.skill-text-metrics th:first-child { width: 65%; }
+
+.native-skill-text pre { white-space: pre-wrap; overflow-wrap: anywhere; }

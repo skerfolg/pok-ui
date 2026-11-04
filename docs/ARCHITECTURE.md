@@ -1,5 +1,8 @@
 # 구조와 배포 경계
 
+27차: 원본 skill-text 어댑터가 각 줄과 전체 입력을 독립 원본 XML reload로 관측한다. parser를 복제하지 않고 full/line consistency를 검사해 source에 새 native Skill와 Spectre/BeastCompanion 추가만 반영한다. canonical fresh node factory를 재사용하며 input-record는 XML을 parse/serialize하지도 않고 revision/undo를 유지한다. inputEvidence는 native 응답/원문·진단/과거 trial의 독립 기록이며 현재 계산 검증으로 해석하지 않는다. 실제 skill-import-native에만 appliedRevision을 붙인다. JSON/복제는 원래 source build identity를 보존한다. NativeSkillText portal은 submit 전파를 차단하고 요청 hash/revision/runtime/generation과 부분 반영 확인을 검사한다.
+
+
 26차: `skillGroups.copy/move`는 LoadSkill에서 관측한 XML node를 원본 parser로 대상 skillSet 끝에 로드한다. move는 원본 OnSelDelete를 호출한다. source 객체→원래 XML 위치와 대상 append 위치·기존 선택을 반환하며 host는 요청과 일치하는 transfer만 받아 `skill-copy-native`로 원본 DOM 전체를 복제한다. renderer에는 텍스트 parser/게임 규칙을 추가하지 않는다. 비활성 대상은 별도 전환 전까지 계산하지 않은 것으로 표시한다. 원본 텍스트 교환과 무손실 XML 복제를 구분한다. portal modal의 submit은 stopPropagation으로 바깥 group editor의 submit과 분리하며, 생략 속성 입력의 readonly preview에서도 XML/revision을 유지한다.
 
 

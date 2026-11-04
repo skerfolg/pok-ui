@@ -8,6 +8,8 @@ import type {PobTreeRequest,PobTreeResult,PobTreePatch} from './pob-tree';
 import type {PobItemControlsRequest,PobItemControls,PobItemMetadata} from './pob-item-controls';
 import type {PobEquipmentRequest,PobEquipment,PobEquipmentPatch} from './pob-equipment';
 import type {PobLoadoutsRequest,PobLoadouts,PobLoadoutSets} from './pob-loadouts';
+import type {PobSetNode} from './pob-loadouts';
+import type {SkillTextEvidence,SkillTextInput} from './pob-skill-groups';
 import type { CatalogEntry, CatalogEntryType, CatalogQuery, CatalogQueryResult, DataBundleInfo, ItemRenderRequest, ItemRenderResult, RuntimeIdentity } from './game-data';
 import type { PassiveTreeData } from './passive-tree';
 
@@ -32,6 +34,8 @@ export interface ParsedBuild {
   party?:{buffers:Partial<Record<PartyName,string>>;exportEnabled:boolean};
 }
 export type BuildAtomicEdit =
+  | {type:'input-record';input:SkillTextInput}
+  | {type:'skill-import-native';setId:string;node:PobSetNode;companions:{tag:'Spectre'|'BeastCompanion';id:string}[];input?:SkillTextInput}
   | {type:'skill-copy-native';setId:string;groupId:string;targetSetId:string}
   | {type:'skill-native-order';setId:string;order:string[]}
   | {type:'main-skill-native';index:number}
@@ -65,6 +69,7 @@ export type BuildAtomicEdit =
 export type BuildEdit = BuildAtomicEdit | { type: 'batch'; edits: BuildAtomicEdit[] };
 export interface Calculation { provenance?: CalculationProvenance; revision: number; at: string; result: Record<string, unknown>; restoreNotes: unknown[] }
 export interface BuildDocument {
+  inputEvidence?:SkillTextEvidence[];
   id: string; name: string; revision: number; createdAt: string; updatedAt: string;
   xml: string; originalXml: string; sourceName: string;
   undo: { xml: string; label: string }[]; calculation?: Calculation;

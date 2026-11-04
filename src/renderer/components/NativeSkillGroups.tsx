@@ -25,7 +25,7 @@ export function NativeSkillGroups({build,setId,groupId,runtimeId,enabled,applyEx
   const current=preview&&preview.token===generation.current&&preview.snapshot.id===build.id&&preview.snapshot.revision===build.revision&&preview.snapshot.xml===build.xml&&preview.data.runtimeId===runtimeId?preview:undefined;
   const result=current?.data.skillGroups;
   function transfer(action:'copy'|'move'){cancel();setError('');setTransferAction(action);setTargetSetId(action==='copy'?setId:data?.sets?.find(value=>value.id!==setId)?.id||'');}
-  const labels={inspect:'조회',reorder:'순서 변경',delete:'삭제',copy:'복사',move:'이동'};
+  const labels={inspect:'조회',reorder:'순서 변경',delete:'삭제',copy:'복사',move:'이동','import-text':'텍스트 가져오기','export-text':'텍스트 내보내기'};
   async function apply(){if(!current||!result||applying||pending)return;setApplying(true);setError('');let committed:BuildDocument|undefined;
     try{const info=await api.getPobRuntimeInfo();if(info.status!=='ready'||info.runtimeId!==current.data.runtimeId)throw new Error('검토 후 PoB 런타임이 바뀌었습니다. 다시 검토해 주세요.');
       const label='원본 스킬 그룹 '+labels[result.operation.action];committed=applyExpected(current.snapshot,current.edit,label);setPreview(undefined);setTransferAction(undefined);

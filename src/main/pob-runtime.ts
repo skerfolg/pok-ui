@@ -17,7 +17,7 @@ import type {PobTreeRequest,PobTreeResult} from '../shared/pob-tree';
 import type {PobItemControlsRequest,PobItemControls} from '../shared/pob-item-controls';
 import type {PobEquipmentRequest,PobEquipment} from '../shared/pob-equipment';
 import type {PobLoadoutsRequest,PobLoadouts,PobLoadoutSelection} from '../shared/pob-loadouts';
-import {skillGroupEdit,type PobSkillGroups} from '../shared/pob-skill-groups';
+import {skillGroupEdit,validateSkillTextInput,type PobSkillGroups} from '../shared/pob-skill-groups';
 
 interface Manifest {
   schemaVersion:1;protocolVersion:1;runtimeId:string;commit:string;version:string;platform:string;
@@ -139,7 +139,12 @@ export class PobRuntime {
       const data=result.skillGroups as PobSkillGroups|undefined;
       if(!data||!isDeepStrictEqual(data.operation,snapshot.skillGroups)||data.setId!==skillSet!.id||!Array.isArray(data.groups)||!Array.isArray(data.order)||data.groups.length!==skillSet!.groups.length||data.groups.some((group,index)=>group.id!==skillSet!.groups[index].id||typeof group.canDelete!=='boolean'||typeof group.label!=='string'))throw new PobRuntimeError('POB_PROTOCOL','원본 스킬 그룹 응답의 요청·출처가 다릅니다.');
       data.operation=snapshot.skillGroups;
-      if(snapshot.skillGroups.action!=='inspect')skillGroupEdit(snapshot.xml,data);
+      if(snapshot.skillGroups.action==='import-text'||snapshot.skillGroups.action==='export-text'){
+        if(!data.text||typeof data.text.raw!=='string'||!Array.isArray(data.text.lines)||!Array.isArray(data.text.warnings)||typeof data.text.canApply!=='boolean'||typeof data.text.partial!=='boolean'||snapshot.skillGroups.action==='import-text'&&data.text.raw!==snapshot.skillGroups.text)throw new PobRuntimeError('POB_PROTOCOL','원본 텍스트 복원 응답이 요청과 다릅니다.');
+        if(data.text.warnings.some(value=>typeof value!=='string'))throw new PobRuntimeError('POB_PROTOCOL','원본 텍스트 진단 형식이 올바르지 않습니다.');
+        if(snapshot.skillGroups.action==='import-text')try{validateSkillTextInput({inputRevision:snapshot.revision,inputXmlSha256:xmlHash(snapshot.xml),runtimeId:manifest.runtimeId,pobCommit:manifest.commit,raw:data.text.raw,lines:data.text.lines,warnings:data.text.warnings,partial:data.text.partial,...(data.text.stats!==undefined||data.text.canApply?{trial:{stats:data.text.stats!,warnings:data.text.calcWarnings!}}:{})});}catch(reason){throw new PobRuntimeError('POB_PROTOCOL',String(reason));}
+        if(data.text.canApply)editBuild(snapshot.xml,skillGroupEdit(snapshot.xml,data));
+      }else if(snapshot.skillGroups.action!=='inspect')skillGroupEdit(snapshot.xml,data);
       else if(!isDeepStrictEqual(data.order,skillSet!.groups.map(group=>group.id)))throw new PobRuntimeError('POB_PROTOCOL','원본 스킬 그룹 조회가 순서를 바꿨습니다.');
     }
     if(!Array.isArray(result.choices)||!Array.isArray(result.diagnostics)||!result.identity||!result.equipment)throw new PobRuntimeError('POB_PROTOCOL','원본 통합 구성 응답이 올바르지 않습니다.');

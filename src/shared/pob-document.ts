@@ -264,10 +264,18 @@ function editGems(group: Element, gems: Gem[]): void {
 }
 
 export function editBuild(xml: string, edit: BuildEdit): string {
+  if(edit.type==='input-record')return xml;
   if (edit.type === 'batch') return edit.edits.reduce((current, next) => editBuild(current, next), xml);
   const document = readXml(xml);
   const root = document.documentElement!;
   const build = child(root, 'Build')!;
+  let created=0;
+  function fresh(value:import('./pob-loadouts').PobSetNode,depth=0):Element{
+    if(depth>64||++created>100000||!value||typeof value.tag!=='string'||!/^[A-Za-z_][\w:.-]*$/.test(value.tag)||!Array.isArray(value.children))throw new Error('원본 새 세트 XML 구조가 올바르지 않습니다.');
+    const node=document.createElement(value.tag);
+    for(const [key,text]of Object.entries(value.attributes||{})){if(!/^[A-Za-z_][\w:.-]*$/.test(key)||typeof text!=='string')throw new Error('원본 새 세트 속성이 올바르지 않습니다.');node.setAttribute(key,text);}
+    for(const entry of value.children)node.appendChild(typeof entry==='string'?document.createTextNode(entry):fresh(entry,depth+1));return node;
+  }
   switch (edit.type) {
     case 'tree-adopt-legacy': {
       const legacy=children(root,'Spec');if(legacy.length!==1||children(root,'Tree').length)throw new Error('단일 root Spec만 옮길 수 있습니다. 여러 Spec 또는 Tree와의 혼합 입력은 원본을 보존합니다.');
@@ -355,13 +363,6 @@ export function editBuild(xml: string, edit: BuildEdit): string {
       let notes=child(root,'Notes');if(!notes){notes=document.createElement('Notes');root.appendChild(notes);}replaceDirectText(notes,edit.text);break;
     }
     case 'loadout-native-sets': {
-      let created=0;
-      function fresh(value:import('./pob-loadouts').PobSetNode,depth=0):Element{
-        if(depth>64||++created>100000||!value||typeof value.tag!=='string'||!/^[A-Za-z_][\w:.-]*$/.test(value.tag)||!Array.isArray(value.children))throw new Error('원본 새 세트 XML 구조가 올바르지 않습니다.');
-        const node=document.createElement(value.tag);
-        for(const [key,text]of Object.entries(value.attributes||{})){if(!/^[A-Za-z_][\w:.-]*$/.test(key)||typeof text!=='string')throw new Error('원본 새 세트 속성이 올바르지 않습니다.');node.setAttribute(key,text);}
-        for(const entry of value.children)node.appendChild(typeof entry==='string'?document.createTextNode(entry):fresh(entry,depth+1));return node;
-      }
       for(const kind of Object.keys(setKinds) as SetKind[]){
         const entries=edit.sets[kind];if(!Array.isArray(entries)||!entries.length)throw new Error('원본 관리 연산에는 모든 종류의 세트가 필요합니다.');
         const plannedIds=new Set<string>();for(const [index,entry]of entries.entries()){if(!entry||typeof entry.id!=='string'||!/^\d+$/.test(entry.id)||plannedIds.has(entry.id)||kind==='tree'&&entry.id!==String(index+1))throw new Error('원본 관리 세트 ID/순서가 올바르지 않습니다.');plannedIds.add(entry.id);}
@@ -464,6 +465,11 @@ export function editBuild(xml: string, edit: BuildEdit): string {
       const group=getGroup(getSet(root,'skills',edit.setId),edit.groupId),gems=children(group,'Gem');requireInteger(edit.gemIndex,'젬',1,gems.length);
       if(edit.value===undefined)gems[edit.gemIndex-1].removeAttribute(edit.key);
       else{requireInteger(edit.value,'스킬 선택값',edit.key.startsWith('skillPart')?1:0);gems[edit.gemIndex-1].setAttribute(edit.key,String(edit.value));}break;
+    }
+    case 'skill-import-native': {
+      if(edit.setId!==activeId(root,'skills')||edit.node.tag!=='Skill')throw new Error('텍스트 복원의 스킬 세트/태그가 올바르지 않습니다.');
+      const group=fresh(edit.node);getSet(root,'skills',edit.setId).appendChild(group);
+      for(const entry of edit.companions){if(!['Spectre','BeastCompanion'].includes(entry.tag)||typeof entry.id!=='string'||!entry.id)throw new Error('원본 미니언 목록 변경이 올바르지 않습니다.');if(!children(build,entry.tag).some(node=>attr(node,'id')===entry.id)){const node=document.createElement(entry.tag);node.setAttribute('id',entry.id);build.appendChild(node);}}break;
     }
     case 'skill-copy-native': {
       if(edit.setId!==activeId(root,'skills'))throw new Error('현재 활성 스킬 세트에서만 복사할 수 있습니다.');

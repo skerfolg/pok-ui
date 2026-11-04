@@ -3,6 +3,7 @@ import { extname, basename } from 'node:path';
 import type { BuildDocument } from '../shared/contracts';
 import { createBuildDocument } from '../shared/state';
 import { parseBuild } from '../shared/pob-document';
+import {validateSkillTextEvidence} from '../shared/pob-skill-groups';
 
 const MAX_XML = 24 * 1024 * 1024;
 export function decodePob(code: string): string {
@@ -20,6 +21,7 @@ export function validateBuild(value: unknown): asserts value is BuildDocument {
       !Number.isSafeInteger(b.revision) || b.revision < 0 || !Array.isArray(b.undo)) throw new Error('빌드 문서 형식이 올바르지 않습니다.');
   if (Buffer.byteLength(b.xml) > MAX_XML || Buffer.byteLength(b.originalXml) > MAX_XML) throw new Error('XML은 24 MB를 넘을 수 없습니다.');
   parseBuild(b.xml);
+  if(b.inputEvidence!==undefined){if(!Array.isArray(b.inputEvidence))throw new Error('가져오기 원문 기록이 올바르지 않습니다.');for(const input of b.inputEvidence)validateSkillTextEvidence(input);}
 }
 export function importDocument(fileName: string, contents: string): BuildDocument {
   if (Buffer.byteLength(contents) > MAX_XML * 3) throw new Error('가져오기 파일이 너무 큽니다.');
@@ -29,7 +31,7 @@ export function importDocument(fileName: string, contents: string): BuildDocumen
     if (value.schemaVersion !== 1 || !value.build) throw new Error('POK 편집 문서 v1 형식이 필요합니다.');
     validateBuild(value.build);
     const result = createBuildDocument(value.build.name, value.build.xml, basename(fileName));
-    return { ...result, originalXml: value.build.originalXml };
+    return { ...result, originalXml: value.build.originalXml,...(value.build.inputEvidence?{inputEvidence:structuredClone(value.build.inputEvidence)}:{}) };
   }
   const xml = extension === '.xml' || contents.trimStart().startsWith('<') ? contents : decodePob(contents);
   parseBuild(xml);

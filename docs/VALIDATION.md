@@ -1,5 +1,12 @@
 # 로컬 검증
 
+## 원본 스킬 텍스트 교환 — 2026-11-03 (27차 진행)
+
+- 원본 native `.local/standalone-pob/skill-text-result.json`5개 그룹 통과: readonly Copy/CRLF, 정상 ASCII metadata/실제 적용·명시 주력 계산, ignored Korean/invalid-gem 줄 보존·부분 복원, 전체 미지원 차단, Spectre 목록 추가/중복·probe 상태 불변, 빈 세트/oversize 거부 후 계산 불변. 시험 계산과 최종 XML의 전체 수치가 일치한다. minion 관측 사례는 Lightless Abomination1종이며 전수 minion 검증이 아니다.
+- `pob-skill-text.test.ts`5개 통과, check193/build 중간 통과. native DOM 추가·unknown/inactive 보존, XML/revision/undo 불변 record-only, 적용 근거·혼합 편집과 미적용 구분, undo/redo/재시작·JSON/복사 historical ownership, malformed data 거부를 검사한다. 최종 source/package·두 해상도·OS clipboard는 진행 중이다.
+- 첫 native 실패는 한국어 label 보존/추가 젬 후 전체 수치 불변을 가정한 하네스 오류였다. 실제 native응답에서 sanitiseText가 label을 변경하고 ReqInt가14→28로 증가함을 확인했다. 원본 함수·원문/실제 저장값/요구량을 그대로 보여주며 UI에 보정 규칙을 만들지 않는다. 이후 전체 trial/final stats 대조 native5 통과. 최초 typecheck의 optional evidence 접근과 action union label 타입 오류도 수정했다.
+
+
 ## 전체 XML 그룹 복제·이동 — 2026-11-03 (26차)
 
 - 최종 source `.local/skill-transfer-native-1793663206062/result.json` / Windows packaged `.local/skill-transfer-native-1793663669798/result.json` **각5개 그룹 통과**. includeInFullDPS 생략 입력에서 readonly preview의 XML/revision0 불변을 먼저 검사한다. 대상 변경/대기 취소·문서 격리, 같은/비활성 세트 deep copy·확인 이동·transfer receipt, undo/redo·명시 대상 활성/revision7 full numeric output 및 저장/재시작·PoK 미연결을 확인했다. 두 크기 최종 source/packaged PNG를 직접 시각 확인했고 renderer pageerror 없음. packaged는 실제 exe의 resources에 포함된 runtime/editor를 사용한다.

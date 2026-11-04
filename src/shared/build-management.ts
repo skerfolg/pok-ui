@@ -22,7 +22,7 @@ export function removeWorkspaceFolder(state:AppState,folder:string):AppState{
   return{...state,folders:workspaceFolders(state).filter(f=>!within(f)),builds:state.builds.map(b=>within(b.folder||'')?{...b,folder:parent}:b)};
 }
 export function duplicateDocument(source:BuildDocument,name:string):BuildDocument{
-  return{...createBuildDocument(buildName(name),source.xml),folder:source.folder||'',copiedFrom:{buildId:source.id,revision:source.revision}};
+  return{...createBuildDocument(buildName(name),source.xml),folder:source.folder||'',copiedFrom:{buildId:source.id,revision:source.revision},...(source.inputEvidence?{inputEvidence:structuredClone(source.inputEvidence)}:{})};
 }
 export function removeDocument(state:AppState,id:string):AppState{
   const index=state.builds.findIndex(b=>b.id===id);if(index<0)throw new Error('삭제할 빌드가 없습니다.');
