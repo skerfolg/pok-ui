@@ -1,3 +1,11 @@
+## UI 재구축 최종 검증 — 2026-11-04
+
+check214·verify:pob/build/pack:win 통과. final source b2ea1da, PoB0.23.1/5d173cb, runtime0f7/editor876. Native Add modifier4/기존 popup6, actual packaged modifier3/popup6/dark modifier3·search3·workspace9·스킬 초안7·세트/조건8·GUI import4·persistent7의 해당 source와 결과는 `UI-REBUILD-FINAL-20261104.md`를 따른다. GUI 저장102 수치 일치/byte 동일 export, unknown/inactive·정본 revision·undo·생성/검색 격리,1920/1024와 Tab/Shift+Tab/Escape/focus를 실제 확인했다. 단독 legacy/current/QPC/queue/actual Paint·idle/1024 정량 기준도 통과했다. 실패를 삭제하거나 빈 실행을 통과로 집계하지 않고 Add modifier harness 시작 오류·옛 popup active/cancel 기대·기존 release 잠금 EPERM을 수정/이관한 이력을 남겼다.
+
+원본/미지원/미검증 한계와 실제 실행 파일은 최종 기록을 참조한다. 아래 성공/active/미완료 내용은 단계별 이력이다. 테스트 수만으로 전체 PoB 동등성 또는 #188 완료를 주장하지 않는다.
+
+---
+
 ## 단독 성능·notes/affix 검사 이관 — 2026-11-04
 
 check213/build/pack:win 통과. source notes6/affix4와 actual packaged notes6/affix4/workspace9 통과. 노트는 빠른 build/view 전환에서도 원래 owner의 expected XML note로 반영하고 rich text/CRLF/unknown XML·undo/restart를 유지한다. native range는 값 변화로 input node를 재생성하지 않아 Home→End focus를 보존한다. legacy/current host 동일 XML/numeric output·QPC 복원/계산/조립·latest queue·actual packaged Paint3profile/idle/1024 계측은 UI-REBUILD-PERFORMANCE-FINAL-20261104를 따른다. 마지막 수정 후 compact도 입력1.9~12.7ms/수치1.08~1.54초로 기준 통과. noUnusedLocals와3진입점98파일·35 IPC/2 scheme·16 Lua/5 deps 감사도 수행했다. 남은 old smoke selector 이관/최종 UI 커밋·완료 감사는 아직 필요하다.

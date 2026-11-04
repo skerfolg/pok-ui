@@ -1,5 +1,45 @@
 # UI 재구축 성능 최종 계측 — 2026-11-03/04
 
+## 최종 runtime0f7 — 기준 통과
+
+원본 Add modifier까지 포함한 production `pob-0f7c495fb8df59bc8cca328325603e8aaa7841dc718ef3a1612718449dc62f92`를 단독 재검증했다. 원본 PoB0.23.1/5d173cb는 그대로다. source7054680의 마지막 표시 수정 뒤 실제 package의 일반 UI 계측도 다시 수행했다. 이후 popup 키보드 포커스 보완은 계산/일반 입력 경로를 바꾸지 않으며 별도 실제 package/키보드 동선으로 검증한다.
+
+| 입력 | 옛 host warm 중앙값 | 현재 warm 중앙값 | 감소 | 최초 검증 | cold 요청 | 복원/계산/snapshot 중앙값 |
+|---|---:|---:|---:|---:|---:|---:|
+| simple | 5185ms | 320ms | 93.8% | 1060ms | 2636ms | 232/21/30ms |
+| representative | 5494ms | 580ms | 89.4% | 1080ms | 2845ms | 412/50/73ms |
+| heavy | 7394ms | 617ms | 91.7% | 1245ms | 3117ms | 423/72/80ms |
+
+각 XML/반복에서 legacy/current의 전체 numeric output이 일치했다.3profile queue는 중간 revision을 버리고 최신12만 완료했으며 값은 baseline과 같았다. 대표 host≤3003ms는 최초6006ms 실측에서 고정한 값이며 이번 baseline에 맞춰 완화하지 않았다.
+
+| 실제 UI 조건 | 대표 입력→현재 Life Paint | 전체 profile input Paint |
+|---|---:|---:|
+|1920×1080|1272/1904/1946ms|100ms 이내|
+|1024×768|1197/1985/1734ms|100ms 이내|
+|35초 idle·주기 byte 검사|2558ms|100ms 이내|
+
+세 조건의 전체 input Paint 최댓값은15.886ms다. 대표 UI≤3000ms/input≤100ms와 전체 assessment가 통과했다. 현재 raw 근거는 `.local/ui-rebuild-review/performance-{phases,queue,ui,ui-compact,ui-refresh,assessment}.json`이며 실행 로그는 `complete-performance-*`와 표시 수정 후 `final-performance-*`다. QPC probe와 실제 Chrome trace/캡처는 해당 private 결과 디렉터리에 보존했다. 새 upstream/제품 resource를 계측용으로 수정하지 않았다.
+
+각 warm/일반 UI 표본3개·idle1개, Windows x64의 관측이다. OS cache/일반 OS 부하는 통제하지 않았다. heavy는91items/32groups/8inactive sets의 직렬화 부하이지 모든 고부하 빌드를 대리하지 않는다. cold와 다른 PC/모든 빌드의 시간 보장을 주장하지 않는다.
+
+## 이전 runtime89 재검증 이력 — 2026-11-04
+
+source commit588f9d1, production `pob-89a93da3d3282cc85e496d9d0c5364d259a73a887bdbe1523056832c9eae710d`와 최종 Windows package에서 다시 단독 계측했다. 계산 원본은 같은 PoB0.23.1/5d173cb다. 아래 최초 기록을 새 runtime의 결과로 재사용하지 않았다. `.local/ui-rebuild-review/goal-final-performance-*.log`와 현재 `performance-{phases,queue,ui,ui-compact,ui-refresh,assessment}.json`을 근거로 한다.
+
+| 입력 | 옛 host warm 중앙값 | 현재 warm 중앙값 | 감소 | 최초 검증 | cold 요청 | 복원/계산/snapshot 중앙값 |
+|---|---:|---:|---:|---:|---:|---:|
+| simple | 6555ms | 525ms | 92.0% | 1321ms | 4058ms | 377/34/50ms |
+| representative | 5594ms | 580ms | 89.6% | 1111ms | 2885ms | 416/46/71ms |
+| heavy | 5388ms | 839ms | 84.4% | 1220ms | 4318ms | 579/82/89ms |
+
+동일 XML/진단 Lua에서 legacy/current 각 반복의 전체 numeric output이 일치했다. queue3profile은 중간 revision을 버리고 최신12를 완료했으며, 최종 값도 baseline과 동일했다. 대표 host 기준은 초기 실측6006ms에서 고정한≤3003ms를 유지했다.
+
+최종 actual Paint: 대표 UI1920 입력→현재 Life1.326/1.994/1.984초,1024는1.237/1.831/1.257초다. 두 크기의 전체 input Paint1.3~15.4ms.35초 idle 뒤 주기 무결성 검사와 겹친 대표 UI도2.600초/input17.8ms였다. 대표 UI≤3초/input≤100ms 기준을 바꾸지 않았다. heavy idle도2.917초/input13.0ms로 관측했고 전체 performance assessment가 통과했다.
+
+OS cache/일반 OS 부하는 통제하지 않았다. 각 warm/일반 UI 표본은3개, idle은 profile당1개다. cold와 heavy의 변동도 기록하며 모든 빌드/PC 시간 보장이나 전체 앱 옛 버전의 복원 비교로 해석하지 않는다.
+
+## 이전 runtime059 계측 이력
+
 Windows x64, PoB0.23.1/5d173cb, production runtime05950380. 다른 smoke/check를 동시에 실행하지 않았다. OS cache와 일반 OS 부하는 통제하지 않았으며 각 warm 표본은3개다. heavy는 보유 목록/스킬 그룹 직렬화 부하이지 모든 고부하 게임 빌드의 대리표본은 아니다.
 
 ## 입력과 host 전략 비교

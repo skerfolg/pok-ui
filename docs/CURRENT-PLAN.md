@@ -1,3 +1,33 @@
+# UI 재구축 goal 완료 — 2026-11-04
+
+`GOAL-UI-REBUILD-20261103.md`의 구현/검증/보존/정리/기록 기준을 완료했다. 최종 기록은 `UI-REBUILD-FINAL-20261104.md`, 요구별 근거는 `UI-REBUILD-COMPLETION-AUDIT-20261103.md`, 실측은 `UI-REBUILD-PERFORMANCE-FINAL-20261104.md`를 따른다. 아래 절은 단계별 이력이다. 전체 원본 PoB control 동등성이나 #188/R7 해결을 선언하지 않는다.
+
+- 최신 실행 파일: `release/ui-rebuild-20261104-final/win-unpacked/POK.exe`. check214·verify:pob/build/pack:win 통과. 최종 dialog keyboard package에서 Add modifier3(생성/기존·XML undo·실제17 Strength·Tab/Shift+Tab/Escape·포커스 복원), 기존 popup6, dark modifier3 통과. light `.local/item-modifier-1793764735205`, dark `.local/item-modifier-1793764805195`의1920/1024 및 앞선 캡처를 직접 확인했다.
+- 최종 원본 Add modifier native4/기존 anoint·corrupt native6, source0f7의 actual search3/workspace9/GUI import4/persistent7 통과. GUI 저장 XML102 수치 mismatch0/동일 byte export. 상세 각각의 경로는 최종 기록 참조.
+- 단독 성능의 legacy/current 전체 numeric output 일치. warm host 중앙값 simple320/대표580/heavy617ms. 대표 실제 Paint1920 1.27~1.95초,1024 1.20~1.98초, 주기 byte 검사와 겹쳐도2.56초. 전체 input Paint 최대15.9ms로 초기 고정 기준 통과. 키보드 후속 변경은 popup 내부에 한정했고 별도 최종 패키지에서 검증했다.
+- source: PoB0.23.1/5d173cbf8c9cf394a975cbb813f19d0b6dc67ea6, runtime `pob-0f7c495fb8df59bc8cca328325603e8aaa7841dc718ef3a1612718449dc62f92`, editor `pob-editor-876b347b6a39c46a33e94c6032bb9943e3892f36cbe97f994d649710b3e4b5a8`. 원본 PoB/공유 PoK 소스 수정 없음.
+- 커밋 경계: 기존27차 snapshot4fbafcb → UI/runtime8cd07b1 → 옵션당 한 행3dc23fe → 원본 검색/정리588f9d1 → 원본 옵션 추가7054680 → 키보드b2ea1da. 기존 dirty를 일괄 폐기하지 않았고 별도 백업/스냅샷 tree 일치를 검증했다.
+- 후속/미검증: 전체 원본 control parity, 설치 PoB 연결 UI(설계만 완료), 공유 코드/서비스 URL 직접 가져오기, 실시간 거래소 리그·매물 응답, 실제 PoK 모델/서버 연결, Windows 외 배포/서명·설치기. invalid 초안은 세션 범위이며 restart 복원 보장은 아니다. 정상 수동 작업은 PoK 없이 실행한다.
+
+---
+
+# UI goal 잔여 요구 마무리 — 2026-11-04
+
+최종 요구 대조에서 `Add modifier…`의 별도 진입점이 고급 원문 편집과는 구분되어 필요함을 확인해 추가했다. 원본 displayItemAddCustom 버튼과 popup의 실제 source/sort/modSelect/custom controls를 투영한다. Custom 입력은 로컬 초안으로 유지하다 선택 완료 시 원본에 함께 전달해 문자마다 native 응답을 기다리지 않도록 했다. 생성 초안과 기존 아이템 모두 같은 원본 경로를 사용하며 Add/commit 전에는 정본을 바꾸지 않는다. native modifier3/기존 anoint·corrupt6/check214/noUnused 통과. 옛 popup cancel 검사는 사라진 단발 프로세스 active 속성 대신 실제 persistent worker 요청 시작을 기다리도록 이관했다.
+
+현재 마지막 묶음은 runtime `pob-0f7c495fb8df59bc8cca328325603e8aaa7841dc718ef3a1612718449dc62f92`, editor `pob-editor-876b347b6a39c46a33e94c6032bb9943e3892f36cbe97f994d649710b3e4b5a8`, 원본 PoB0.23.1/5d173cb다. `.local/ui-goal-complete-20261104` package의 modifier/popup/search/workspace/GUI import/persistent와 단독 성능 검증을 진행한다. 아래 runtime89 기록은 Add modifier 추가 전 이력이다.
+
+사용자의 goal 계속 지시를 따라 원래 GOAL-UI-REBUILD-20261103 범위를 진행한다. 마지막 명시 기능 차이인 비슷한 아이템 검색 진입점을 생성/기존 아이템의 원본 옵션 영역에 연결했다. `CompareBuySimilar`의 실제 control·trade ID·필터·URL 생성 함수를 호출하고 renderer에서 거래 규칙이나 게임 수식을 만들지 않는다. 원본 PoB/공유 PoK 소스는 수정하지 않았다.
+
+- 검색은 별도 상세 runtime에서 수행하는 읽기 전용 요청이다. 원본이 인정한 부위·검색 가능 옵션·비활성 필드·숫자 필터를 제공하고 리그는 직접 입력한다. 최신 리그 목록·시세·매물을 조회했다고 주장하지 않는다. 조건을 바꾼 뒤 갱신해야 검색할 수 있으며 명시 클릭 때만 원본 PoE2 URL을 연다.
+- main은 검색 URL의 HTTPS/공식 호스트/PoE2 검색 경로/단일 JSON query를 확인한다. 다른 주소는 거부한다. Escape/닫기/취소·포커스 복원·리비전/아이템/runtime 변경 시 검색 창 폐기를 구현했다. 늦은 검색 응답은 새 입력에 적용하지 않는다.
+- native3 통과: 원본 희귀 category/실제 trade modifier ID/수치와 사용자 리그 인코딩, 고유 이름·베이스, 오류 뒤 다음 검색 복원과 전체 수치/정본 XML 불변. 비활성 기본 필드의 roundtrip 거부 문제는 값이 동일할 때만 유지하도록 수정했다. 변경은 계속 거부한다. check214 통과.
+- current runtime `pob-89a93da3d3282cc85e496d9d0c5364d259a73a887bdbe1523056832c9eae710d`, editor `pob-editor-4862a2433fc17e060e6f82c88ddb57c12bd1b8093fdcb75fe08707783531b695`, PoB0.23.1/5d173cb.1715 runtime/589 editor 파일,13965 catalog 항목. 검증된 tree cache는 converter/source/output hash 검사 후 재사용했다.
+
+진행 중: 새 `.local/ui-goal-release-20261104` Windows package에서 실제 검색/편집/workspace/원본 GUI 왕복 XML 재가져오기·persistent 검증, current runtime 성능 재측정과 완료 감사/최종 커밋. 이전 성능·패키지 결과를 새 runtime 검증으로 대체하지 않는다.
+
+---
+
 # 아이템 옵션 한 행 정렬 — 2026-11-04
 
 사용자가 생성/옵션의 세부 능력치가 정렬되지 않았으며 옵션당 한 행을 차지해야 한다고 지적했다. NativeItemEditor의 독립2열 field-grid를 옵션별 행으로 교체했다. 원본 field ID로 식별되는 접두/접미 선택과 대응 AffixRange를 같은 행에 묶어 이름/선택/슬라이더/직접 수치·+/− 열을 맞춘다. 퀄리티/소켓/촉매/변형 등 단일 옵션도 한 행씩 표시한다. 생성 초안과 기존 아이템은 같은 컴포넌트를 사용한다. 원본 metadata/입력·자동 반영·revision 경로는 바꾸지 않는다.
