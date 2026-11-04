@@ -168,3 +168,5 @@ input:focus,select:focus,textarea:focus { border-color:var(--color-accent); }
 .gear-slot:is([data-slot^='Arm'],[data-slot^='Leg']) .slot-kind { flex-direction:row; gap:4px; }
 .gear-slot:is([data-slot^='Arm'],[data-slot^='Leg']) .slot-kind svg { width:13px; height:13px; }
 @media(max-width:1279px) { .gear-slot:is([data-slot^='Arm'],[data-slot^='Leg']) .slot-kind svg { display:none; } }
+
+.native-item-popup[data-kind=add] .pob-config-grid { grid-template-columns:minmax(0,1fr); }

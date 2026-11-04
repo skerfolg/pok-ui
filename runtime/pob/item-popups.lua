@@ -7,16 +7,23 @@ function api.actions(tab)
   for i=1,4 do local control=tab.controls['displayItemAnoint'..(i==1 and '' or i)];if control and control:IsShown()then actions[#actions+1]={kind='anoint',slot=i,label=text(control:GetProperty('label')),enabled=not not control:IsEnabled()}end end
   local control=tab.controls.displayItemCorrupt
   if control and control:IsShown()then actions[#actions+1]={kind='corrupt',label=text(control:GetProperty('label')),enabled=not not control:IsEnabled()}end
+  control=tab.controls.displayItemAddCustom
+  if control and control:IsShown()then actions[#actions+1]={kind='add',label=text(control:GetProperty('label')),enabled=not not control:IsEnabled()}end
   return actions
 end
 local function key(entry)
   if type(entry)=='string'then return 'value:'..entry end
-  if entry.mod then for id,mod in pairs(data.itemMods.Corruption)do if mod==entry.mod then return 'mod:'..id end end;error('Unknown original corruption modifier')end
+  if entry.sourceId then return 'source:'..entry.sourceId end
+  if entry.mod then
+    for id,mod in pairs(data.itemMods.Corruption)do if mod==entry.mod then return 'mod:'..id end end
+    local keys={};for category,mods in pairs(data.itemMods)do for id,mod in pairs(mods)do if mod==entry.mod then keys[#keys+1]='original:'..category..':'..id end end end;table.sort(keys);assert(keys[1],'Unknown original modifier');return keys[1]
+  end
   if entry.stat then return 'stat:'..entry.stat end
   return 'value:'..tostring(entry.label or entry.name or '')
 end
 local function select(control,value)
-  assert(control and control:IsShown() and control:IsEnabled(),'Original popup control is unavailable')
+  assert(control and control:IsShown(),'Original popup control is unavailable')
+  if not control:IsEnabled()then assert(key(control.list[control.selIndex or 1])==value,'Original popup control is disabled');return end
   local selected
   for i,entry in ipairs(control.list)do if key(entry)==value then selected=i;break end end
   assert(selected,'Unknown or filtered original popup option')
@@ -32,8 +39,8 @@ local function selectField(id,label,control)
   return result
 end
 function api.run(tab,request)
-  assert(request.kind=='anoint' or request.kind=='corrupt','Unknown original item popup')
-  local button=tab.controls[request.kind=='anoint' and ('displayItemAnoint'..((request.slot or 1)==1 and '' or request.slot)) or 'displayItemCorrupt']
+  assert(request.kind=='anoint' or request.kind=='corrupt' or request.kind=='add','Unknown original item popup')
+  local button=tab.controls[request.kind=='anoint' and ('displayItemAnoint'..((request.slot or 1)==1 and '' or request.slot)) or request.kind=='add' and 'displayItemAddCustom' or 'displayItemCorrupt']
   assert(button and button:IsShown() and button:IsEnabled(),'Original item popup is unavailable')
   local captured,original
   original=main.OpenPopup
@@ -41,7 +48,13 @@ function api.run(tab,request)
   local worked,message=pcall(button.onClick);main.OpenPopup=original;assert(worked,message);assert(captured,'Original item popup was not created')
   local controls,values=captured,request.selections or {}
   local result={kind=request.kind,slot=request.slot or 1,fields=array(),modes=array(),comparison=array(),state={kind=request.kind,slot=request.slot or 1,selections={}}}
-  if request.kind=='anoint'then
+  if request.kind=='add'then
+    for id in pairs(values)do assert(id=='source' or id=='sort' or id=='modSelect' or id=='custom','Unknown original modifier control')end
+    for _,id in ipairs({'source','sort','modSelect'})do if values[id]then select(controls[id],values[id])end end
+    if values.custom~=nil then local control=controls.custom;assert(control:IsShown() and control:IsEnabled() and type(values.custom)=='string' and #values.custom<=(control.limit or 1024),'Original custom modifier is unavailable');assert(not control.filterPattern or values.custom:gsub(control.filterPattern,'')==values.custom,'Original custom modifier filter rejected input');control:SetText(values.custom,true)end
+    for _,id in ipairs({'source','sort','modSelect'})do if controls[id]:IsShown()then result.fields[#result.fields+1]=selectField(id,({source='옵션 출처',sort='정렬',modSelect='추가할 옵션'})[id],controls[id])end end
+    if controls.custom:IsShown()then local control=controls.custom;result.fields[#result.fields+1]={id='custom',label='추가할 옵션',kind='edit',value=control.buf,enabled=not not control:IsEnabled(),limit=control.limit}end
+  elseif request.kind=='anoint'then
     local db=controls.notableDB
     for id,value in pairs(values)do
       local control=db.controls[id]

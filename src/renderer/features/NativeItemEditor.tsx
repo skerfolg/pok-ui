@@ -57,7 +57,7 @@ export function NativeItemEditor({build,item,slot,runtimeId,getRuntimeId,applyEx
     const token=++generation.current,snapshot={...build},text=item.text;if(commit)popupCommit.current=token;else setPopupDraft({state,sourceText:text});setPending(true);setPopup({state,data:popup?.data});
     try{
       const data=await checked(snapshot,text,undefined,undefined,{...state,commit});if(commit?popupCommit.current!==token:generation.current!==token)return;if(getRuntimeId&&getRuntimeId()!==runtimeId)throw new Error('편집 중 PoB 버전이 변경되었습니다.');
-      if(commit){if(!data.sourcePreserved)throw new Error('원문 보존을 확인하지 못해 변경하지 않았습니다.');const next=applyExpected(snapshot,{type:'item-native',id:item.id,text:data.text,metadata:data.metadata},'성유·오염 옵션 변경');ownRevision.current=next.revision;setPopupDraft(undefined);setPopup(undefined);}
+      if(commit){if(!data.sourcePreserved)throw new Error('원문 보존을 확인하지 못해 변경하지 않았습니다.');const next=applyExpected(snapshot,{type:'item-native',id:item.id,text:data.text,metadata:data.metadata},state.kind==='add'?'아이템 옵션 추가':'성유·오염 옵션 변경');ownRevision.current=next.revision;setPopupDraft(undefined);setPopup(undefined);}
       else{if(!data.popup||data.popup.kind!==state.kind||data.popup.slot!==(state.slot||1))throw new Error('팝업 응답의 종류 또는 위치가 다릅니다.');setPopupDraft({state:data.popup.state,sourceText:text});setPopup({state:data.popup.state,data:data.popup});}
     }catch(reason){if(generation.current===token)setPopup(previous=>previous?{...previous,error:String(reason)}:undefined);}finally{if(generation.current===token)setPending(false);}
   }
@@ -98,7 +98,7 @@ export function NativeItemEditor({build,item,slot,runtimeId,getRuntimeId,applyEx
     {popupDraft&&popupDraft.sourceText!==item.text&&<p className="warning">이전 성유·오염 초안의 아이템 원문이 변경되어 자동 복원을 중단했습니다. <button onClick={()=>setPopupDraft(undefined)}>팝업 초안 지우기</button></p>}
     {Object.keys(numberDrafts).length>0&&<button onClick={()=>setNumberDrafts({})}>입력 초안 지우기</button>}
     <p role="status" className="muted">{pending?'원본 옵션 처리 중…':current?'자동 반영 준비됨':''}</p>{error&&<p className="warning" role="alert">{error}</p>}
-    <div className="actions spaced"><ItemSimilarSearch build={build} item={item} slot={slot} runtimeId={runtimeId} disabled={busy||!current?.data.sourcePreserved}/>{current?.data.actions?.map(action=><button key={action.kind+':'+action.slot} disabled={pending||Boolean(popup)||!action.enabled||!current.data.sourcePreserved} onClick={()=>void runPopup({kind:action.kind,slot:action.slot||1})}>{action.kind==='anoint'?`성유 ${action.slot||1} 편집`:'오염 편집'}</button>)}</div><div className="native-option-list">{rows.map(({field,range})=><div className="native-option-row" data-field={field.id} data-paired={Boolean(range)} data-affix={/^displayItemAffix\d+$/.test(field.id)} key={runtimeId+':'+field.id}>
+    <div className="actions spaced"><ItemSimilarSearch build={build} item={item} slot={slot} runtimeId={runtimeId} disabled={busy||!current?.data.sourcePreserved}/>{current?.data.actions?.map(action=><button key={action.kind+':'+action.slot} disabled={pending||Boolean(popup)||!action.enabled||!current.data.sourcePreserved} onClick={()=>void runPopup({kind:action.kind,slot:action.slot||1})}>{action.kind==='anoint'?`성유 ${action.slot||1} 편집`:action.kind==='add'?'옵션 추가…':'오염 편집'}</button>)}</div><div className="native-option-list">{rows.map(({field,range})=><div className="native-option-row" data-field={field.id} data-paired={Boolean(range)} data-affix={/^displayItemAffix\d+$/.test(field.id)} key={runtimeId+':'+field.id}>
       <span className="native-option-label">{displayFieldLabel(field,fields)}</span>
       <div className="native-option-value">{renderControl(field)}{fieldErrors[field.id]&&<small className="warning" role="alert">{fieldErrors[field.id]}</small>}</div>
       {range&&<div className="native-option-range">{renderControl(range)}{fieldErrors[range.id]&&<small className="warning" role="alert">{fieldErrors[range.id]}</small>}</div>}
@@ -108,6 +108,6 @@ export function NativeItemEditor({build,item,slot,runtimeId,getRuntimeId,applyEx
     {current?.data.diagnostics.map((d,i)=><div className="warning spaced" key={i}><p>{d.code}: {d.message}</p>{d.lines?.map((line,j)=><p className="calcs-line" key={j}>{line}</p>)}</div>)}
     {current&&<details className="item-control-provenance"><summary>고급 · 원본 컨트롤 출처</summary><p>리비전 {current.snapshot.revision} · {current.data.pobCommit}</p></details>}
     {current&&!current.data.sourcePreserved&&<p className="warning">원본 줄 일부를 정확히 보존하지 못해 적용을 차단했습니다. 현재 아이템 원문은 변경되지 않았습니다.</p>}
-    {popup&&<NativeItemPopup data={popup.data} state={popup.state} error={popup.error} pending={pending} change={state=>void runPopup(state)} commit={()=>void runPopup(popup.state,true)} close={closePopup}/>}
+    {popup&&<NativeItemPopup data={popup.data} state={popup.state} error={popup.error} pending={pending} change={state=>void runPopup(state)} commit={state=>void runPopup(state||popup.state,true)} close={closePopup}/>}
   </div></details>;
 }

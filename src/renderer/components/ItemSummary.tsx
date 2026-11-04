@@ -10,7 +10,7 @@ export function ItemSummary({item,compact=false}:{item:Item;compact?:boolean}){
     if(/^(Crafted|Prefix|Suffix|Implicits|Variant|Alt Variant(?: \d+)?|Has Alt Variant|Selected Variant|Unique ID|Item ID):/.test(line))continue;
     if(line==='Corrupted'){chips.push({label:'타락',value:''});continue;}
     if(/^[-=]{3,}$/.test(line)&&(!lines.length||/^[-=]{3,}$/.test(lines[lines.length-1])))continue;
-    lines.push(line);
+    lines.push(line.replace(/^\{custom\}/,''));
   }
   return <article className={'item-preview item-summary'+(compact?' compact':'')}>
     <header><span className={'item-summary-mark rarity-'+item.rarity.toLowerCase()} aria-hidden="true">◇</span><div><h3 className={'rarity-'+item.rarity.toLowerCase()}>{item.name}</h3>{item.base&&item.base!==item.name&&<p className="muted">{item.base}</p>}</div><span className="item-rarity">{({RARE:'희귀',UNIQUE:'고유',MAGIC:'마법',NORMAL:'일반'} as Record<string,string>)[item.rarity.toUpperCase()]||item.rarity}</span></header>

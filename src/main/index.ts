@@ -219,7 +219,7 @@ function registerIpc():void{
       if(request.similar.selections!==undefined){record(request.similar.selections);if(Object.keys(request.similar.selections).length>256)throw new Error('검색 조건이 너무 많습니다.');for(const [key,value]of Object.entries(request.similar.selections)){if(key.length>100||typeof value!=='boolean'&&!(typeof value==='string'&&value.length<=100)&&!(typeof value==='number'&&Number.isSafeInteger(value)))throw new Error('검색 조건 값이 올바르지 않습니다.');}}
     }
     if(request.popup!==undefined){
-      record(request.popup);if(!['anoint','corrupt'].includes(String(request.popup.kind)))throw new Error('아이템 팝업 종류가 올바르지 않습니다.');
+      record(request.popup);if(!['anoint','corrupt','add'].includes(String(request.popup.kind)))throw new Error('아이템 팝업 종류가 올바르지 않습니다.');
       if(request.popup.slot!==undefined&&(!Number.isSafeInteger(request.popup.slot)||Number(request.popup.slot)<1||Number(request.popup.slot)>4))throw new Error('성유 위치가 올바르지 않습니다.');
       if(request.popup.nodeId!==undefined&&(!Number.isSafeInteger(request.popup.nodeId)||Number(request.popup.nodeId)<0))throw new Error('성유 노드가 올바르지 않습니다.');
       if(request.popup.query!==undefined)text(request.popup.query,512,'성유 검색');
