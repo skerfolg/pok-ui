@@ -86,7 +86,21 @@ input:focus,select:focus,textarea:focus { border-color:var(--color-accent); }
 .item-summary.compact .item-summary-mark { width:32px; height:36px; font-size:24px; }
 .native-item-editor { box-shadow:none; }
 .native-item-editor>.panel-body { padding:12px; }
-.native-item-editor .field-grid { gap:12px 14px; }
+.native-option-list { display:flex; flex-direction:column; margin-top:8px; }
+.native-option-row { display:grid; grid-template-columns:80px minmax(0,1fr) minmax(144px,.85fr); align-items:center; gap:8px; min-height:43px; padding:6px 0; border-bottom:1px solid var(--color-line); }
+.native-option-row:last-child { border-bottom:0; }
+.native-option-label { font-size:11px; color:var(--color-muted); overflow-wrap:anywhere; }
+.native-option-value,.native-option-range { min-width:0; }
+.native-option-row[data-paired=false][data-affix=false]>.native-option-value { grid-column:2 / -1; }
+.native-option-row[data-field^="range:"]>.native-option-label { grid-column:1 / 3; color:var(--color-text); }
+.native-option-row[data-field^="range:"]>.native-option-value { grid-column:3; }
+.native-option-value>select,.native-option-value>input { width:100%; min-width:0; }
+.native-option-value:has(>.number-field) { justify-self:end; }
+.native-option-row .native-slider { display:grid; grid-template-columns:minmax(0,1fr) 90px; align-items:center; gap:6px; width:100%; }
+.native-option-row .native-slider>input { min-width:0; width:100%; margin:0; }
+.native-option-row .number-field { width:90px; }
+.native-option-row .number-field input { flex:1; width:0; }
+.native-option-row .field-error { z-index:1; }
 .native-item-editor label { font-size:11px; color:var(--color-muted); }
 .native-item-editor label>input,.native-item-editor label>select,.native-item-editor .number-field { color:var(--color-text); }
 .number-field { gap:0; border:1px solid var(--color-line); border-radius:5px; overflow:visible; background:var(--color-bg); }
@@ -126,7 +140,9 @@ input:focus,select:focus,textarea:focus { border-color:var(--color-accent); }
   .stats-rail details { margin-top:1px; padding-top:5px; }
   .stats-rail summary { margin-bottom:3px; }
   .native-item-editor>.panel-body { padding:9px; }
-  .native-item-editor .field-grid { gap:9px; }
+  .native-option-row { grid-template-columns:54px minmax(0,1fr) minmax(130px,.85fr); gap:6px; min-height:40px; }
+  .native-option-row .native-slider { grid-template-columns:minmax(0,1fr) 84px; gap:4px; }
+  .native-option-row .number-field { width:84px; }
 }
 
 .slot-label-compact { display:none; }
