@@ -1,3 +1,9 @@
+# main 통합 — 2026-11-06
+
+사용자 요청으로 origin/main(d15bdab)의 MCP 큰 결과 참조 회수 개선을 skerfolg/coho에 병합했다. 충돌5파일을 해결하면서 현재 연결/출처 검증·직렬화·복원 선택 차단·진단 원문 보존과 main의 Unicode 페이지/해시/공유 시간 예산 검증을 함께 유지했다. 문서는 양쪽 이력을 보존했다. 통합 check229와 build 통과. 병합 커밋은 작업 브랜치에서 만들고 main과 작업 원격 브랜치를 같은 결과로 갱신한다. 기존 Windows 실행 파일은 이번 MCP 병합 전 패키지이며 재패키징은 수행하지 않았다.
+
+---
+
 # 커밋·원격 반영 체크포인트 — 2026-11-06
 
 사용자 요청으로 `skerfolg/coho` 브랜치에 이번 UI/런타임 개선과 회귀 검사를 커밋하고 원격에 반영한다. 범위는 지연 개선·시작 준비·hover 단일화·레이아웃 안정화·생성 단계 분리·전체 베이스 탐색/요구 능력치 필터·옵션 색상 및 관련 문구/테스트 정리다. 최종 check217/build/verify:pob/Windows package와 앞 절의 실제 Electron 검증 결과를 따른다. 실행 파일과 `.local` 합성 검증 산출물은 Git에 포함하지 않는다. 최신 실행 파일은 `release/creation-pages-20261106-final/win-unpacked/POK.exe`다.
@@ -855,6 +861,37 @@ flowchart LR
   classDef blocked fill:#512c2c,stroke:#c47c7c,color:#fff
   classDef pending fill:#272c34,stroke:#687383,color:#fff
 ```
+
+
+## PoK 큰 결과 참조 호환 — U0 (2026-10-31)
+
+브랜치: `codex/pok-result-transport`, 기준 main `d3817f6`.
+PoK R0~R7 재설계의 현행 소비 계약 정상화 작업이다. 새 설계 기록 계약이나
+전체 R6 앱/모델/번들 통합을 완료했다는 뜻은 아니다.
+
+- [x] 기존 자동 계산이 `stored_tool_result`를 실제 복원 결과로 읽지 못하는 회귀 재현(신규3실패)
+- [x] 자동 연결/계산 경로만 JSON 페이지 회수·원문 SHA256·연결 세대 검증
+- [x] Python Unicode 오프셋·부동소수점 표기의 실제 PoK 합성 fixture 검증
+- [x] 변조/무진행 페이지·재연결·구형 엔진·크기 한도·정규화 원문 참조 회귀
+- [x] `npm run check`: 경계·타입·64개 테스트 통과
+- [x] 최종 프로덕션 빌드 통과
+- [x] 변경 리뷰 및 초안 [PR #2](https://github.com/skerfolg/pok-ui/pull/2) 생성(사용자 병합 대기)
+- [ ] 최신 실제 PoK/모델/번들로 앱 통합 검증(재설계 R6에서 수행)
+
+일반 에이전트 도구 응답은 작은 참조를 유지한다. 자동 회수는 64 MiB/25,000페이지
+상한을 초과하면 명시적으로 실패하며 요약을 계산 결과로 사용하지 않는다.
+한 결과의 최초 호출과 모든 페이지 회수는 단조 시계 기준30분 예산을 공유한다.
+원본 XML·화면 배치·게임 규칙은 변경하지 않는다.
+
+```mermaid
+flowchart LR
+  T[참조 소비 실패 재현]:::done --> C[자동 회수와 무결성]:::done --> V[64검사]:::done --> P[빌드 · 초안 PR2]:::done
+  P --> I[R6 실제 통합 검증]
+  classDef done fill:#243d31,stroke:#65967d,color:#fff
+  classDef active fill:#4b4025,stroke:#bca46c,color:#fff
+```
+
+
 
 ## GitHub 저장소 연결 (2026-10-07)
 
