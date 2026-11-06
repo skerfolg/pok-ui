@@ -6,7 +6,7 @@ return function(editor)
     return{slots=slots,useSecondWeaponSet=not not tab.activeItemSet.useSecondWeaponSet,mainSocketGroup=tab.build.mainSocketGroup}
   end
   return function(request,current)
-    if not current then editor.load(request.xml)end;local tab=build.itemsTab;tab:PopulateSlots();local before=state(tab)
+    if not current then editor.ensure(request.xml)end;local tab=build.itemsTab;tab:PopulateSlots();local before=state(tab)
     if request.action=='weapon'then
       assert(request.weaponSet==1 or request.weaponSet==2,'Unknown original weapon set')
       tab.controls['weaponSwap'..request.weaponSet].onClick()

@@ -63,7 +63,7 @@ export class PobEditorData {
     const query=(request.query||'').trim().toLowerCase(),category=(request.category||'').trim().toLowerCase();
     const limit=Math.max(1,Math.min(100,Number.isInteger(request.limit)?Number(request.limit):50)),offset=Math.max(0,Math.min(1_000_000,Number.isInteger(request.offset)?Number(request.offset):0));
     const entries=catalog.entries.filter(e=>(!request.type||e.type===request.type)&&(!category||e.category?.toLowerCase()===category)&&(!query||[e.name,e.id,e.category,e.subType,e.gemId,e.gameId].filter(Boolean).join(' ').toLowerCase().includes(query)));
-    return{total:entries.length,offset,limit,entries:entries.slice(offset,offset+limit)};
+    return{categories:[...new Set(catalog.entries.filter(e=>!request.type||e.type===request.type).map(e=>e.category).filter((v):v is string=>Boolean(v)))].sort(),total:entries.length,offset,limit,entries:entries.slice(offset,offset+limit)};
   }
   async getEntry(type:CatalogEntryType,id:string):Promise<CatalogEntry>{
     if(!types.has(type)||typeof id!=='string')throw new Error('카탈로그 식별자가 올바르지 않습니다.');

@@ -3,7 +3,7 @@ return function(editor,states)
   local function array()return setmetatable({},{__jsontype='array'})end
   local state,differences=states.read,states.differences
   return function(request,current)
-    if not current then editor.load(request.xml)end
+    if not current then editor.ensure(request.xml)end
     local spec=build.spec;spec.allocMode=request.allocMode or 0;spec:BuildAllDependsAndPaths()
     local before,old=state(spec),{}
     for id in pairs(spec.allocNodes)do old[id]=true end

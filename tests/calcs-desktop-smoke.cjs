@@ -20,10 +20,10 @@ async function ready(){await poll(()=>page.getByLabel('계산 상세 모드',{ex
   const repeatStart=performance.now();await page.getByLabel('Life Total 1 상세',{exact:true}).click();await modal.getByText('62 (base)',{exact:true}).waitFor();report.reopenMs=performance.now()-repeatStart;assert(report.reopenMs<200);assert.equal(await modal.getByRole('status').count(),0);await modal.getByRole('button',{name:'닫기',exact:true}).click();
   assert.equal((await current()).xml,xml);report.passed.push('original Life cell opens native formatted breakdown without changing the build XML');
   await page.getByLabel('계산 상세 모드',{exact:true}).selectOption('UNBUFFED');await poll(current,b=>b.revision===1);await ready();assert.equal(await page.getByLabel('계산 상세 모드',{exact:true}).inputValue(),'UNBUFFED');
-  await page.getByLabel('PoB 스킬 모드',{exact:true}).selectOption('2');const modeBuild=await poll(current,b=>b.revision===2);assert.match(modeBuild.xml,/<StatSetCalcsIndex[^>]*index="2"/);await ready();
-  await page.getByRole('button',{name:'스킬',exact:true}).click();await poll(()=>page.getByLabel('PoB 스킬 모드',{exact:true}).isEnabled(),Boolean);assert.equal(await page.getByLabel('PoB 스킬 모드',{exact:true}).inputValue(),'1');
+  await page.getByLabel('스킬 모드',{exact:true}).selectOption('2');const modeBuild=await poll(current,b=>b.revision===2);assert.match(modeBuild.xml,/<StatSetCalcsIndex[^>]*index="2"/);await ready();
+  await page.getByRole('button',{name:'스킬',exact:true}).click();await poll(()=>page.getByLabel('스킬 모드',{exact:true}).isEnabled(),Boolean);assert.equal(await page.getByLabel('스킬 모드',{exact:true}).inputValue(),'1');
   report.passed.push('Calcs buff mode and Ice Nova mode are saved separately from main skill settings');
-  await page.getByRole('button',{name:'계산',exact:true}).click();await ready();assert.equal(await page.getByLabel('PoB 스킬 모드',{exact:true}).inputValue(),'2');
+  await page.getByRole('button',{name:'계산',exact:true}).click();await ready();assert.equal(await page.getByLabel('스킬 모드',{exact:true}).inputValue(),'2');
   await page.getByLabel('계산 상세 그룹',{exact:true}).selectOption('2');await poll(current,b=>b.revision===3);await ready();assert.equal(await page.getByLabel('계산 상세 그룹',{exact:true}).inputValue(),'2');
   await page.getByLabel('계산 상세 검색',{exact:true}).fill('Life');await page.getByLabel('Life Total 1 상세',{exact:true}).click();await modal.getByRole('button',{name:'닫기',exact:true}).click();
   await page.getByLabel('계산 상세 모드',{exact:true}).selectOption('EFFECTIVE');await poll(current,b=>b.revision===4);await ready();assert.equal(await modal.count(),0);

@@ -59,9 +59,9 @@ for line in io.stdin:lines() do
       if request.op=='item-controls' then return itemControls(request) end
       if request.op~='compute' then error('Unsupported operation: '..tostring(request.op)) end
       assert(type(request.xml)=='string','XML is required')
-      editor.load(request.xml)
+      editor.ensure(request.xml)
       assert(build and build.targetVersion,'PoB requires build conversion')
-      build.calcsTab:BuildOutput()
+      editor.calculate()
       local stats={}
       for key,value in pairs(build.calcsTab.mainOutput or {}) do
         if type(value)=='number' and value==value and value~=math.huge and value~=-math.huge then stats[key]=value end
@@ -95,7 +95,11 @@ for line in io.stdin:lines() do
       local ids={};for id in pairs(itemDisplays)do ids[#ids+1]=id end;table.sort(ids);for i=1,math.min(4,#ids)do detailTargets[#detailTargets+1]={itemId=ids[i]}end
       return {ok=true,stats=stats,warnings=warnings,target=target,inputDiagnostics=diagnostics,workspaceSnapshot=snapshot,itemDisplays=itemDisplays,detailTargets=detailTargets,version=launch.versionNumber,treeVersion=build.spec.treeVersion}
     end)
-    if not worked then editor.invalidateRead()end
+    local reusable=request.op=='compute' or request.op=='inspect' or request.op=='calcs' or request.op=='item-tooltip'
+      or request.op=='equipment' and not request.action
+      or request.op=='tree' and request.action=='character' and request.classId==nil and request.ascendancyId==nil and request.nodeId==nil
+      or request.op=='item-controls' and not request.popup and not request.similar
+    if not worked or not reusable then editor.invalidateState()end
     if worked then reply({id=request.id,ok=true,result=result})
     else reply({id=request.id,ok=false,error={code=request.op=='compute' and 'POB_COMPUTE' or 'POB_EDITOR',message=tostring(result)}}) end
   end

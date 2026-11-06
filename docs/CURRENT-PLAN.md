@@ -1,3 +1,159 @@
+# 커밋·원격 반영 체크포인트 — 2026-11-06
+
+사용자 요청으로 `skerfolg/coho` 브랜치에 이번 UI/런타임 개선과 회귀 검사를 커밋하고 원격에 반영한다. 범위는 지연 개선·시작 준비·hover 단일화·레이아웃 안정화·생성 단계 분리·전체 베이스 탐색/요구 능력치 필터·옵션 색상 및 관련 문구/테스트 정리다. 최종 check217/build/verify:pob/Windows package와 앞 절의 실제 Electron 검증 결과를 따른다. 실행 파일과 `.local` 합성 검증 산출물은 Git에 포함하지 않는다. 최신 실행 파일은 `release/creation-pages-20261106-final/win-unpacked/POK.exe`다.
+
+---
+
+# 생성 선택/편집 두 화면·미리보기 분할 — 2026-11-06
+
+- 선택 화면의 희귀도/이름/고유 변형/생성 버튼을 상단 한 줄에 배치하고 모든 생성 버튼을 `생성`으로 통일했다. 선택 상세 중복 영역과 하단 생성 입력을 제거하고 목록만 내부에서 스크롤한다.
+- 생성 성공 시 베이스 목록 아래에 편집기를 붙이지 않고 별도 편집 단계로 전환한다. `뒤로 · 베이스 선택`으로 돌아가며 목록 컴포넌트를 유지해 필터·검색·선택 상태를 보존한다. 취소로 초안을 버릴 수도 있다.
+- NativeItemEditor를 미리보기(좌)/설정(우)의 grid로 분할하고 각 영역을 독립적으로 스크롤한다. 생성/기존 아이템 모두 같은 구조를 사용한다. Add는 별도이며 생성·편집만으로 canonical XML을 변경하지 않는다. 같은 슬롯의 생성 화면 재진입은 기존 초안 편집을 복원한다.
+- 기본 방어 미리보기에서 MovementPenalty 같은 내부 필드명이 노출되지 않게 표시 속성을 정리했다.
+- source `.local/creation-pages-1793952289055`에서1920/1024 toolbar 정렬, 선택 후 outer scroll 없음, 생성 단계 전환, 좌/우 위치·상단 정렬, 편집 단계 outer scroll 없음, 뒤로 시 INT 필터/이름 보존 및 canonical XML 불변을 검증했다. 실제 선택1920/편집1024 캡처를 직접 검토했다. 최종 packaged `.local/creation-pages-1793952875392`에서도 양쪽 해상도의 toolbar/스크롤/단계 전환/좌우 pane/뒤로 필터·이름 보존·canonical 불변을 통과했다. 실제1024 선택/1920 편집 캡처도 검토했다. packaged item-draft5(초안 복원/owner 격리/Add/stale 거부)와 check217/build/verify:pob/pack:win도 통과했다.
+- 배포 경로: `release/creation-pages-20261106-final/win-unpacked/POK.exe`. 계산/runtime 변경 없음.
+
+---
+
+# 베이스 탐색·능력치 분류·옵션 색상 — 2026-11-06
+
+- 장착 비교의 양수 증가/음수 감소를 초록/빨강으로 표시한다.0증가는 강조하지 않는다. formatter가 미지원으로 표시한 옵션 문장은 아이템 카드/hover에서 빨강으로 표시한다. 계산값은 변경하지 않는다.
+- base/unique 검색 결과는100개씩 마지막 페이지까지 읽는다. 베이스는 전체 목록을 스크롤로 탐색하며,150개 초과 결과는72px 행과 위/아래 spacer로 화면 근처20행만 그린다. 데이터 접근을30개로 자르지 않고, 숫자/요구사항을 추가한 목록 높이를300~560px로 늘렸다. 다른 유형의 기존 검색은 과도한 대량 렌더링을 피한다.
+- STR/DEX/INT 및 조합별 필터를 추가했다. native raw.req의 실제 양수 요구량으로 분류하며, renderer에서 캐릭터 조건/장착 판정을 계산하지 않는다. 목록 및 선택 미리보기의 요구 레벨·능력치, native armour/weapon 기본 수치를 표시한다. 품질/접사/빌드 조건을 적용한 새 계산값으로 표현하지 않는다.
+- source `.local/base-browser-1793943004140`에서 실제 감소 delta 색 rgb(255,124,134), 미지원 행 class, 전체 Gloves 마지막 베이스 접근, STR+INT 필터, 요구량/방어 기본 수치,1920/1024 목록 높이를 검증했고1024 캡처를 검토했다. 최종 check217/build/verify:pob/pack:win 통과. 실제 packaged `.local/base-browser-1793943590780`에서 native 장착 비교 감소/미지원 rgb(255,124,134), 감소 옵션이 붙은 합성 반지 해제 비교의 증가 rgb(114,214,155)를 확인했다. 전체 마지막 베이스 접근·STR+INT 필터·요구량/방어 수치·두 해상도도 통과하고 실제1920/1024 캡처를 검토했다. click으로 닫은 동일 슬롯에서 재진입 없이 hover를 기다리던 최초 검사 대기는 포인터를 밖으로 이동 후 재진입하는 동선으로 보정했다.
+- 새 배포 경로: `release/base-browser-20261106/win-unpacked/POK.exe`. PoB/runtime 변경 없음.
+
+---
+
+# 시작 준비·즉시 hover 닫기·슬롯 분류 — 2026-11-06
+
+- 시작 시 작업 화면을 hidden/inert 상태로 준비하고 첫 계산과 기본 상세 조회를 마친 뒤 공개한다. 준비 화면에도 창 제어를 제공하며, 이후 일반 조작에서는 다시 준비 화면을 띄우지 않는다. 오류/데이터 미지원 시 복구 화면을 열고 실패 뒤 안내를 닫아도 준비 화면에 갇히지 않는다. 편집 재계산이나 빌드/버전별 추가 준비 비용이 사라진다는 뜻은 아니다.
+- 장비 등 비interactive tooltip은 pointer leave 즉시 닫는다. 기존180ms 유예는 interactive 계산 근거에만 유지한다. 활성 owner 단일화/실제 gear-slot 추적은 유지한다.
+- Create Item의 보유 목록 돌아가기 버튼을 제거했다. 선택 슬롯에 맞는 표시 분류를 초기값으로 사용한다(Gloves/Helmet/Boots/Body Armour/Ring/Amulet/Belt). 고정 category와 달리 초기 분류는 사용자가 드롭다운에서 바꿀 수 있다. 관련 기존 선택을 초기화해 다른 부위의 base가 남지 않게 한다.
+- source 검사에서 tooltip이 다음 frame까지 닫힘, 장갑 클릭→Gloves 기본 분류, 보유 목록 버튼 없음, 두 크기72전환 중복0을 확인했다. 최종 packaged `.local/hover-slots-1793942143909`에서 준비 중 workspace hidden→첫 계산/상세 준비 후 표시, 다음 frame tooltip0개, Gloves 기본 분류, 버튼 없음 및72전환 중복0을 통과했다. 시작 화면 캡처도 직접 검토했다. check217/build/verify:pob/pack:win 통과. packaged item-draft5 회귀도 통과해 같은 슬롯의 생성 초안 복원/별도 owner/명시 Add/stale 차단을 확인했다.
+- 배포 경로: `release/startup-hover-20261106-final/win-unpacked/POK.exe`. 런타임/게임 계산 변경 없음.
+
+---
+
+# 장비 hover 단일 표시·슬롯 문자 정리 — 2026-11-06
+
+- 슬롯별 지연 닫기와 독립 open 상태로 이전/다음 tooltip이 동시에 남던 경로를 공통 활성 owner로 단일화했다. 새 슬롯이 활성화되면 이전 portal은 즉시 제외한다. 접근성 describedby도 활성 card에만 연결한다.
+- 장비 영역에서 tooltip이 다른 슬롯을 덮어도 pointer 위치 아래 실제 gear-slot을 추적한다. 드래그 중에는 tooltip의 pointer 가로채기를 끄고 pointerup/cancel/창 blur/복귀 시 정리한다. 열린 장비 선택 목록이나 modal은 추적에서 제외한다. tooltip 안에서 읽기/스크롤하는 기존 닫기 유예는 유지한다.
+- 구독 snapshot은 각 card의 활성 여부 boolean이라 이전/새 card만 다시 그린다. 장비 슬롯이 없는 화면에서는 hit testing을 하지 않는다.
+- 빈 슬롯 이름·아이템 fallback 글자·바알/주얼 썸네일 이름을 제거했다. 아이콘/이미지와 선택 테두리, 접근성 이름 및 hover 옵션을 유지한다. 요청한 비활성 장비 소켓 아코디언을 제거하고 XML/실제 장착 데이터는 유지한다.
+- source hover-slots(`.local/hover-slots-1793933405725`)에서1920/1024 일반 이동·버튼 누른 드래그,6개 슬롯을3회씩 왕복하여72전환의 현재 tooltip 이름 일치·동시 card1개·DOM 중복0·슬롯 문자/비활성 아코디언 없음 확인. 최종 packaged `.local/hover-slots-1793933842293`에서도72전환·중복DOM0·현재 슬롯 일치·문자/아코디언 없음 통과.1920/1024 실제 캡처를 직접 검토했다. check217/build/verify:pob/pack:win 통과.
+- 새 배포 경로: `release/hover-exclusive-20261106-final/win-unpacked/POK.exe`. 계산/runtime은 변경하지 않았다.
+
+---
+
+# 아이템 옵션·붙여넣기·분류 선택 — 2026-11-06
+
+- 룬/선택 옵션과 중복되는 설명 및 수치 상세 아코디언을 제거했다. 선택란과 실제 아이템 옵션 표시를 사용한다.
+- 빈 슬롯의 원문 추가 버튼을 제거하고 빈 슬롯 카드에서 paste를 처리한다. 빈 장비 작업 영역의 비입력 요소에 붙여넣는 동작도 같은 canonical item-equip 편집을 사용한다. 텍스트 입력/검색란의 붙여넣기는 가로채지 않는다. undo/원문 보존·자동 계산 계약을 유지한다.
+- 생성 분류는 검색 가능한 드롭다운으로 교체했다. backend가 검색/페이지 제한과 독립적인 전체 type별 categories를 제공하여 첫30개 결과만으로 분류가 누락되지 않는다. 검색 목록은 overlay여서 폼을 밀지 않는다.
+- 고유 아이템 범위 제어는 stock showAllItemAffixes 표시 설정 때문에 adapter가 사용하는 range selector가 숨는 원인이 있었다. adapter가 사용하는 stock 개별 range 모드를 명시하여 원본 slider callbacks를 그대로 노출한다. 원본 PoB/게임 수식은 변경하지 않았다. runtime/metadata identity를 다시 준비했다.
+- check217/build/verify:pob/pack:win 통과. 최종 packaged `.local/item-flows-1793931217534`에서 Ironbound slider→실제35% 표시/current 계산, 중복 설명 없음, 빈 슬롯 카드 및 슬롯 클릭 직후 열린 목록에서 paste→XML/계산, 전체 분류 검색/선택을 확인했다.1920/1024 실제 열린 분류 목록 캡처를 직접 검토했다. native persistent7도 통과했다. 최종 배포 경로: `release/item-controls-20261106-final/win-unpacked/POK.exe`. runtime05d82d3/editor99a01a2, 원본0.23.1/5d173cb 유지.
+
+---
+
+# 주요 화면 레이아웃 안정성 점검 — 2026-11-06
+
+사용자가 개별 지적 없이 다른 화면의 흔들림도 점검하도록 요청했다. 스킬·조건·트리·계산·파티·비교·장비 및 공통 팝업의 조건부 pending UI를 검색했다.
+
+- 스킬 세부 폼에 조회 중 삽입되던 안내문을 제거했다. 스킬 그룹 조회의 임시 취소 버튼은 자리를 유지하며, 일반 갱신 상태 문구가 폼을 밀지 않도록 했다. 실제 오류는 유지한다.
+- 장비 드롭다운, 아이템 팝업, 거래소 검색, 스킬 텍스트와 트리 작업의 조회 중 문구는 접근성 알림으로 옮겨 폼 높이를 바꾸지 않는다.
+- 공통 모달은 내용 높이에 따른 수직 중앙 재정렬 대신 상단 기준 위치와 viewport 내부 스크롤을 사용한다. async 결과/진단/선택지 등장으로 창 전체가 위아래 움직이는 경로를 없앴다.
+- source `.local/stable-results-1793928852439`의9개 동선(장비 두 해상도/단일 조작/레벨/젬/조건/계산표/열린 분해/파티)에서 내용 빈칸0 및 관측 대상의 좌표 이동0px. 실제 사용자 입력과 비동기 계산 중 매 프레임 검사했다. 트리/스킬/검색/팝업의 pending 삽입 경로도 코드 점검·제거했다.
+- 위로 열리는 장비 목록은 고정된 가용 높이를 사용해 검색 결과 수가 달라져도 검색창 위치를 유지한다. 최종 packaged equipment-art(`.local/equipment-art-1793929321537`)에서1920/1024 필터 입력/해제의 검색창 이동≤1px, 장착/해제·무기 전환·XML 복원을 통과했다. tooltip에도 동일 h3가 있으므로 검사 selector는 실제 편집 카드로 한정했다.
+- check217/build/verify:pob/pack:win 통과. 최종 package9동선 `.local/stable-results-1793929185526`370프레임에서 관측 대상 좌표 이동0px/빈칸0. 실제1024 드롭다운·계산 캡처를 검토했다.
+- 최신 배포 경로: `release/layout-audit-20261106-final/win-unpacked/POK.exe`. 최종 검증 결과를 후속 기록한다. 게임 계산/원본 API/정본 보존은 변경하지 않았다.
+
+---
+
+# 조작 중 레이아웃 흔들림·진단 노출 제거 — 2026-11-06
+
+- 사용자 재현의 움찔거림은 결과 빈칸과 별개였다. 기존 responsive package에서 퀄리티3회 조작을 매 프레임 관찰하니 유효한 숫자 입력마다 `입력 초안 지우기`가 옵션 위에 삽입/제거되며 행이30.84375px 움직였다.1920/1024 모두 재현(`.local/item-layout-1793926618834`).
+- reset 버튼은 미완성/오류 입력일 때만 옵션 목록 아래에 표시한다. 자동 반영 안내와 준비/갱신 문구는 화면에서 제거했으며 접근성 갱신 알림은 레이아웃 밖에 둔다. 숫자 metadata 폭과 scrollbar gutter를 안정화하고 편집 패널의 자동 scroll anchoring을 끈다. 계산 중 주력 대상의 button/span 교체도 없애 수치 행의 높이를 유지했다.
+- 생성 진단 JSON과 이를 보관하던 renderer state, 카탈로그 raw JSON/원문 teaser, 기본 안내 footer를 제거했다. 오른쪽 요약의 리비전·시각·해석/복원 건수·미반영 옵션/참고사항 목록과 하단의 반복 리비전/계산 진행 문구를 제거했다. 전체 계산 기록·원문/미지원 데이터 자체는 유지한다. 실제 실패/입력 오류 표시는 유지하며, 이전 수치 여부는 출처 선택란에서 구분한다.
+- source `.local/item-layout-1793926934298`에서162프레임 동안 퀄리티 행/수치 행/scrollTop/scrollHeight 변화0px, 임시 reset 버튼0프레임.1920×1080/1024×768에서 확인했다. Cadiro’s Gambit 생성에서도 실제 unsupported 옵션 줄은 유지되고 parser JSON·카탈로그 raw metadata는 표시되지 않으며 canonical XML이 바뀌지 않음을 확인했다.
+- check217/build/verify:pob/pack:win 통과. 최종 package `.local/item-layout-1793927282776`151프레임에서도 두 크기의 행/스크롤 이동0px와 생성 JSON 미노출을 확인했고1920/1024/생성 화면을 직접 검토했다. packaged item-draft5 회귀도 통과하여 미완성 입력·view/build 전환·private 초안·Add·stale 거부를 확인했다. Lua/runtime·게임 계산은 수정하지 않았으며 이전 지연 개선을 유지한다. 최신 배포 경로: `release/ui-polish-20261106/win-unpacked/POK.exe`.
+
+---
+
+# 실제 입력 지연 개선·제품 문구 정리 — 2026-11-05
+
+사용자는 보이는 화면보다 실제 대기시간 개선을 우선하며, pok-ui를 PoB의 새로운 UI로 취급하도록 지시했다. 이전 표시 유지 작업만으로 성능 개선을 완료한 것으로 보지 않는다.
+
+## 실행 경로 변경
+
+- 원본 `Build:Init`/`OnFrame`에서 이미 수행한 계산을 adapter가 다시 호출하던 경로를 제거했다. `editor.ensure`는 동일 입력의 메모리 상태를 재사용하고, 검증 범위의 Build 레벨/주력 선택·Skills·Config·Items 변경은 원본 XML loader와 OnFrame을 호출한다. 원본 계산식/업스트림/공유 PoK 코드는 수정하지 않았다.
+- XML 구조/다른 절/트리·직업·버전이 달라지거나 중복 절, 새/삭제 아이템, 영향 있는 패시브 주얼 등의 변경은 전체 복원으로 돌아간다. 실패/취소/출처 변경은 상태를 폐기한다. 제한된 opt-in 경로이며 모든 PoB 제어의 증분 갱신을 선언하지 않는다.
+- `editor.load`의 전체 복원 계약은 유지한다. 최초 시험에서 skill group lineage hook이 메모리 재사용으로 실행되지 않아 metadata 요청 실패→worker 재시작이 일어난 것을 실제 앱 계측으로 발견했다. 해당 API는 전체 로드로 유지하고, 읽기 전용 loadout/그룹/트리 관리 정보는 별도 상세 worker에서 낮은 우선순위로 조회한다. 오래된 같은 대상 조회는 최신 입력으로 대체한다. 주 편집/계산 lane을 막지 않는다.
+- 검증된 아이템 편집 응답의 결과 text/fields를 실제 성공한 canonical XML patch에 결합해 중복 조회를 생략한다. 응답의 입력 출처는 바꾸지 않고 origin snapshot을 보존한다. 무관한 입력/owner/runtime 변경은 재조회한다. 처리 중 native mutation은 초안 Add를 계속 막는다.
+- 자동 계산의150ms 고정 대기를 제거했다. inspection/equipment/character 읽기는16ms 뒤 주 계산 snapshot을 재사용한다. 젬 숫자의 버튼/입력 완료는350ms 초안 debounce를 추가로 기다리지 않는다. 미완성 입력과 텍스트 debounce는 보존한다.
+
+## 실측과 검증
+
+- 초기 전후 native 대조는 `.local/warm-state-baseline-results.json`, 최종 전체 복원 reference 대조는 `.local/warm-state-test-final.log`. 레벨/젬/조건·아이템/다른 빌드/what-if/실패/장착/undo 전후의 전체 numeric output·아이템 표시·대상·진단이 일치했다. 편집 반환 fields와 다음 XML 조회 fields도 일치했다.
+- source 최종 `.local/stable-results-1793867074948`: 퀄리티3회0.75~1.11초, 레벨0.42초, 젬0.25초, 조건0.35초, 계산표0.34초. 이전 source `.local/stable-results-1793863883518`의 같은 동선은 퀄리티3회2.22~2.80초, 레벨1.06초, 젬1.25초, 조건0.94초, 계산표1.06초였다. 소수 합성 표본이며 원본 GUI와 동일 조건 직접 비교나 모든 PC/무거운 빌드의 보장은 아니다.
+- actual package `.local/stable-results-1793867499952`: 입력 이벤트→새 요약의 rAF 관측은 레벨160ms/젬189ms/조건210ms/퀄리티1회345ms. 테스트의 후속 readiness·저장 polling까지 포함하면 각각323/270/286/478ms였다.9개 갱신 동선에서 관측 빈칸0.1920×1080/1024×768을 확인했다. 기존 결과를 단순히 남기는 검사와 새 결과까지의 시간을 구분했다.
+- check217/build/verify:pob/Windows package 통과. native persistent7·detail reuse4·skill groups·item controls 통과. source item-draft5 및 최종 packaged skill-draft 회귀 통과. 동시 bundle build 중 시작한 source skill-draft는 초기 계산 대기에서 timeout했으며, 빌드가 끝난 실제 package의 재검증으로 분리 기록한다. 실패를 성공으로 재분류하지 않는다.
+
+## 문구·출처·재현
+
+- 일반 화면의 `원본 PoB 장착 비교`→`장착 비교`, 요구사항·계산 근거·스킬·조건 등의 기능명으로 정리했다. tooltip의 커밋/리비전 반복 표시는 제거하고 이전 결과/갱신만 표시한다. 버전·해시 검증 및 고급 진단은 유지한다. 세부 원칙은 DESIGN 최상단.
+- runtime `pob-7f2e206d04f37bc33af1edcc8f4be3422b8b217035e53dcce7d8e9c3f359bf98`, editor `pob-editor-726f31b15fc2f6bab8e2d6ccd1f9ade111a0038b669de1916abbeb2e43e64a45`, 원본 PoB0.23.1/5d173cb 유지. 참조 저장소는 사용자 지정 PathOfBuildingCommunity/PathOfBuilding-PoE2이며, bundled 고정 원본의 API를 직접 읽어 적용했다.
+- 검증된 기존 번들 위에서 우리 adapter만 재준비하는 `node --import tsx scripts/refresh-pob-adapters.mjs`를 추가했다. 기존 bytes를 검사하고 source/라이선스는 유지하며 atomic swap/backup 후 runtime identity를 갱신한다. 이어 `node --import tsx scripts/prepare-pob-data.mjs --tree-python <python> --reuse-tree-assets`로 metadata identity를 재생성한다.
+- 최종 packaged equipment-art도 통과(`.local/equipment-art-1793867762549`): 두 크기 드롭다운 hover·장착/해제·무기 전환·exact XML 복원 및 슬롯 프레임 누락0. 최신 장착 비교/요구사항 문구와 두 해상도 캡처를 직접 확인했다. packaged skill-draft7의 결과는 `.local/skill-draft-1793867555878`이다.
+- 최신 실행 파일: `release/responsive-ui-20261105/win-unpacked/POK.exe`. 초기 로드·전체 복원 fallback·무거운 계산과 일부 상세 조회 비용은 남는다. 모든 작업 무지연이나 원본 GUI 동등 속도를 달성했다고 선언하지 않는다.
+
+---
+
+# PoB 결과 갱신 중 표시 유지 — 2026-11-05
+
+사용자는 퀄리티뿐 아니라 PoB 결과를 받는 화면 전반의 빈칸·깜빡임과 원본 대비 지연을 지적했다.
+
+- 현재도 원본 Lua를 지속 LuaJIT worker에서 직접 실행한다. 다만 원본 GUI의 살아 있는 build 객체를 계속 편집하는 것과 달리, mutation/주 계산은 요청별 XML 복원, 별도 편집/조회/계산과 IPC를 거친다. 원본 수준의 즉시 최종 결과를 달성했다고 주장하지 않는다.
+- 표시용 이전 결과와 현재 리비전의 편집/적용 권한을 분리했다. 공통 retained presentation은 build/runtime/item/slot/cell/spec 소유자가 바뀌면 버리고, 동일 소유자의 재조회 중에는 기존 옵션/행을 유지한다. 과거 결과를 새 계산이나 새 편집 근거로 승격하지 않는다.
+- 아이템 본문·동적 옵션 버튼/설명·hover, 장비 슬롯과 주얼 목록, 상단 패시브 현황/직업, 상세 직업 선택, 트리 노드 정보, 계산표·hover·열린 분해 상세, 파티 요약/출력을 점검·보완했다. 스킬/전투 조건은 기존 검사 layout 유지 경로를 검증했다. 능력치 요약은 실패 시에도 같은 build/runtime의 마지막 성공 수치를 이전 결과로 유지한다. 검토/적용 초안 무효화는 안전성을 위해 유지한다.
+- 아이템 mutation에서 이미 반환된 원본 formatter 결과를 성공한 XML patch의 새 입력 표시 캐시에 즉시 제공한다. 전체 계산·컨트롤 재조회는 별도이며 원본 게임 규칙을 UI에 복제하지 않는다. 상단 character 조회의 불필요한600ms 대기를 제거하고 기존 공유 요청 병합을 사용한다.
+- check217/build 통과. source `.local/stable-results-1793863883518`에서 두 해상도 퀄리티 연속 입력, 레벨/젬/전투 조건/계산표/파티 입력 변화 중 총630프레임의 관측 대상 빈칸0을 확인했다. 최초 테스트는 옵션 없는 합성 일반 갑옷의 본문을 기다렸으므로 종료하고, 합성 modifier가 있는 fixture로 교정했다.
+- 같은 source 계측의 native 요청: item-controls389~594ms, compute332~713ms, tooltip8~41ms. 단일 레벨/젬→최종 UI 약0.94~1.25초, 퀄리티3회 연속 전체2.22~2.80초였다. IPC 요청 전후/자동 계산 대기까지 포함한 작은 합성 표본이며 원본 GUI와 동일 조건 비교는 아니다. 표시 안정화와 실제 연산 지연 개선을 구분한다. 원본 수준 목표는 추가 runtime 상태 재사용·XML 복원/중복 조회 제거와 오염 회귀가 필요하다.
+- 최신 source `.local/stable-results-1793864210738`은 열린 Life 분해 상세까지8개 동선/944프레임에서 빈칸0. 실제1920/1024 화면을 검토했다. 기존 workspace9(`.local/workspace-rebuild-1793864246391`)도 통과하여 자동 편집·빠른 입력·undo/redo·저장/재시작·XML 보존을 확인했다. Calcs는 공유 캐시에서 빠져도 자체 보관한 동일 XML/revision/runtime 응답을 현재 결과로 사용할 수 있게 보완했다.
+- 1차 packaged8동선 프레임 검사도 통과했다(`.local/stable-results-1793864400149`). 이어 무기 전환 중 이전 슬롯 layout과 새 무기 flag 혼용을 제거하고 source equipment-art 회귀/무기 슬롯 매 프레임 유지를 검증했다(`.local/equipment-art-1793864499762`).
+- 최종 verify:pob/build/pack:win/check217 및 최종 package equipment-art 회귀 통과(`.local/equipment-art-1793864584971`): 무기 슬롯 프레임 누락0, 두 해상도/드롭다운 hover/장착 해제·재장착·exact XML 복원 확인.
+- 새 실행 파일: `release/stable-results-20261105-final/win-unpacked/POK.exe`. 원본 PoB/공유 엔진/런타임 adapter는 수정하지 않았다.
+
+---
+
+# 슬롯 드롭다운과 항목 hover — 2026-11-05
+
+- 사용자의 원본 PoB 예시를 따라 중앙 모달을 슬롯에 붙는 작은 드롭다운으로 교체했다. 화면 dim/backdrop 없이 슬롯 아래/위 공간을 선택하고 화면 크기·스크롤에 위치를 맞춘다. 검색, 현재 선택 표시, 항목 즉시 장착/비우기, 바깥 클릭/Escape 닫기와 키보드 이동을 제공한다.
+- 각 후보 항목 hover/focus는 기존 ItemHover를 사용해 원본 포맷 옵션·요구량·해당 슬롯의 실제 장착 비교를 보여준다. 원본 choices/계산·XML 안전성은 그대로다.
+- check217/build 통과. source `.local/equipment-art-1793863138856`에서1920/1024 슬롯 기준 위치·화면 경계·backdrop 없음·목록 hover 옵션·비우기/재장착과 XML 복원을 확인하고 실제 캡처를 검토했다.
+- verify:pob/build/pack:win 및 실제 packaged 회귀 통과(`.local/equipment-art-1793863252550`). 바깥 클릭/Escape 닫기도 확인했다. 최신 패키지 경로: `release/equipment-dropdown-20261105/win-unpacked/POK.exe`. 이전 picker 패키지는 중앙 모달 버전이다.
+
+---
+
+# 슬롯 선택으로 장착·해제 — 2026-11-05
+
+- 사용자의 후속 지시로 별도 장착/해제 버튼을 없앴다. 장비 슬롯 클릭 시 원본 native slot choices 기반의 검색 가능한 목록을 열고 항목 선택으로 즉시 장착한다. `비우기`는 해당 슬롯의 해제다. 현재 장착 표시·Escape/Tab·닫기 후 슬롯 포커스 복원을 제공한다. 보유 목록은 이름/베이스 좌측 정렬이며 썸네일과 행별 장착 버튼을 제거했다.
+- 아이템 옵션의 `item-unparsed-lines` 원문 경고와 컨트롤 출처 disclosure를 제거했다. 진단 DTO·원문·계산 요약의 미지원 정보는 보존하며 실패/보존 차단 오류는 계속 표시한다. 이는 계산 지원을 추가한 변경이 아니다.
+- check217/build 통과. source Electron `.local/equipment-art-1793862166128`에서 두 해상도 슬롯 목록/목록 정렬·검색 진입, 갑옷 비우기/재장착 뒤 current 계산과 exact XML 복원을 검증했다. 초기 bow 왕복에서 원본이 활 해제 시 화살통도 해제하므로 전체 XML 일치 가정이 틀렸고, 독립 갑옷 왕복으로 검사를 교정했다. 원본 장착 규칙은 변경하지 않았다.
+- verify:pob/build/pack:win과 실제 packaged equipment-art 회귀도 통과했다(`.local/equipment-art-1793862236205`). 새 패키지 경로는 `release/equipment-picker-20261105/win-unpacked/POK.exe`다. 이전 feedback 패키지는 후속 슬롯 선택 UX 이전 버전이다.
+
+---
+
+# 장비 화면 사용자 피드백 — 2026-11-05
+
+- 보유 목록의 고정 높이150/160px에서 검색·도구 영역 뒤 아이템 행이 잘리는 문제를220/240px로 조정했다. 도구 영역은 축소되지 않고 목록 내부만 스크롤된다.
+- 상세 카드의 장식 마름모를 제거하고 이름 옆 희귀도, 우측 편집 버튼으로 정렬했다. `원본 아이템 옵션`은 `아이템 옵션`, `오염 편집`과 해당 팝업 제목은 `타락`으로 수정했다.
+- 비슷한 아이템 검색을 Create Item 옆으로 이동했다. 기존 editor의 sourcePreserved/busy 보호와 검색 context·취소·포커스 복원을 유지하기 위해 헤더에 portal로 표시한다. 생성 초안에서는 기존처럼 검색을 표시하지 않는다.
+- check217/build 통과. source Electron equipment-art 회귀 통과,1920×1080/1024×768 캡처를 직접 확인했다. 목록 첫 행 완전 표시·헤더 검색/생성 버튼 같은 행·장식 제거·옵션 제목을 검사한다. XML/계산/runtime은 수정하지 않았다.
+- 새 배포 경로: `release/equipment-feedback-20261105/win-unpacked/POK.exe`. verify:pob/build/pack:win 통과. 최신 패키지 equipment-art 회귀도 통과(`.local/equipment-art-1793860575708`); 두 크기에서 목록 행·버튼 배치와 검색 팝업 열기/닫기·포커스 복원, 슬롯 선택·무기 전환 뒤 exact XML 복원을 확인했다.
+
+---
+
 # 후속 수정: 이미지 중심 장비 개요 — 2026-11-04
 
 사용자 제공 poe.ninja 이미지를 최신 장비 배치 기준으로 반영했다. 실제 장비 그림을 사용하는 길쭉한 양쪽 무기, 상단 투구·중앙 갑옷·측면 액세서리·하단 장갑/허리띠/장화와 플라스크/호신부 구성을 적용했다. 양쪽 무기 위의 I/II는 같은 원본 무기 세트에 연동된다. 바알 신체 부위4칸은 장비판에서 분리했고 active tree의 장착 주얼을 아래 썸네일로 표시한다. 보유 목록·상세 주얼 탭·장비 소켓·편집/hover/미니맵/자동 계산은 유지했다.

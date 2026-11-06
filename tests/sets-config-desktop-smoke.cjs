@@ -20,13 +20,13 @@ async function manage(name,action,title){
   await page.getByRole('button',{name:'스킬',exact:true}).click();await page.getByRole('button',{name:'스킬 그룹 추가',exact:true}).click();await poll(current,b=>b.revision===1);
   await page.getByLabel('젬 카탈로그 검색').fill('Ice Nova');await page.locator('.catalog-results button').filter({hasText:'Ice Nova'}).first().click();
   await page.getByLabel('젬 1 레벨',{exact:true}).fill('1');await page.getByLabel('젬 1 레벨',{exact:true}).press('Tab');await poll(current,b=>b.revision===2);
-  await page.getByLabel('PoB 스킬 모드').selectOption('2');let build=await poll(current,b=>b.revision===3);
+  await page.getByLabel('스킬 모드').selectOption('2');let build=await poll(current,b=>b.revision===3);
   const inspected=await page.evaluate(b=>window.pok.inspectBuild({buildId:b.id,revision:b.revision,xml:b.xml}),build);assert.equal(inspected.skills[0].selectedMode,2);
   report.passed.push('catalogue gem and native Ice Nova mode update the canonical XML and original PoB selector');
-  await page.getByRole('button',{name:'전투 조건',exact:true}).click();await page.getByLabel('PoB 전투 조건 검색').fill('resistancePenalty');
+  await page.getByRole('button',{name:'전투 조건',exact:true}).click();await page.getByLabel('전투 조건 검색').fill('resistancePenalty');
   await page.getByLabel('PoB 조건 resistancePenalty',{exact:true}).selectOption('0');build=await poll(current,b=>parseBuild(b.xml).configs.find(c=>c.active)?.inputs.resistancePenalty===0);
   await page.getByLabel('resistancePenalty 미설정',{exact:true}).click();build=await poll(current,b=>!Object.hasOwn(parseBuild(b.xml).configs.find(c=>c.active).inputs,'resistancePenalty'));
-  await page.getByLabel('PoB 전투 조건 검색').fill('conditionFullLife');await page.getByText('원본에서 표시 가능한 조건 모두',{exact:true}).click();
+  await page.getByLabel('전투 조건 검색').fill('conditionFullLife');await page.getByText('원본에서 표시 가능한 조건 모두',{exact:true}).click();
   await page.getByLabel('PoB 조건 conditionFullLife',{exact:true}).check();await poll(current,b=>parseBuild(b.xml).configs.find(c=>c.active)?.inputs.conditionFullLife===true);
   await page.getByLabel('PoB 조건 conditionFullLife',{exact:true}).uncheck();await poll(current,b=>parseBuild(b.xml).configs.find(c=>c.active)?.inputs.conditionFullLife===false);
   await page.getByLabel('conditionFullLife 미설정',{exact:true}).click();await poll(current,b=>!Object.hasOwn(parseBuild(b.xml).configs.find(c=>c.active).inputs,'conditionFullLife'));
@@ -46,7 +46,7 @@ async function manage(name,action,title){
   await page.getByRole('button',{name:'되돌리기',exact:true}).click();await poll(current,b=>parseBuild(b.xml).notes==='');
   await page.getByLabel('PoB 노트',{exact:true}).fill(note);const saved=await poll(current,b=>parseBuild(b.xml).notes===note&&b.calculation?.revision===b.revision);
   report.passed.push('notes preserve literal colour codes, Korean and XML-special characters, with undo');
-  for(const [width,height] of [[1920,1080],[1024,768]]){await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(...size),[width,height]);for(const view of ['스킬','전투 조건','노트']){await page.getByRole('button',{name:view,exact:true}).click();if(view==='전투 조건')await page.getByText('현재 리비전의 원본 컨트롤',{exact:true}).waitFor();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:path.join(directory,view+'-'+width+'.png')});}}
+  for(const [width,height] of [[1920,1080],[1024,768]]){await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(...size),[width,height]);for(const view of ['스킬','전투 조건','노트']){await page.getByRole('button',{name:view,exact:true}).click();if(view==='전투 조건')await page.getByText('현재 설정',{exact:true}).waitFor();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:path.join(directory,view+'-'+width+'.png')});}}
   await app.close();app=undefined;await launch();build=await current();assert.equal(build.xml,saved.xml);assert.equal(build.originalXml,saved.originalXml);assert.equal(build.revision,saved.revision);assert.equal((await page.evaluate(()=>window.pok.getPokConnection())).connected,false);
   report.passed.push('sets, native options and notes survive restart; all new screens fit both desktop sizes');
   await page.getByRole('button',{name:'새 빌드',exact:true}).first().click();const second=await poll(current,b=>b.id!==saved.id);

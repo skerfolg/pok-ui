@@ -9,7 +9,9 @@ return function(editor,popups,similar)
     return entry.name
   end
   return function(request)
-    editor.load(request.xml)
+    if request.popup or request.similar then editor.load(request.xml)else editor.ensure(request.xml)end
+    -- This UI exposes the stock per-line range selector rather than stacked controls.
+    main.showAllItemAffixes=false
     local tab=build.itemsTab
     local configured=tab.items[tonumber(request.itemId)]
     local raw=request.text==request.sourceText and configured and configured:BuildRaw() or request.text

@@ -26,9 +26,9 @@ local function raw(value,seen,depth)
   return setmetatable(out,{__jsontype='object'})
 end
 local function array() return setmetatable({},{__jsontype='array'}) end
-local readXml
+local readXml,loadedXml,loadedTree
 local function setup(xml)
-  readXml=nil
+  readXml=nil;loadedXml=nil;loadedTree=nil
   local previous=launch.ShowErrMsg
   local errors={}
   launch.ShowErrMsg=function(self,format,...)errors[#errors+1]=string.format(format,...)end
@@ -42,12 +42,87 @@ local function setup(xml)
     runCallback('OnFrame')
   end
 end
-api.load=setup
+-- Keep the original build object for narrowly supported edits. All XML ownership
+-- remains with the host; unknown section changes fall back to full restoration.
+local function equal(a,b)
+  if type(a)~=type(b)then return false end
+  if type(a)~='table'then return a==b end
+  for k,v in pairs(a)do if not equal(v,b[k])then return false end end
+  for k in pairs(b)do if a[k]==nil then return false end end
+  return true
+end
+local function parse(xml)
+  local nodes,err=common.xml.ParseXML(xml)
+  if err or not nodes or not nodes[1] or nodes[1].elem~='PathOfBuilding2'then return nil end
+  return nodes[1]
+end
+local function sync(xml)
+  local nextTree=parse(xml)
+  if not loadedTree or not nextTree or #loadedTree~=#nextTree or not equal(loadedTree.attrib,nextTree.attrib)then return false end
+  local changes,seen={},{}
+  for _,node in ipairs(nextTree)do if type(node)=='table'then if seen[node.elem]then return false end;seen[node.elem]=true end end
+  for i,node in ipairs(nextTree)do
+    local old=loadedTree[i]
+    if not equal(old,node)then
+      if type(old)~='table' or type(node)~='table' or old.elem~=node.elem then return false end
+      if node.elem=='Build'then
+        local allowed={level=true,characterLevelAutoMode=true,mainSocketGroup=true,mainSkillIndex=true}
+        for key,value in pairs(node.attrib)do if not allowed[key] and old.attrib[key]~=value then return false end end
+        for key,value in pairs(old.attrib)do if not allowed[key] and node.attrib[key]~=value then return false end end
+        if #old~=#node then return false end
+        for j,value in ipairs(node)do if not equal(value,old[j])then return false end end
+      elseif node.elem=='Items'then
+        if not equal(old.attrib,node.attrib) or #old~=#node then return false end
+        for j,entry in ipairs(node)do if not equal(old[j],entry)then
+          if type(entry)~='table' or type(old[j])~='table' or entry.elem~=old[j].elem then return false end
+          if entry.elem=='Item'then
+            if entry.attrib.id~=old[j].attrib.id then return false end
+            local item=build.itemsTab.items[tonumber(entry.attrib.id)]
+            if not item or item.clusterJewel or item.baseName=='Timeless Jewel' then return false end
+            for _,id in pairs(build.spec.jewels or {})do if id==item.id then return false end end
+          elseif entry.elem~='ItemSet'then return false end
+        end end
+      elseif node.elem=='Skills' or node.elem=='Config'then
+        if not equal(old.attrib,node.attrib)then return false end
+      else return false end
+      changes[#changes+1]=node
+    end
+  end
+  -- Use the stock XML loaders and normal frame invalidation, not a second set
+  -- of item/skill/config rules. Any error discards the context before retry.
+  for _,node in ipairs(changes)do
+    if node.elem=='Build'then build:Load(node,'POK UI memory')
+    else
+      local saver=build.savers[node.elem]
+      if node.elem=='Items'then saver.items={};saver.itemOrderList={} end
+      assert(not saver:Load(node,'POK UI memory'),'Updated section could not be loaded')
+    end
+  end
+  build.controls.characterLevel:SetText(tostring(build.characterLevel))
+  build:SyncLoadouts();build.buildFlag=true;runCallback('OnFrame')
+  loadedXml=xml;loadedTree=nextTree;readXml=nil
+  return true
+end
+function api.invalidateState()readXml=nil;loadedXml=nil;loadedTree=nil end
 function api.invalidateRead()readXml=nil end
--- Only Calcs/tooltip reads may share this restored and calculated context.
--- Every editor operation still calls setup and invalidates it first.
+function api.load(xml)
+  setup(xml);loadedXml=xml;loadedTree=xml and parse(xml)or nil
+end
+function api.ensure(xml)
+  if loadedXml==xml and xml then return end
+  if loadedXml and xml then
+    local ok,reused=pcall(sync,xml)
+    if ok and reused then return end
+    api.invalidateState()
+  end
+  setup(xml)
+  loadedXml=xml;loadedTree=xml and parse(xml)or nil
+end
+function api.calculate()
+  if build.buildFlag then runCallback('OnFrame')end
+end
 function api.read(xml)
-  if readXml~=xml then setup(xml);build.calcsTab:BuildOutput();readXml=xml end
+  if readXml~=xml then api.ensure(xml);api.calculate();readXml=xml end
 end
 function api.itemPresentation(item)
   local result={displayLines=api.itemLines(item),requirements=array()}

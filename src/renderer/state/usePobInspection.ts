@@ -13,7 +13,7 @@ export function usePobInspection(build:BuildDocument|undefined,runtimeId:string|
       if(cancelled)return;
       if(result.buildId!==request.buildId||result.revision!==request.revision||result.xmlSha256!==hash||result.runtimeId!==runtimeId)throw new Error('PoB 조회 결과의 입력 또는 버전이 현재 문서와 다릅니다.');
       setSaved({data:result,xml:request.xml});setPending(false);
-    }).catch(reason=>{if(!cancelled){setError(String(reason));setPending(false);}});},250);
+    }).catch(reason=>{if(!cancelled){setError(String(reason));setPending(false);}});},16);
     return()=>{cancelled=true;clearTimeout(timer);};
   },[build?.id,build?.revision,build?.xml,runtimeId]);
   const data=saved?.data;

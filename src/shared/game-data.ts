@@ -82,6 +82,7 @@ export interface CatalogQuery {
 }
 
 export interface CatalogQueryResult {
+  categories?: string[];
   total: number;
   offset: number;
   limit: number;

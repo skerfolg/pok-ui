@@ -269,7 +269,9 @@ function registerIpc():void{
       if(operation.sourceName!==undefined&&operation.index!==undefined)throw new Error('통합 구성 관리 대상의 출처가 둘 이상입니다.');
       if(operation.sources!==undefined){record(operation.sources);for(const key of ['tree','items','skills','config'])text(operation.sources[key],128,'원본 복사 세트');}
     }
-    return pobRuntime.loadouts(request as unknown as import('../shared/pob-loadouts').PobLoadoutsRequest);
+    const group=request.skillGroups as {action?:unknown}|undefined,tree=request.treeWorkspace as {action?:unknown}|undefined;
+    const readOnly=!request.manage&&!request.name&&(!group||group.action==='inspect'||group.action==='export-text')&&(!tree||tree.action==='inspect'||tree.action==='export-code');
+    return (readOnly?pobDetailRuntime:pobRuntime).loadouts(request as unknown as import('../shared/pob-loadouts').PobLoadoutsRequest);
   });
   handle('pok:read-party',async(request:unknown)=>{
     record(request);text(request.buildId,128,'빌드 ID');text(request.xml,12*1024*1024,'빌드 XML');

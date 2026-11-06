@@ -1,5 +1,5 @@
 /* Inventory-sized artwork arranged like the in-game equipment overview. */
-.equipment-left { grid-template-rows:minmax(0,1fr) 160px; }
+.equipment-left { grid-template-rows:minmax(0,1fr) 240px; }
 .equipment-overview { min-height:0; flex:1; padding:12px; }
 .equipment-figure { width:min(100%,380px); margin:0 auto; }
 .weapon-switches { display:flex; justify-content:space-between; margin-bottom:7px; }
@@ -43,13 +43,12 @@
 .equipment-thumbnail-name { display:block; font-size:9px; line-height:1.4; margin-top:3px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .equipment-thumbnail .gear-slot { width:52px; height:52px; }
 .inventory-item { flex-direction:row; align-items:center; gap:8px; }
-.inventory-art { width:32px; height:36px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:var(--color-soft); border-radius:3px; }
 .inventory-item-text { min-width:0; display:flex; flex-direction:column; gap:2px; }
 .inventory-item-text>span { max-width:100%; overflow:hidden; text-overflow:ellipsis; }
 .equipment-workspace .item-library .item-list { min-height:0; }
 .equipment-workspace .jewel-socket-row { gap:8px; align-items:center; }
 @media(max-width:1279px){
- .equipment-left { grid-template-rows:minmax(0,1fr) 150px; }
+ .equipment-left { grid-template-rows:minmax(0,1fr) 220px; }
  .equipment-overview { padding:10px; }
  .gear-slots { gap:4px; }
  .charm-slots { gap:4px; }
@@ -61,3 +60,23 @@
  .equipment-thumbnail>.hover-anchor,.equipment-thumbnail .gear-slot { width:44px; height:44px; }
  .equipment-collection { margin-top:13px; }
 }
+
+.inventory-tools { flex-shrink:0; }
+.item-detail-actions { justify-content:flex-end; }
+.item-detail-actions>div:empty { display:none; }
+
+.equipment-workspace .library-row { grid-template-columns:minmax(0,1fr); }
+.equipment-workspace .inventory-item { justify-content:flex-start; align-items:flex-start; text-align:left; }
+.inventory-item-text { align-items:flex-start; text-align:left; }
+
+/* Slot-anchored dropdown; item details use the shared hover card. */
+.equipment-picker { position:fixed; z-index:900; width:min(320px,calc(100vw - 16px)); display:flex; flex-direction:column; gap:4px; padding:5px; border:1px solid var(--color-line); border-radius:4px; background:var(--color-bg); box-shadow:0 6px 20px #0005; }
+.equipment-picker>.panel-heading { padding:3px 5px; flex-shrink:0; }
+.equipment-picker>.panel-heading button { padding:1px 6px; }
+.equipment-picker>input { flex-shrink:0; }
+.equipment-picker-list { min-height:0; display:flex; flex-direction:column; gap:1px; }
+.equipment-picker-list>.hover-anchor { display:block; }
+.equipment-picker-choice { display:flex; justify-content:space-between; align-items:center; gap:6px; width:100%; text-align:left; padding:6px 8px; border-radius:2px; min-height:28px; }
+.equipment-picker-choice>span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.equipment-picker-choice small { color:var(--color-muted); flex-shrink:0; }
+.equipment-picker-choice[aria-pressed=true] { border-color:var(--color-accent); background:var(--color-accent-soft); }

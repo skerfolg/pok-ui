@@ -100,6 +100,7 @@ export class PobRuntime {
     }finally{if(requestId){this.requestIds.delete(requestId);this.cancelledIds.delete(requestId);}}
   }
   private equipmentReadKeys=new Map<string,string>();
+  private loadoutReadKeys=new Map<string,string>();
   private itemReadKeys=new Map<string,string>();
   private inspections=new Map<string,number>();
   private inspectionRequests=new Map<string,{key:string;pending:Promise<PobInspection>}>();
@@ -276,7 +277,10 @@ export class PobRuntime {
     // Original Loadout management operates on canonical tree order, including filtered rows.
     if(snapshot.treeWorkspace&&(snapshot.manage||snapshot.name))throw new PobRuntimeError('POB_REQUEST','트리 작업의 요청 출처가 둘 이상입니다.');
     const canonicalSets=snapshot.treeWorkspace?{tree:canonical.trees.map(set=>set.id),items:canonical.itemSets.map(set=>set.id),skills:canonical.skillSets.map(set=>set.id),config:canonical.configs.map(set=>set.id)}:undefined;
-    const {result,manifest}=await this.request({op:'loadouts',xml:snapshot.xml,name:snapshot.name,manage:snapshot.manage,treeWorkspace:snapshot.treeWorkspace,canonicalSets,skillGroups:snapshot.skillGroups,canonicalSkillGroups:snapshot.skillGroups?skillSet!.groups.map(group=>group.id):undefined,canonicalSkillSets:snapshot.skillGroups?Object.fromEntries(parsed.skillSets.map(set=>[set.id,set.groups.map(group=>group.id)])):undefined},snapshot.runtimeId,undefined,snapshot.requestId);
+    const readOnly=!snapshot.manage&&!snapshot.name&&(!snapshot.skillGroups||snapshot.skillGroups.action==='inspect'||snapshot.skillGroups.action==='export-text')&&(!snapshot.treeWorkspace||snapshot.treeWorkspace.action==='inspect'||snapshot.treeWorkspace.action==='export-code');
+    const readOwner=JSON.stringify([snapshot.buildId,snapshot.skillGroups?.action,snapshot.skillGroups?.setId,snapshot.skillGroups?.groupId,snapshot.treeWorkspace?.action]),readKey=sha(JSON.stringify({...snapshot,requestId:undefined}));
+    if(readOnly){this.loadoutReadKeys.set(readOwner,readKey);if(this.loadoutReadKeys.size>64)this.loadoutReadKeys.delete(this.loadoutReadKeys.keys().next().value!);}
+    const {result,manifest}=await this.request({op:'loadouts',prefetch:readOnly,xml:snapshot.xml,name:snapshot.name,manage:snapshot.manage,treeWorkspace:snapshot.treeWorkspace,canonicalSets,skillGroups:snapshot.skillGroups,canonicalSkillGroups:snapshot.skillGroups?skillSet!.groups.map(group=>group.id):undefined,canonicalSkillSets:snapshot.skillGroups?Object.fromEntries(parsed.skillSets.map(set=>[set.id,set.groups.map(group=>group.id)])):undefined},snapshot.runtimeId,readOnly?()=>this.loadoutReadKeys.get(readOwner)!==readKey:undefined,snapshot.requestId);
     if(snapshot.skillGroups){
       const data=result.skillGroups as PobSkillGroups|undefined;
       if(!data||!isDeepStrictEqual(data.operation,snapshot.skillGroups)||data.setId!==skillSet!.id||!Array.isArray(data.groups)||!Array.isArray(data.order)||data.groups.length!==skillSet!.groups.length||data.groups.some((group,index)=>group.id!==skillSet!.groups[index].id||typeof group.canDelete!=='boolean'||typeof group.label!=='string'))throw new PobRuntimeError('POB_PROTOCOL','원본 스킬 그룹 응답의 요청·출처가 다릅니다.');

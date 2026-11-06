@@ -7,9 +7,9 @@ export function useEquipmentState(buildId:string|undefined,revision:number|undef
   useEffect(()=>{
     let cancelled=false;setError('');if(!buildId||revision===undefined||!xml||!runtimeId){setPending(false);return;}
     const requestId=crypto.randomUUID(),input={buildId,revision,xml,runtimeId,requestId};setPending(true);
-    const timer=setTimeout(()=>{void Promise.all([api.equipment(input),hashBuildXml(xml)]).then(([data,hash])=>{if(cancelled)return;if(data.buildId!==buildId||data.revision!==revision||data.xmlSha256!==hash||data.runtimeId!==runtimeId)throw new Error('원본 장비 상태의 입력/버전이 현재 문서와 다릅니다.');setSaved({xml,data});setPending(false);}).catch(reason=>{if(!cancelled){setError(String(reason));setPending(false);}});},250);
+    const timer=setTimeout(()=>{void Promise.all([api.equipment(input),hashBuildXml(xml)]).then(([data,hash])=>{if(cancelled)return;if(data.buildId!==buildId||data.revision!==revision||data.xmlSha256!==hash||data.runtimeId!==runtimeId)throw new Error('원본 장비 상태의 입력/버전이 현재 문서와 다릅니다.');setSaved({xml,data});setPending(false);}).catch(reason=>{if(!cancelled){setError(String(reason));setPending(false);}});},16);
     return()=>{cancelled=true;clearTimeout(timer);};
   },[buildId,revision,xml,runtimeId]);
   const data=saved&&saved.xml===xml&&saved.data.buildId===buildId&&saved.data.revision===revision&&saved.data.runtimeId===runtimeId?saved.data:undefined;
-  return{data,pending,error};
+  return{data,layout:saved&&saved.data.buildId===buildId&&saved.data.runtimeId===runtimeId?saved.data:undefined,pending,error};
 }

@@ -5,7 +5,7 @@ return function(editor)
   local function scalar(v) local t=type(v);if t=='string' or t=='number' or t=='boolean' then return v end end
   local function label(v) return StripEscapes(v==nil and '' or tostring(v)) end
   return function(xml,current)
-    if not current then editor.load(xml);build.calcsTab:BuildOutput()end;build.viewMode='CONFIG';build.configTab:UpdateControls()
+    if not current then editor.ensure(xml);editor.calculate()end;build.viewMode='CONFIG';build.configTab:UpdateControls()
     local sections,diagnostics,skills=array(),array(),array()
     local function attempt(field,fn,fallback)
       local ok,value=pcall(fn)

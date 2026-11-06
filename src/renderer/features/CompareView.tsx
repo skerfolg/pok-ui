@@ -28,7 +28,7 @@ export function CompareView({state,update,runtimeId,applyExpected,changed}:{stat
     if(!left||!right)return;setBusy('두 구성 계산 중…');setError('');setApplied(undefined);
     const record:BuildComparison={id:crypto.randomUUID(),at:new Date().toISOString(),left:{snapshot:comparisonSnapshot(left),selection:{...leftSet}},right:{snapshot:comparisonSnapshot(right),selection:{...rightSet}}};
     try{
-      if(!runtimeId)throw new Error('독립 PoB 런타임을 준비해 주세요.');
+      if(!runtimeId)throw new Error('계산 기능을 준비하고 있습니다.');
       for(const side of [record.left,record.right]){try{const resolved=await resolveTreeSetEdit(side.snapshot,selectionEdit(side.selection),runtimeId,request=>api.editTree(request));side.treeIdentity=resolved.identity;const projected=projectComparisonSide(side),calculation=await api.computeBuild(projected);if(calculation.provenance?.bundleId!==runtimeId||calculation.provenance.buildId!==projected.id||calculation.provenance.revision!==projected.revision||calculation.provenance.xmlSha256!==await hashBuildXml(projected.xml))throw new Error('비교 계산의 입력·PoB 출처가 변경되었습니다. 다시 비교해 주세요.');side.calculation=calculation;}catch(reason){side.error=String(reason);}}
       setResult(record);update(s=>({...s,comparisons:[...(s.comparisons||[]),record]}));
     }catch(reason){setError(String(reason));}finally{setBusy('');}
